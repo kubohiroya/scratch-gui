@@ -24,7 +24,7 @@ URL の直接読込は上流が未信頼URLに sandbox を強制するため、�
 
 ## ビルドと依存
 
-共通 API の固定 SHA は `.github/workflows/pages.yml` の checkout 設定で管理（現在 `21c7cf54df2f2f8768219252a2bc6e5b5ad5434f`）。
+共通 API の固定 SHA は `.github/workflows/pages.yml` の checkout 設定で管理（現在 `ec338023ca8123b1db50787601ca8c78ab06917d`）。
 `build:pages` はインストールされた共通 API のリンク先にある Git checkout の HEAD を取得し、`build-info.json` と日英クレジットのソースリンクに同じ SHA を使います。
 ローカルビルドも Git checkout をリンクして利用します。Git checkout が見つからない場合は公開ビルドを失敗させ、GUI の SHA や古い固定値を代用しません。
 Actions は両リポジトリを隣接配置し、共通 API を pnpm 11.18.0 と Node 22 で install / typecheck / test / build します。
@@ -48,6 +48,21 @@ Node の旧 OpenSSL 互換設定はビルドスクリプト内で webpack 4 に�
 `.github/workflows/pages.yml` は公開ソース branch の push と手動実行を入口にします。
 GitHub Pages の配信元は GitHub Actions。公開 job だけが `pages: write` と `id-token: write` を持ちます。
 検証対象は今回の公開経路と変更部分です。この公開は実験版で、安定版リリースのフル検証を完了したものではありません。
+
+## 階層フォームの公開確認
+
+階層編集と元ブロックの名前・アイコン・背景色・枠線は、developのPR #10・#13を公開ソースへ統合して配信します。
+両機能フラグは起動時固定・既定OFFを維持し、確認時だけ次のURLで明示的に有効にします。
+
+```text
+https://kubohiroya.github.io/scratch-gui/editor.html?blockEditorDialogs=1&blockEditorDescendants=1
+```
+
+管理下の階層サンプルは同じ公開物の `/static/extensions/block-editor-descendants.js` に含めます。
+公開URLの拡張ソースをカスタム拡張の「テキスト」に貼り付け、サンドボックスなしで実行します。
+親・子・孫のフォーム冒頭の名前とアイコン、それぞれの薄い背景色・枠線を確認します。
+
+公開確認ではpushの通常CIとPages workflowのbuild・deploy成功を確認し、`build-info.json`のGUI revisionが公開ブランチのpush SHAに一致すること、coreRevisionがworkflowの固定SHAに一致することを照合します。
 
 ## ロールバック
 

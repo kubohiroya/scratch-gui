@@ -48,8 +48,9 @@ ScratchBlocks.Blocks.story_scene = {
     }
 };
 
-export function fixture(t, {definition = makeDefinition(), registry = new EditorRegistry()} = {}) {
-    registry.register(definition);
+export function fixture(t, {definition = makeDefinition(), registry = new EditorRegistry(), xmlText,
+    enableDescendants = false} = {}) {
+    const unregisterDefinition = registry.register(definition);
     const workspace = new ScratchBlocks.Workspace();
     // Headless workspaces have no procedure-return renderer to update.
     workspace.procedureReturnsWillChange = () => {};
@@ -59,7 +60,7 @@ export function fixture(t, {definition = makeDefinition(), registry = new Editor
     vm.runtime.targets.push(target);
     vm.setEditingTarget(target.id);
     workspace.addChangeListener(vm.blockListener);
-    const xml = ScratchBlocks.Xml.textToDom('<xml><block type="story_scene" id="scene">' +
+    const xml = ScratchBlocks.Xml.textToDom(xmlText || '<xml><block type="story_scene" id="scene">' +
         '<value name="PROPERTIES"><shadow type="text" id="props"><field name="TEXT">{}</field></shadow></value>' +
         '<value name="NAME"><shadow type="text" id="name"><field name="TEXT">opening</field></shadow></value>' +
         '</block></xml>');
@@ -68,7 +69,7 @@ export function fixture(t, {definition = makeDefinition(), registry = new Editor
     workspace.clearUndo();
     let dirty = 0;
     vm.on('PROJECT_CHANGED', () => { dirty++; });
-    const host = createBlockEditorHost({ScratchBlocks, workspace, vm, registry});
+    const host = createBlockEditorHost({ScratchBlocks, workspace, vm, registry, enableDescendants});
     const reference = {targetId: target.id, blockId: 'scene'};
     const block = workspace.getBlockById('scene');
     t.after(() => {
@@ -79,7 +80,7 @@ export function fixture(t, {definition = makeDefinition(), registry = new Editor
         vm.quit();
     });
     return {
-        host, reference, registry, workspace, vm, target, block,
+        host, reference, registry, workspace, vm, target, block, unregisterDefinition,
         open: () => registry.open(reference, host),
         dirty: () => dirty,
         field: id => workspace.getBlockById(id).getField('TEXT'),

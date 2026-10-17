@@ -10,6 +10,11 @@ test('startup flags default OFF and accept only the explicit opt-in', () => {
         assert.equal(readFeatureFlags(query).blockEditorDialogs, false);
     }
     assert.equal(readFeatureFlags('?blockEditorDialogs=1').blockEditorDialogs, true);
+    for (const query of ['', '?blockEditorDescendants=1', '?blockEditorDialogs=1',
+        '?blockEditorDialogs=1&blockEditorDescendants=true']) {
+        assert.equal(readFeatureFlags(query).blockEditorDescendants, false);
+    }
+    assert.equal(readFeatureFlags('?blockEditorDialogs=1&blockEditorDescendants=1').blockEditorDescendants, true);
     assert.ok(Object.isFrozen(readFeatureFlags('')));
 });
 

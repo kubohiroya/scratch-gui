@@ -6,7 +6,10 @@
     "tw.blockEditor.failed": "ブロックを編集できませんでした。閉じて、もう一度試してください。",
     "tw.blockEditor.cancel": "キャンセル",
     "tw.blockEditor.save": "保存",
-    "tw.blockEditor.saving": "保存中…"
+    "tw.blockEditor.saving": "保存中…",
+    "tw.blockEditor.saveAll": "すべて保存",
+    "tw.blockEditor.structuralNode": "このブロックにフォームはありません。内側のブロックは編集対象に含まれます。",
+    "tw.blockEditor.structureError": "不正な階層、または500ブロック・深さ32の上限超過のため開けません。保存は行われていません。"
   },
   "en": {
     "tw.blockEditor.open": "Edit block",
@@ -15,6 +18,9 @@
     "tw.blockEditor.failed": "The block could not be edited. Close this dialog and try again.",
     "tw.blockEditor.cancel": "Cancel",
     "tw.blockEditor.save": "Save",
-    "tw.blockEditor.saving": "Saving…"
+    "tw.blockEditor.saving": "Saving…",
+    "tw.blockEditor.saveAll": "Save all",
+    "tw.blockEditor.structuralNode": "No form for this block; its nested blocks are included.",
+    "tw.blockEditor.structureError": "This hierarchy is invalid or exceeds 500 blocks or 32 levels. No blocks were saved."
   }
 }

@@ -1,8 +1,23 @@
 import createBlockEditorHost from './tw-block-editor-host.js';
 import bindBlockEditorIcon from './tw-block-editor-icon.js';
+import readBlockEditorAppearance from './tw-block-editor-appearance.js';
+import {supportsDescendantEditing} from '@kubohiroya/turbowarp-block-editor';
+import featureFlags from './tw-feature-flags.js';
+import createBlockEditorErrorSession from './tw-block-editor-error-session.js';
 
-const createBlockEditorBridge = ({ScratchBlocks, workspace, vm, service, label, canOpen, onOpen, onError}) => {
-    const host = createBlockEditorHost({ScratchBlocks, workspace, vm, registry: service.registry, onError});
+const openBlockEditorSession = ({registry, reference, host, descendants}) => (
+    descendants && supportsDescendantEditing(host) ?
+        registry.openDescendants(reference, host) : registry.open(reference, host)
+);
+
+const createBlockEditorBridge = ({ScratchBlocks, workspace, vm, service, label, canOpen, onOpen, onError,
+    descendants = featureFlags.blockEditorDescendants}) => {
+    const host = createBlockEditorHost({ScratchBlocks,
+        workspace,
+        vm,
+        registry: service.registry,
+        enableDescendants: descendants,
+        onError});
     const decorations = new Map();
     let disposed = false;
     let timer = null;
@@ -12,6 +27,10 @@ const createBlockEditorBridge = ({ScratchBlocks, workspace, vm, service, label, 
     const endSession = () => {
         const session = activeSession;
         if (!session) return;
+        if (typeof session.invalidate === 'function') {
+            session.invalidate();
+            return;
+        }
         // Normal close is refused while saving. Host invalidation also blocks commit,
         // then releases the old view as soon as its pending validation settles.
         if (session.dispose()) return;
@@ -27,8 +46,10 @@ const createBlockEditorBridge = ({ScratchBlocks, workspace, vm, service, label, 
     const checkSession = () => {
         // The host owns rollback. Its synchronous transaction must retain the draft on failure.
         if (host.isCommitting()) return;
-        if (!activeSession || !['editing', 'saving'].includes(activeSession.getState().status)) return;
-        const current = host.readBlock(activeSession.reference);
+        if (!activeSession || !openingSnapshot ||
+            !['editing', 'saving'].includes(activeSession.getState().status)) return;
+        const current = typeof activeSession.getNodes === 'function' ?
+            host.descendants.readSubtree(activeSession.reference) : host.readBlock(activeSession.reference);
         if (!current || JSON.stringify(current) !== JSON.stringify(openingSnapshot)) endSession();
     };
     const available = block => {
@@ -38,18 +59,32 @@ const createBlockEditorBridge = ({ScratchBlocks, workspace, vm, service, label, 
     };
     const open = block => {
         if (activeSession && ['editing', 'saving'].includes(activeSession.getState().status)) return;
+        const reference = {targetId: vm.editingTarget.id, blockId: block.id};
         try {
-            const session = service.registry.open({
-                targetId: vm.editingTarget.id, blockId: block.id
-            }, host);
+            const session = openBlockEditorSession({registry: service.registry, reference, host, descendants});
+            if (!session && descendants) throw new Error('The complete block hierarchy is not editable.');
             if (session) {
                 ScratchBlocks.hideChaff();
                 activeSession = session;
-                openingSnapshot = host.readBlock(session.reference);
-                onOpen(session);
+                openingSnapshot = typeof session.getNodes === 'function' ?
+                    host.descendants.readSubtree(session.reference) : host.readBlock(session.reference);
+                const labels = {};
+                const appearances = Object.create(null);
+                if (typeof session.getNodes === 'function') {
+                    for (const node of session.getNodes()) {
+                        const source = workspace.getBlockById(node.reference.blockId);
+                        const appearance = readBlockEditorAppearance(source, ScratchBlocks);
+                        appearances[node.reference.blockId] = appearance;
+                        labels[node.reference.blockId] = appearance.name || node.opcode;
+                    }
+                }
+                onOpen(session, labels, appearances);
             }
         } catch (error) {
             onError(error);
+            activeSession = createBlockEditorErrorSession(reference, error);
+            openingSnapshot = null;
+            onOpen(activeSession);
         }
     };
     const refresh = () => {
@@ -92,8 +127,11 @@ const createBlockEditorBridge = ({ScratchBlocks, workspace, vm, service, label, 
         timer = setTimeout(refresh, 0);
     };
     const unregister = service.subscribe(() => {
-        host.invalidate();
-        endSession();
+        // Aggregate sessions observe relevant registry changes themselves.
+        if (!activeSession || typeof activeSession.getNodes !== 'function') {
+            host.invalidate();
+            endSession();
+        }
         schedule();
     });
     workspace.addChangeListener(schedule);
@@ -118,3 +156,4 @@ const createBlockEditorBridge = ({ScratchBlocks, workspace, vm, service, label, 
 };
 
 export default createBlockEditorBridge;
+export {openBlockEditorSession};
