@@ -29,7 +29,9 @@ import {
     closeExtensionLibrary,
     openSoundRecorder,
     openConnectionModal,
-    openCustomExtensionModal
+    openCustomExtensionModal,
+    openBlockEditorModal,
+    closeBlockEditorModal
 } from '../reducers/modals';
 import {activateCustomProcedures, deactivateCustomProcedures} from '../reducers/custom-procedures';
 import {setConnectionModalExtensionId} from '../reducers/connection-modal';
@@ -44,6 +46,10 @@ import AddonHooks from '../addons/hooks.js';
 import LoadScratchBlocksHOC from '../lib/tw-load-scratch-blocks-hoc.jsx';
 import {findTopBlock} from '../lib/backpack/code-payload.js';
 import {gentlyRequestPersistentStorage} from '../lib/tw-persistent-storage.js';
+import featureFlags from '../lib/tw-feature-flags.js';
+import getBlockEditorService from '../lib/tw-block-editor-service.js';
+import createBlockEditorBridge from '../lib/tw-block-editor-bridge.js';
+import BlockEditorModal from './tw-block-editor-modal.jsx';
 
 // TW: Strings we add to scratch-blocks are localized here
 const messages = defineMessages({
@@ -122,14 +128,17 @@ class Blocks extends React.Component {
             'onWorkspaceMetricsChange',
             'setBlocks',
             'setLocale',
-            'handleEnableProcedureReturns'
+            'handleEnableProcedureReturns',
+            'handleOpenBlockEditor',
+            'handleCloseBlockEditor'
         ]);
         this.ScratchBlocks.prompt = this.handlePromptStart;
         this.ScratchBlocks.statusButtonCallback = this.handleConnectionModalStart;
         this.ScratchBlocks.recordSoundCallback = this.handleOpenSoundRecorder;
 
         this.state = {
-            prompt: null
+            prompt: null,
+            blockEditorSession: null
         };
         this.onTargetsUpdate = debounce(this.onTargetsUpdate, 100);
         this.toolboxUpdateQueue = [];
@@ -217,6 +226,22 @@ class Blocks extends React.Component {
         });
 
         this.attachVM();
+        if (featureFlags.blockEditorDialogs) {
+            this.blockEditorBridge = createBlockEditorBridge({
+                ScratchBlocks: this.ScratchBlocks,
+                workspace: this.workspace,
+                vm: this.props.vm,
+                service: getBlockEditorService(this.props.vm),
+                label: this.props.intl.formatMessage({
+                    id: 'tw.blockEditor.open',
+                    defaultMessage: 'Edit block',
+                    description: 'Tooltip for an extension block editor icon'
+                }),
+                canOpen: () => this.props.isVisible && !this.props.anyModalVisible && !this.state.blockEditorSession,
+                onOpen: this.handleOpenBlockEditor,
+                onError: error => log.error(error)
+            });
+        }
         // Only update blocks/vm locale when visible to avoid sizing issues
         // If locale changes while not visible it will get handled in didUpdate
         if (this.props.isVisible) {
@@ -233,6 +258,7 @@ class Blocks extends React.Component {
     shouldComponentUpdate (nextProps, nextState) {
         return (
             this.state.prompt !== nextState.prompt ||
+            this.state.blockEditorSession !== nextState.blockEditorSession ||
             this.props.isVisible !== nextProps.isVisible ||
             this._renderedToolboxXML !== nextProps.toolboxXML ||
             this.props.extensionLibraryVisible !== nextProps.extensionLibraryVisible ||
@@ -287,6 +313,8 @@ class Blocks extends React.Component {
     componentWillUnmount () {
         this.detachVM();
         this.unmounted = true;
+        if (this.blockEditorBridge) this.blockEditorBridge.dispose();
+        if (this.state.blockEditorSession) this.props.onCloseBlockEditor();
         this.workspace.dispose();
         clearTimeout(this.toolboxUpdateTimeout);
 
@@ -658,6 +686,14 @@ class Blocks extends React.Component {
                 this.updateToolbox(); // To show new variables/custom blocks
             });
     }
+    handleOpenBlockEditor (session) {
+        this.setState({blockEditorSession: session});
+        this.props.onOpenBlockEditor();
+    }
+    handleCloseBlockEditor () {
+        if (!this.unmounted) this.setState({blockEditorSession: null});
+        this.props.onCloseBlockEditor();
+    }
     handleEnableProcedureReturns () {
         this.workspace.enableProcedureReturns();
         this.requestToolboxUpdate();
@@ -676,6 +712,8 @@ class Blocks extends React.Component {
             isRtl,
             isVisible,
             onActivateColorPicker,
+            onOpenBlockEditor,
+            onCloseBlockEditor,
             onOpenConnectionModal,
             onOpenSoundRecorder,
             onOpenCustomExtensionModal,
@@ -698,6 +736,12 @@ class Blocks extends React.Component {
                     onDrop={this.handleDrop}
                     {...props}
                 />
+                {this.state.blockEditorSession ? (
+                    <BlockEditorModal
+                        session={this.state.blockEditorSession}
+                        onClose={this.handleCloseBlockEditor}
+                    />
+                ) : null}
                 {this.state.prompt ? (
                     <Prompt
                         defaultValue={this.state.prompt.defaultValue}
@@ -749,6 +793,8 @@ Blocks.propTypes = {
     locale: PropTypes.string.isRequired,
     messages: PropTypes.objectOf(PropTypes.string),
     onActivateColorPicker: PropTypes.func,
+    onOpenBlockEditor: PropTypes.func,
+    onCloseBlockEditor: PropTypes.func,
     onActivateCustomProcedures: PropTypes.func,
     onOpenConnectionModal: PropTypes.func,
     onOpenSoundRecorder: PropTypes.func,
@@ -817,6 +863,8 @@ const mapStateToProps = state => ({
 });
 
 const mapDispatchToProps = dispatch => ({
+    onOpenBlockEditor: () => dispatch(openBlockEditorModal()),
+    onCloseBlockEditor: () => dispatch(closeBlockEditorModal()),
     onActivateColorPicker: callback => dispatch(activateColorPicker(callback)),
     onActivateCustomProcedures: (data, callback) => dispatch(activateCustomProcedures(data, callback)),
     onOpenConnectionModal: id => {

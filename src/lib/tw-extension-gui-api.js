@@ -1,5 +1,7 @@
 import LazyScratchBlocks from './tw-lazy-scratch-blocks';
 import AddonHooks from '../addons/hooks';
+import featureFlags from './tw-feature-flags.js';
+import getBlockEditorService from './tw-block-editor-service.js';
 
 /**
  * Implements Scratch.gui API for unsandboxed extensions.
@@ -36,6 +38,9 @@ const implementGuiAPI = Scratch => {
          */
         getBlocklyEagerly: () => LazyScratchBlocks.load()
     };
+    if (featureFlags.blockEditorDialogs) {
+        Scratch.gui.blockEditors = getBlockEditorService(Scratch.vm).api;
+    }
 };
 
 export default implementGuiAPI;
