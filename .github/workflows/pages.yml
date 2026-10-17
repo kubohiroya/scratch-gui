@@ -1,0 +1,78 @@
+name: Publish extended editor
+
+on:
+  push:
+    branches: [feat/site/github-pages]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: scratch-gui
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: scratch-gui
+          persist-credentials: false
+      - name: Check out pinned editor package
+        uses: actions/checkout@v4
+        with:
+          repository: kubohiroya/turbowarp-block-editor
+          ref: 21c7cf54df2f2f8768219252a2bc6e5b5ad5434f
+          path: turbowarp-block-editor
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: scratch-gui/package-lock.json
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.18.0
+      - name: Build and verify shared package
+        working-directory: turbowarp-block-editor
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm typecheck
+          pnpm test
+      - name: Install GUI dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Prepare upstream microbit assets
+        run: node scripts/prepublish.mjs
+      - name: Verify changed features
+        run: |
+          npm run test:block-editor
+          npm run test:pages
+      - name: Build Pages application
+        env:
+          ROOT: /scratch-gui/
+          BUILD_REVISION: ${{ github.sha }}
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: npm run build:pages
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: scratch-gui/build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

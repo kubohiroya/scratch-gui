@@ -5,6 +5,7 @@ const owns = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 // Adapt only standard, unvalidated text shadows; never evaluate connected reporters.
 const createBlockEditorHost = ({ScratchBlocks, workspace, vm, registry, onError = console.error}) => {
     let disposed = false;
+    let committing = false;
     let revision = 0;
     let identity = 0;
     const identities = new WeakMap();
@@ -95,6 +96,7 @@ const createBlockEditorHost = ({ScratchBlocks, workspace, vm, registry, onError 
         vm.runtime.emitProjectChanged = () => {};
         Events.setGroup(true);
         Events.disable();
+        committing = true;
         try {
             for (const item of prepared) {
                 item.field.setValue(item.next);
@@ -115,6 +117,7 @@ const createBlockEditorHost = ({ScratchBlocks, workspace, vm, registry, onError 
             workspace.redoStack_.splice(0, workspace.redoStack_.length, ...redo);
             throw error;
         } finally {
+            committing = false;
             Events.enable();
             Events.setGroup(false);
             vm.runtime.emitProjectChanged = emitProjectChanged;
@@ -130,6 +133,7 @@ const createBlockEditorHost = ({ScratchBlocks, workspace, vm, registry, onError 
     };
 
     return {
+        isCommitting: () => committing,
         readBlock: reference => {
             const result = inspect(reference);
             return result ? result.snapshot : null;

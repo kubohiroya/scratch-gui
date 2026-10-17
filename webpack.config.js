@@ -77,7 +77,7 @@ const base = {
         rules: [{
             // RJSF v5 ships syntax newer than webpack 4's parser understands.
             test: /\.js$/,
-            include: /node_modules[\\/]@rjsf[\\/]/,
+            include: /node_modules[\\/](?:@rjsf|yaml)[\\/]/,
             loader: 'babel-loader',
             options: {
                 babelrc: false,

@@ -10,6 +10,13 @@
     padding: 1.5rem;
     background: $ui-modal-background;
     max-height: calc(100vh - 180px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.editor-body {
+    min-height: 0;
     overflow: auto;
 }
 
@@ -36,6 +43,7 @@
 }
 
 .buttons {
+    flex-shrink: 0;
     display: flex;
     justify-content: flex-end;
     gap: 0.75rem;
@@ -73,4 +81,11 @@
 
 .body textarea {
     resize: vertical;
+}
+
+:global([data-block-editor-icon]):hover,
+:global([data-block-editor-icon]):focus {
+    filter: brightness(1.2) drop-shadow(0 0 2px currentColor);
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
 }
