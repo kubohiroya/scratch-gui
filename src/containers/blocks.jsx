@@ -686,8 +686,8 @@ class Blocks extends React.Component {
                 this.updateToolbox(); // To show new variables/custom blocks
             });
     }
-    handleOpenBlockEditor (session) {
-        this.setState({blockEditorSession: session});
+    handleOpenBlockEditor (session, nodeLabels) {
+        this.setState({blockEditorSession: session, blockEditorLabels: nodeLabels});
         this.props.onOpenBlockEditor();
     }
     handleCloseBlockEditor () {
@@ -738,6 +738,7 @@ class Blocks extends React.Component {
                 />
                 {this.state.blockEditorSession ? (
                     <BlockEditorModal
+                        nodeLabels={this.state.blockEditorLabels}
                         session={this.state.blockEditorSession}
                         onClose={this.handleCloseBlockEditor}
                     />

@@ -1,38 +1,89 @@
-import {BlockEditorConflictError} from '@kubohiroya/turbowarp-block-editor';
+import {BlockEditorConflictError, DESCENDANT_EDITING_CAPABILITY} from '@kubohiroya/turbowarp-block-editor';
+import collectBlockEditorSubtree from './tw-block-editor-subtree.js';
 
 const owns = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 
 // Adapt only standard, unvalidated text shadows; never evaluate connected reporters.
-const createBlockEditorHost = ({ScratchBlocks, workspace, vm, registry, onError = console.error}) => {
+const createBlockEditorHost = ({ScratchBlocks, workspace, vm, registry, enableDescendants = false,
+    onError = console.error}) => {
     let disposed = false;
     let committing = false;
     let revision = 0;
     let identity = 0;
+    let generation = 1;
+    let lastTarget = vm.editingTarget;
+    const versions = new Map();
+    const invalidations = new Set();
+    let notifyInvalidations = () => {};
     const identities = new WeakMap();
     const identify = object => {
         if (!identities.has(object)) identities.set(object, ++identity);
         return identities.get(object);
     };
     const invalidate = event => {
-        if (!event || !event.isUiEvent) revision++;
+        if (event && event.isUiEvent) return;
+        revision++;
+        if (enableDescendants && event) {
+            const ids = new Set([event.blockId, ...(event.ids || [])]);
+            for (const id of ids) if (id) versions.set(id, (versions.get(id) || 0) + 1);
+        }
+        if (!committing) notifyInvalidations();
+    };
+    const renew = () => {
+        generation++;
+        versions.clear();
+        invalidate();
+    };
+    const targetsChanged = () => {
+        if (lastTarget === vm.editingTarget) invalidate();
+        else {
+            lastTarget = vm.editingTarget;
+            renew();
+        }
     };
     workspace.addChangeListener(invalidate);
-    vm.on('workspaceUpdate', invalidate);
-    vm.on('targetsUpdate', invalidate);
+    vm.on('workspaceUpdate', renew);
+    vm.on('targetsUpdate', targetsChanged);
 
-    const inspect = reference => {
+    const inspect = (reference, structural = false) => {
         const target = vm.editingTarget;
         if (disposed || !target || target.id !== reference.targetId || workspace.isFlyout ||
             workspace.options.readOnly || (workspace.isDragging && workspace.isDragging())) return null;
         const block = workspace.getBlockById(reference.blockId);
-        if (!block || block.isInFlyout || block.isShadow() || !block.isEditable()) return null;
+        if (!block || block.isInFlyout || block.isShadow()) return null;
         const descriptor = registry.resolve(block.type);
         const vmBlock = target.blocks.getBlock(block.id);
-        if (!descriptor || !vmBlock || vmBlock.opcode !== block.type) return null;
+        if ((!structural && !descriptor) || (!block.isEditable() && (!structural || descriptor)) ||
+            !vmBlock || vmBlock.opcode !== block.type) return null;
         const slots = {};
         const fields = new Map();
-        const signature = [revision, identify(block), identify(vmBlock), identify(target)];
-        for (const name of descriptor.editableArguments) {
+        const signature = [structural ? versions.get(block.id) || 0 : revision,
+            identify(block), identify(vmBlock), identify(target)];
+        if (structural) {
+            if ((block.getParent() ? block.getParent().id : null) !== (vmBlock.parent || null)) return null;
+            signature.push(block.isEditable(), vmBlock.fields, vmBlock.inputs, vmBlock.mutation || null);
+            for (const input of block.inputList) {
+                if (input.type !== ScratchBlocks.INPUT_VALUE) continue;
+                const connected = input.connection && input.connection.targetBlock();
+                const vmInput = vmBlock.inputs[input.name];
+                if ((connected ? connected.id : null) !==
+                    (vmInput && vmInput.block ? vmInput.block : null)) return null;
+                if (!connected) continue;
+                signature.push(input.name, connected.id, identify(connected), connected.type);
+                if (!connected.isShadow()) continue;
+                const vmShadow = target.blocks.getBlock(connected.id);
+                if (!vmShadow) return null;
+                for (const row of connected.inputList) {
+                    for (const field of row.fieldRow) {
+                        if (!field.name) continue;
+                        const stored = vmShadow.fields[field.name];
+                        if (!stored || String(field.getValue()) !== String(stored.id || stored.value)) return null;
+                    }
+                }
+                signature.push(versions.get(connected.id) || 0, identify(vmShadow), vmShadow.fields);
+            }
+        }
+        for (const name of descriptor ? descriptor.editableArguments : []) {
             const input = block.getInput(name);
             const shadow = input && input.connection && input.connection.targetBlock();
             const field = shadow && shadow.getField('TEXT');
@@ -62,32 +113,38 @@ const createBlockEditorHost = ({ScratchBlocks, workspace, vm, registry, onError 
                 revision: JSON.stringify(signature),
                 arguments: slots
             },
-            fields
+            fields,
+            block,
+            vmBlock
         };
     };
 
-    const commit = ({expected, changes}) => {
-        const current = inspect(expected);
-        if (!current || JSON.stringify(current.snapshot) !== JSON.stringify(expected)) {
-            throw new BlockEditorConflictError();
+    const collect = reference => collectBlockEditorSubtree({ScratchBlocks, reference, inspect, generation});
+    notifyInvalidations = () => {
+        if (committing) return;
+        for (const item of [...invalidations]) {
+            let matches = false;
+            try {
+                const current = collect(item.reference);
+                matches = current && JSON.stringify(current.snapshot) === JSON.stringify(item.snapshot);
+            } catch (error) {
+                // A malformed replacement graph invalidates an already open session too.
+            }
+            if (!matches) item.listener(new BlockEditorConflictError('The block hierarchy changed.'));
         }
+    };
+
+    const apply = (prepared, signal) => {
         const Events = ScratchBlocks.Events;
         if (!Events.isEnabled() || !Events.recordUndo || Events.getGroup() ||
             !Array.isArray(workspace.undoStack_) || !Array.isArray(workspace.redoStack_)) {
             throw new Error('The workspace is busy or its undo API is unsupported.');
         }
-        const seen = new Set();
-        const prepared = changes.map(change => {
-            if (!change || typeof change.value !== 'string' || seen.has(change.argument) ||
-                !owns(expected.arguments, change.argument) || !current.fields.has(change.argument)) {
-                throw new TypeError('Only distinct standard text shadow changes are supported.');
-            }
-            seen.add(change.argument);
-            const item = current.fields.get(change.argument);
-            return {...item, next: change.value};
-        }).filter(item => item.next !== item.value);
         if (!prepared.length) return;
 
+        const target = vm.editingTarget;
+        const oldRevision = revision;
+        const oldVersions = new Map(versions);
         const undo = workspace.undoStack_.slice();
         const redo = workspace.redoStack_.slice();
         const emitProjectChanged = vm.runtime.emitProjectChanged;
@@ -98,6 +155,7 @@ const createBlockEditorHost = ({ScratchBlocks, workspace, vm, registry, onError 
         Events.disable();
         committing = true;
         try {
+            if (signal && signal.aborted) throw new BlockEditorConflictError();
             for (const item of prepared) {
                 item.field.setValue(item.next);
                 if (item.field.getValue() !== item.next) throw new Error('The field rejected its value.');
@@ -105,16 +163,20 @@ const createBlockEditorHost = ({ScratchBlocks, workspace, vm, registry, onError 
             // Deliver normal Change events synchronously: VM and undo state agree before resolving.
             for (const item of prepared) {
                 workspace.fireChangeListener(new Events.Change(item.shadow, 'field', 'TEXT', item.value, item.next));
+                if ((signal && signal.aborted) || vm.editingTarget !== target) throw new BlockEditorConflictError();
             }
             succeeded = true;
         } catch (error) {
             // No queued setter events exist because events were disabled throughout this section.
             for (const item of prepared) {
-                item.field.setValue(item.value);
-                vm.blockListener(new Events.Change(item.shadow, 'field', 'TEXT', item.next, item.value));
+                ScratchBlocks.FieldTextInput.prototype.setValue.call(item.field, item.value);
+                target.blocks.blocklyListen(new Events.Change(item.shadow, 'field', 'TEXT', item.next, item.value));
             }
             workspace.undoStack_.splice(0, workspace.undoStack_.length, ...undo);
             workspace.redoStack_.splice(0, workspace.redoStack_.length, ...redo);
+            revision = oldRevision;
+            versions.clear();
+            for (const [id, value] of oldVersions) versions.set(id, value);
             throw error;
         } finally {
             committing = false;
@@ -132,21 +194,74 @@ const createBlockEditorHost = ({ScratchBlocks, workspace, vm, registry, onError 
         }
     };
 
-    return {
+    const prepare = (changes, records) => {
+        if (!Array.isArray(changes)) throw new TypeError('Expected an argument patch array.');
+        const seen = new Set();
+        const fields = new Set();
+        return changes.map(change => {
+            const record = change && records.get(change.blockId);
+            const key = change && JSON.stringify([change.blockId, change.argument]);
+            if (!record || typeof change.value !== 'string' || seen.has(key) ||
+                !owns(record.snapshot.arguments, change.argument) || !record.fields.has(change.argument)) {
+                throw new TypeError('Only distinct standard text shadow changes are supported.');
+            }
+            seen.add(key);
+            const item = record.fields.get(change.argument);
+            if (fields.has(item.field)) throw new TypeError('Duplicate shadow write.');
+            fields.add(item.field);
+            return {...item, next: change.value};
+        }).filter(item => item.next !== item.value);
+    };
+    const host = {
         isCommitting: () => committing,
         readBlock: reference => {
             const result = inspect(reference);
             return result ? result.snapshot : null;
         },
-        commit,
-        invalidate: () => invalidate(),
+        commit: ({expected, changes}) => {
+            const current = inspect(expected);
+            if (!current || JSON.stringify(current.snapshot) !== JSON.stringify(expected)) {
+                throw new BlockEditorConflictError();
+            }
+            apply(prepare(changes.map(change => ({...change, blockId: expected.blockId})),
+                new Map([[expected.blockId, current]])));
+        },
+        invalidate: renew,
         dispose: () => {
             disposed = true;
+            notifyInvalidations();
+            invalidations.clear();
             workspace.removeChangeListener(invalidate);
-            vm.removeListener('workspaceUpdate', invalidate);
-            vm.removeListener('targetsUpdate', invalidate);
+            vm.removeListener('workspaceUpdate', renew);
+            vm.removeListener('targetsUpdate', targetsChanged);
         }
     };
+    if (enableDescendants) {
+        host.descendants = {
+            capability: DESCENDANT_EDITING_CAPABILITY,
+            readSubtree: reference => {
+                const result = collect(reference);
+                return result ? result.snapshot : null;
+            },
+            commitSubtree: ({expected, changes, signal}) => {
+                const current = collect(expected);
+                if ((signal && signal.aborted) || !current ||
+                    JSON.stringify(current.snapshot) !== JSON.stringify(expected)) throw new BlockEditorConflictError();
+                apply(prepare(changes, current.records), signal);
+            },
+            subscribeInvalidation: (reference, listener) => {
+                const result = collect(reference);
+                if (!result) {
+                    listener(new BlockEditorConflictError());
+                    return () => {};
+                }
+                const item = {reference, listener, snapshot: result.snapshot};
+                invalidations.add(item);
+                return () => invalidations.delete(item);
+            }
+        };
+    }
+    return host;
 };
 
 export default createBlockEditorHost;

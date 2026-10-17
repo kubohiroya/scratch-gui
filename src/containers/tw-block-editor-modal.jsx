@@ -1,7 +1,8 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 import {FormattedMessage, injectIntl, intlShape} from 'react-intl';
-import {BlockEditorConflictError} from '@kubohiroya/turbowarp-block-editor';
+import {BlockEditorConflictError, BlockEditorStructureError} from '@kubohiroya/turbowarp-block-editor';
+import DescendantTree from '../components/block-editor/descendant-tree.jsx';
 import Modal from './modal.jsx';
 import log from '../lib/log.js';
 import styles from '../components/block-editor/block-editor.css';
@@ -15,6 +16,9 @@ class BlockEditorModal extends React.Component {
         this.handleBody = this.handleBody.bind(this);
         this.handleKey = this.handleKey.bind(this);
         this.handleComposition = this.handleComposition.bind(this);
+        this.handleMountError = this.handleMountError.bind(this);
+        this.handleIssue = this.handleIssue.bind(this);
+        this.handleTree = this.handleTree.bind(this);
         this.composing = false;
     }
     componentDidMount () {
@@ -22,11 +26,12 @@ class BlockEditorModal extends React.Component {
         this.removeListener = this.props.session.subscribe(() => {
             const state = this.props.session.getState();
             this.setState(state);
-            if (state.status === 'cancelled' || state.status === 'disposed') this.props.onClose();
+            if (['cancelled', 'disposed', 'invalidated'].includes(state.status)) this.props.onClose();
         });
         this.mountBody();
     }
     componentWillUnmount () {
+        this.unmounting = true;
         this.mounted = false;
         cancelAnimationFrame(this.focusFrame);
         this.removeListener();
@@ -46,11 +51,14 @@ class BlockEditorModal extends React.Component {
         // ReactModal renders portal contents after this container has mounted.
         if (!this.body || this.unmountBody || this.state.mountFailed) return;
         try {
-            this.unmountBody = this.props.session.mount(this.body);
+            if (typeof this.props.session.getNodes !== 'function') {
+                this.unmountBody = this.props.session.mount(this.body);
+            }
             // ReactModal establishes its focus scope after creating the portal.
             this.focusFrame = requestAnimationFrame(() => {
                 if (!this.mounted) return;
-                const first = this.body.querySelector('input, textarea, select, button, [tabindex="0"]');
+                const first = this.body.querySelector('input, textarea, select') ||
+                    this.body.querySelector('button, [tabindex="0"]');
                 if (first) first.focus();
             });
         } catch (error) {
@@ -60,6 +68,16 @@ class BlockEditorModal extends React.Component {
     }
     handleComposition (event) {
         this.composing = event.type === 'compositionstart';
+    }
+    handleMountError (error) {
+        log.error(error);
+        if (!this.unmounting) this.setState({mountFailed: true});
+    }
+    handleIssue (event) {
+        this.tree.reveal(this.state.issues[Number(event.currentTarget.dataset.blockEditorIssue)]);
+    }
+    handleTree (tree) {
+        this.tree = tree;
     }
     handleKey (event) {
         if (this.composing || event.nativeEvent.isComposing || event.keyCode === 229) {
@@ -75,15 +93,17 @@ class BlockEditorModal extends React.Component {
     async handleSave () {
         const result = await this.props.session.save();
         if (result.status === 'saved') this.props.onClose();
+        if (result.status === 'invalid' && this.tree) this.tree.reveal(result.issues[0]);
     }
     render () {
         const saving = this.state.status === 'saving';
+        const hierarchy = typeof this.props.session.getNodes === 'function';
         const title = this.props.intl.formatMessage({
             id: 'tw.blockEditor.title', defaultMessage: 'Edit block', description: 'Block editor dialog title'
         });
         return (
             <Modal
-                className={styles.modalContent}
+                className={`${styles.modalContent} ${hierarchy ? styles.hierarchyModal : ''}`}
                 contentLabel={title}
                 id="blockEditorModal"
                 onRequestClose={this.handleClose}
@@ -96,7 +116,15 @@ class BlockEditorModal extends React.Component {
                     onKeyDownCapture={this.handleKey}
                 >
                     <div className={styles.editorBody}>
-                        <div ref={this.handleBody} />
+                        <div ref={this.handleBody}>
+                            {hierarchy ? <DescendantTree
+                                disabled={saving}
+                                nodeLabels={this.props.nodeLabels}
+                                onError={this.handleMountError}
+                                ref={this.handleTree}
+                                session={this.props.session}
+                            /> : null}
+                        </div>
                         <div
                             aria-live="polite"
                             className={styles.errors}
@@ -107,8 +135,27 @@ class BlockEditorModal extends React.Component {
                                 description="Block editor validation or save is pending"
                                 id="tw.blockEditor.saving"
                             /> : null}
-                            {this.state.issues.map((issue, index) => <p key={index}>{issue.message}</p>)}
-                            {this.state.error instanceof BlockEditorConflictError ? (
+                            {this.state.issues.map((issue, index) => (hierarchy ? (
+                                <button
+                                    className={styles.nodeError}
+                                    data-block-editor-issue={index}
+                                    disabled={saving}
+                                    key={index}
+                                    type="button"
+                                    onClick={this.handleIssue}
+                                >
+                                    {(this.props.nodeLabels && this.props.nodeLabels[issue.reference.blockId]) ||
+                                        issue.reference.blockId}{': '}{issue.message}
+                                </button>
+                            ) : <p key={index}>{issue.message}</p>))}
+                            {this.state.error instanceof BlockEditorStructureError ? (
+                                <FormattedMessage
+                                    defaultMessage={'This hierarchy is invalid or exceeds 500 blocks or 32 levels. ' +
+                                        'No blocks were saved.'}
+                                    description="A hierarchy cannot be opened safely"
+                                    id="tw.blockEditor.structureError"
+                                />
+                            ) : this.state.error instanceof BlockEditorConflictError ? (
                                 <FormattedMessage
                                     defaultMessage="This block changed. Close this dialog and open it again."
                                     description="Block editor conflict message"
@@ -145,6 +192,10 @@ class BlockEditorModal extends React.Component {
                                 defaultMessage="Saving…"
                                 description="Block editor validation or save is pending"
                                 id="tw.blockEditor.saving"
+                            /> : hierarchy ? <FormattedMessage
+                                defaultMessage="Save all"
+                                description="Save all block forms in one transaction"
+                                id="tw.blockEditor.saveAll"
                             /> : <FormattedMessage
                                 defaultMessage="Save"
                                 description="Save block editing"
@@ -159,12 +210,14 @@ class BlockEditorModal extends React.Component {
 }
 
 BlockEditorModal.propTypes = {
+    nodeLabels: PropTypes.object,
     intl: intlShape,
     onClose: PropTypes.func.isRequired,
     session: PropTypes.shape({
         getState: PropTypes.func.isRequired,
         subscribe: PropTypes.func.isRequired,
-        mount: PropTypes.func.isRequired,
+        mount: PropTypes.func,
+        getNodes: PropTypes.func,
         dispose: PropTypes.func.isRequired,
         save: PropTypes.func.isRequired,
         cancel: PropTypes.func.isRequired

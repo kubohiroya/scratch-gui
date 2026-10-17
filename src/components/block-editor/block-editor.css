@@ -6,6 +6,62 @@
     margin: 60px auto;
 }
 
+.hierarchy-modal {
+    width: min(900px, calc(100vw - 32px));
+}
+
+.tree {
+    min-width: 0;
+}
+
+.tree-node {
+    margin: 0.75rem 0;
+    padding-left: 0.75rem;
+    border-left: 2px solid $ui-black-transparent;
+    min-width: 0;
+}
+
+.node-heading {
+    margin: 0.5rem 0;
+    font-size: 1rem;
+}
+
+.node-heading button {
+    text-align: start;
+    overflow-wrap: anywhere;
+    background: $ui-modal-background;
+    color: $text-primary;
+    border: 1px solid $ui-black-transparent;
+    border-radius: $space;
+    padding: 0.5rem;
+    cursor: pointer;
+    width: 100%;
+}
+
+.branch-name,
+.structural-node {
+    font-weight: normal;
+    font-size: 0.85rem;
+}
+
+.node-identity {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: normal;
+    opacity: 0.75;
+}
+
+.node-error {
+    display: block;
+    color: $text-primary;
+    background: $ui-modal-background;
+    border: 1px solid $ui-black-transparent;
+    padding: 0.5rem;
+    text-align: start;
+    cursor: pointer;
+    margin-top: 0.25rem;
+}
+
 .body {
     padding: 1.5rem;
     background: $ui-modal-background;
