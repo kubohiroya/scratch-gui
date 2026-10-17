@@ -15,10 +15,16 @@
 }
 
 .tree-node {
+    /* Reset these on every node so missing metadata never inherits a parent's colour. */
+    --block-editor-node-colour: $ui-black-transparent;
+    --block-editor-node-tint: transparent;
     margin: 0.75rem 0;
-    padding-left: 0.75rem;
-    border-left: 2px solid $ui-black-transparent;
+    padding: 0.5rem;
+    border: 2px solid var(--block-editor-node-colour);
+    border-radius: $space;
     min-width: 0;
+    /* Each tint is composited over the theme, not over its parent's tint. */
+    background: linear-gradient(var(--block-editor-node-tint), var(--block-editor-node-tint)), $ui-modal-background;
 }
 
 .node-heading {
@@ -27,15 +33,32 @@
 }
 
 .node-heading button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     text-align: start;
     overflow-wrap: anywhere;
-    background: $ui-modal-background;
+    background: transparent;
     color: $text-primary;
     border: 1px solid $ui-black-transparent;
     border-radius: $space;
     padding: 0.5rem;
     cursor: pointer;
     width: 100%;
+}
+
+.node-icon {
+    flex-shrink: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0.125rem;
+    object-fit: contain;
+    background: var(--block-editor-node-colour);
+    border-radius: $space;
+}
+
+.node-caption {
+    min-width: 0;
 }
 
 .branch-name,

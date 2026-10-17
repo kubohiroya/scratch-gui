@@ -1,5 +1,6 @@
 import createBlockEditorHost from './tw-block-editor-host.js';
 import bindBlockEditorIcon from './tw-block-editor-icon.js';
+import readBlockEditorAppearance from './tw-block-editor-appearance.js';
 import {supportsDescendantEditing} from '@kubohiroya/turbowarp-block-editor';
 import featureFlags from './tw-feature-flags.js';
 import createBlockEditorErrorSession from './tw-block-editor-error-session.js';
@@ -68,21 +69,16 @@ const createBlockEditorBridge = ({ScratchBlocks, workspace, vm, service, label, 
                 openingSnapshot = typeof session.getNodes === 'function' ?
                     host.descendants.readSubtree(session.reference) : host.readBlock(session.reference);
                 const labels = {};
+                const appearances = Object.create(null);
                 if (typeof session.getNodes === 'function') {
                     for (const node of session.getNodes()) {
                         const source = workspace.getBlockById(node.reference.blockId);
-                        const text = source && source.inputList.filter(input =>
-                            input.type !== ScratchBlocks.NEXT_STATEMENT).map(input => {
-                            const fields = input.fieldRow.map(field => field.getText()).join(' ');
-                            const value = input.connection && input.connection.targetBlock();
-                            return `${fields} ${value ? value.toString(80) : ''}`.trim();
-                        })
-                            .join(' ')
-                            .trim();
-                        labels[node.reference.blockId] = text ? text.slice(0, 80) : node.opcode;
+                        const appearance = readBlockEditorAppearance(source, ScratchBlocks);
+                        appearances[node.reference.blockId] = appearance;
+                        labels[node.reference.blockId] = appearance.name || node.opcode;
                     }
                 }
-                onOpen(session, labels);
+                onOpen(session, labels, appearances);
             }
         } catch (error) {
             onError(error);
