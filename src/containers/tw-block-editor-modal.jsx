@@ -13,6 +13,9 @@ class BlockEditorModal extends React.Component {
         this.handleClose = this.handleClose.bind(this);
         this.handleSave = this.handleSave.bind(this);
         this.handleBody = this.handleBody.bind(this);
+        this.handleKey = this.handleKey.bind(this);
+        this.handleComposition = this.handleComposition.bind(this);
+        this.composing = false;
     }
     componentDidMount () {
         this.mounted = true;
@@ -25,6 +28,7 @@ class BlockEditorModal extends React.Component {
     }
     componentWillUnmount () {
         this.mounted = false;
+        cancelAnimationFrame(this.focusFrame);
         this.removeListener();
         try {
             if (this.unmountBody) this.unmountBody();
@@ -43,11 +47,24 @@ class BlockEditorModal extends React.Component {
         if (!this.body || this.unmountBody || this.state.mountFailed) return;
         try {
             this.unmountBody = this.props.session.mount(this.body);
-            const first = this.body.querySelector('input, textarea, select, button, [tabindex="0"]');
-            if (first) first.focus();
+            // ReactModal establishes its focus scope after creating the portal.
+            this.focusFrame = requestAnimationFrame(() => {
+                if (!this.mounted) return;
+                const first = this.body.querySelector('input, textarea, select, button, [tabindex="0"]');
+                if (first) first.focus();
+            });
         } catch (error) {
             log.error(error);
             this.setState({mountFailed: true});
+        }
+    }
+    handleComposition (event) {
+        this.composing = event.type === 'compositionstart';
+    }
+    handleKey (event) {
+        if (this.composing || event.nativeEvent.isComposing || event.keyCode === 229) {
+            // Let the IME consume Enter/Escape without reaching the modal's close handler.
+            event.stopPropagation();
         }
     }
     handleClose () {
@@ -71,27 +88,40 @@ class BlockEditorModal extends React.Component {
                 id="blockEditorModal"
                 onRequestClose={this.handleClose}
             >
-                <div className={styles.body}>
-                    <div ref={this.handleBody} />
-                    <div
-                        aria-live="polite"
-                        className={styles.errors}
-                        role="status"
-                    >
-                        {this.state.issues.map((issue, index) => <p key={index}>{issue.message}</p>)}
-                        {this.state.error instanceof BlockEditorConflictError ? (
-                            <FormattedMessage
-                                defaultMessage="This block changed. Close this dialog and open it again."
-                                description="Block editor conflict message"
-                                id="tw.blockEditor.conflict"
-                            />
-                        ) : (this.state.error || this.state.mountFailed) ? (
-                            <FormattedMessage
-                                defaultMessage="The block could not be edited. Close this dialog and try again."
-                                description="Block editor failure message"
-                                id="tw.blockEditor.failed"
-                            />
-                        ) : null}
+                <div
+                    aria-busy={saving}
+                    className={styles.body}
+                    onCompositionEnd={this.handleComposition}
+                    onCompositionStart={this.handleComposition}
+                    onKeyDownCapture={this.handleKey}
+                >
+                    <div className={styles.editorBody}>
+                        <div ref={this.handleBody} />
+                        <div
+                            aria-live="polite"
+                            className={styles.errors}
+                            role="status"
+                        >
+                            {saving ? <FormattedMessage
+                                defaultMessage="Saving…"
+                                description="Block editor validation or save is pending"
+                                id="tw.blockEditor.saving"
+                            /> : null}
+                            {this.state.issues.map((issue, index) => <p key={index}>{issue.message}</p>)}
+                            {this.state.error instanceof BlockEditorConflictError ? (
+                                <FormattedMessage
+                                    defaultMessage="This block changed. Close this dialog and open it again."
+                                    description="Block editor conflict message"
+                                    id="tw.blockEditor.conflict"
+                                />
+                            ) : (this.state.error || this.state.mountFailed) ? (
+                                <FormattedMessage
+                                    defaultMessage="The block could not be edited. Close this dialog and try again."
+                                    description="Block editor failure message"
+                                    id="tw.blockEditor.failed"
+                                />
+                            ) : null}
+                        </div>
                     </div>
                     <div className={styles.buttons}>
                         <button
@@ -111,11 +141,15 @@ class BlockEditorModal extends React.Component {
                             type="button"
                             onClick={this.handleSave}
                         >
-                            <FormattedMessage
+                            {saving ? <FormattedMessage
+                                defaultMessage="Saving…"
+                                description="Block editor validation or save is pending"
+                                id="tw.blockEditor.saving"
+                            /> : <FormattedMessage
                                 defaultMessage="Save"
                                 description="Save block editing"
                                 id="tw.blockEditor.save"
-                            />
+                            />}
                         </button>
                     </div>
                 </div>

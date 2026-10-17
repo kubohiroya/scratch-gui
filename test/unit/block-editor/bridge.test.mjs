@@ -1,0 +1,87 @@
+import assert from 'node:assert/strict';
+import {test} from 'node:test';
+import createBlockEditorBridge from '../../../src/lib/tw-block-editor-bridge.js';
+import {fixture, makeDefinition, ScratchBlocks, dom} from './helpers.mjs';
+
+function bridgeFixture(t, overrides = {}) {
+    t.mock.method(ScratchBlocks, 'hideChaff', () => {});
+    const f = fixture(t, {definition: makeDefinition(overrides)});
+    const listeners = new Set();
+    const service = {registry: f.registry, subscribe: fn => {
+        listeners.add(fn);
+        return () => listeners.delete(fn);
+    }};
+    const field = f.block.inputList[0].fieldRow[0];
+    field.fieldGroup_ = dom.window.document.createElement('div');
+    field.imageElement_ = {};
+    field.setTooltip = value => { field.imageElement_.tooltip = value; };
+    dom.window.document.body.appendChild(field.fieldGroup_);
+    let session;
+    const bridge = createBlockEditorBridge({ScratchBlocks, workspace: f.workspace, vm: f.vm,
+        service, label: 'Edit', canOpen: () => true, onOpen: value => { session = value; },
+        onError: error => { throw error; }});
+    const element = field.fieldGroup_;
+    t.after(() => { bridge.dispose(); element.remove(); });
+    return {...f, bridge, field, session: () => session,
+        openIcon: () => field.fieldGroup_.dispatchEvent(new dom.window.KeyboardEvent('keydown', {
+            key: 'Enter', bubbles: true, cancelable: true
+        })),
+        unregister: () => { for (const listener of listeners) listener(); }};
+}
+
+test('read-only workspaces remove editor decorations and restore original attributes', t => {
+    const f = bridgeFixture(t);
+    assert.equal(f.field.fieldGroup_.getAttribute('role'), 'button');
+    f.workspace.options.readOnly = true;
+    f.bridge.refresh();
+    assert.equal(f.field.fieldGroup_.hasAttribute('data-block-editor-icon'), false);
+    f.workspace.options.readOnly = false;
+    f.bridge.refresh();
+    assert.equal(f.field.fieldGroup_.hasAttribute('data-block-editor-icon'), true);
+});
+
+test('target switch invalidates the open draft and releases its view', t => {
+    const f = bridgeFixture(t);
+    f.openIcon();
+    const session = f.session();
+    assert.ok(session);
+    f.vm.editingTarget = null;
+    f.vm.emit('targetsUpdate');
+    assert.equal(session.getState().status, 'disposed');
+    assert.equal(f.dirty(), 0);
+});
+
+test('registration invalidation while validation is pending closes after rejection and never commits', async t => {
+    let release;
+    const f = bridgeFixture(t, {validate: () => new Promise(resolve => { release = resolve; })});
+    f.openIcon();
+    const session = f.session();
+    session.setDraft({properties: 'changed', name: 'changed'});
+    const saving = session.save();
+    f.unregister();
+    release([]);
+    assert.equal((await saving).status, 'conflict');
+    assert.equal(session.getState().status, 'disposed');
+    assert.equal(f.vmValue('props'), '{}');
+    assert.equal(f.dirty(), 0);
+    assert.equal(f.workspace.undoStack_.length, 0);
+});
+
+test('the bridge retains the draft after a host transaction rolls back', async t => {
+    const f = bridgeFixture(t);
+    f.openIcon();
+    const session = f.session();
+    const field = f.workspace.getBlockById('name').getField('TEXT');
+    const setter = field.setValue;
+    field.setValue = function (value) {
+        setter.call(this, value);
+        if (value === 'closing') throw new Error('Injected setter failure');
+    };
+    session.setDraft({properties: '{"duration":2}', name: 'closing'});
+    assert.equal((await session.save()).status, 'failed');
+    assert.equal(session.getState().status, 'editing');
+    assert.equal(session.getDraft().name, 'closing');
+    assert.equal(f.vmValue('name'), 'opening');
+    assert.equal(f.dirty(), 0);
+    assert.equal(f.workspace.undoStack_.length, 0);
+});
