@@ -22,7 +22,9 @@ URL の直接読込は上流が未信頼URLに sandbox を強制するため、�
 
 ## ビルドと依存
 
-共通 API は `5e8b76d2834be2d699737b6c8b4a0a9990796f92` に固定。
+共通 API の固定 SHA は `.github/workflows/pages.yml` の checkout 設定で管理（現在 `21c7cf54df2f2f8768219252a2bc6e5b5ad5434f`）。
+`build:pages` はインストールされた共通 API のリンク先にある Git checkout の HEAD を取得し、`build-info.json` と日英クレジットのソースリンクに同じ SHA を使います。
+ローカルビルドも Git checkout をリンクして利用します。Git checkout が見つからない場合は公開ビルドを失敗させ、GUI の SHA や古い固定値を代用しません。
 Actions は両リポジトリを隣接配置し、共通 API を pnpm 11.18.0 と Node 22 で install / typecheck / test / build します。
 GUI は npm ci、既存のアセット生成、限定テストの後に `npm run build:pages` を実行します。
 
@@ -37,7 +39,7 @@ Node の旧 OpenSSL 互換設定はビルドスクリプト内で webpack 4 に�
 
 ## 検証と公開
 
-`npm run test:pages` で優先言語・保存選択・フォールバック、日英 HTML のクレジット、ソース SHA、フラグ opt-in / 通常版のリンクとサブパスを確認します。
+`npm run test:pages` で優先言語・保存選択・フォールバック、日英 HTML のクレジット、GUI・共通 API のソース SHA の一致と不正 SHA の拒否、フラグ opt-in / 通常版のリンクとサブパスを確認します。
 `npm run test:block-editor` と共通 API テストを実行し、公開URLでもモーダル・検証・保存・キャンセルを確認します。
 サブパスで確認するときは、親ディレクトリに `scratch-gui` として build を置き、静的HTTPサーバーで配信します。
 
