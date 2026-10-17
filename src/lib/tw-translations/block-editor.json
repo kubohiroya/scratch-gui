@@ -1,0 +1,18 @@
+{
+  "ja": {
+    "tw.blockEditor.open": "ブロックを編集",
+    "tw.blockEditor.title": "ブロックを編集",
+    "tw.blockEditor.conflict": "ブロックが変更されています。閉じて、もう一度開いてください。",
+    "tw.blockEditor.failed": "ブロックを編集できませんでした。閉じて、もう一度試してください。",
+    "tw.blockEditor.cancel": "キャンセル",
+    "tw.blockEditor.save": "保存"
+  },
+  "en": {
+    "tw.blockEditor.open": "Edit block",
+    "tw.blockEditor.title": "Edit block",
+    "tw.blockEditor.conflict": "This block changed. Close this dialog and open it again.",
+    "tw.blockEditor.failed": "The block could not be edited. Close this dialog and try again.",
+    "tw.blockEditor.cancel": "Cancel",
+    "tw.blockEditor.save": "Save"
+  }
+}
