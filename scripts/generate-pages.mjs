@@ -4,14 +4,14 @@ import {fileURLToPath} from 'node:url';
 import content from '../site/content.mjs';
 
 const repository = 'https://github.com/kubohiroya/scratch-gui';
-const coreRevision = '5e8b76d2834be2d699737b6c8b4a0a9990796f92';
 const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const escape = value => String(value).replace(/[&<>"']/g, character => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
 }[character]));
 
-export async function generatePages(output, revision) {
+export async function generatePages(output, revision, coreRevision) {
     if (!/^[a-f0-9]{40}$/.test(revision)) throw new Error('A full source revision is required.');
+    if (!/^[a-f0-9]{40}$/.test(coreRevision)) throw new Error('A full core source revision is required.');
     const source = `${repository}/tree/${revision}`;
     const core = `https://github.com/kubohiroya/turbowarp-block-editor/tree/${coreRevision}`;
     await fs.mkdir(path.join(output, 'assets'), {recursive: true});
