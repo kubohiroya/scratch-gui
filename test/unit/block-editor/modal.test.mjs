@@ -199,7 +199,7 @@ test('IME Escape and multiline Enter retain the draft; ordinary Escape cancels',
     assert.equal(f.commits(), 0);
 });
 
-async function hierarchyFixture(t, {validate = () => [], extraNodes = 0} = {}) {
+async function hierarchyFixture(t, {validate = () => [], extraNodes = 0, nodeAppearances = {}} = {}) {
     const registry = new core.EditorRegistry();
     let commits = 0;
     let closes = 0;
@@ -250,7 +250,7 @@ async function hierarchyFixture(t, {validate = () => [], extraNodes = 0} = {}) {
     document.body.appendChild(root);
     await act(async () => {
         ReactDOM.render(React.createElement(intl.IntlProvider, {locale: 'en'},
-            React.createElement(Component, {session, nodeLabels: {root: 'Root', a: 'First', middle: 'Repeat',
+            React.createElement(Component, {session, nodeAppearances, nodeLabels: {root: 'Root', a: 'First', middle: 'Repeat',
                 grand: 'Grandchild', b: 'Other'}, onClose: () => { closes++; }})
         ), root);
         await new Promise(resolve => setTimeout(resolve, 0));
@@ -368,4 +368,58 @@ test('large hierarchies mount lazily but still validate and reveal an unseen gra
     assert.equal(f.field('grand').value, 'invalid');
     assert.equal(f.toggle('middle').getAttribute('aria-expanded'), 'true');
     assert.equal(f.field('extra29'), null);
+});
+
+
+test('each hierarchy heading has its own decorative icon and colour, including structural nodes', async t => {
+    const firstIcon = 'data:image/svg+xml,<svg id="first"/>';
+    const otherIcon = 'data:image/svg+xml,<svg id="other"/>';
+    const f = await hierarchyFixture(t, {nodeAppearances: {
+        root: {name: '親グループ', iconURI: firstIcon, colour: '#087f8c', tint: 'rgba(8, 127, 140, 0.08)'},
+        a: {iconURI: firstIcon, colour: '#087f8c', tint: 'rgba(8, 127, 140, 0.08)'},
+        middle: {colour: '#ffab19', tint: 'rgba(255, 171, 25, 0.08)'},
+        grand: {iconURI: otherIcon, colour: '#663399', tint: 'rgba(102, 51, 153, 0.08)'}
+    }});
+    const section = id => document.querySelector(`[data-block-editor-node="${id}"]`);
+    const icon = id => document.querySelector(`[data-block-editor-node-icon="${id}"]`);
+    assert.equal(icon('root').getAttribute('src'), firstIcon);
+    assert.equal(document.querySelector('[data-block-editor-node-name="root"]').textContent, '親グループ');
+    assert.equal(document.querySelector('[data-block-editor-node-name="grand"]').textContent, 'Grandchild');
+    assert.equal(icon('grand').getAttribute('src'), otherIcon);
+    assert.equal(icon('grand').getAttribute('alt'), '');
+    assert.equal(icon('grand').getAttribute('aria-hidden'), 'true');
+    assert.equal(icon('grand').tabIndex, -1);
+    assert.equal(section('middle').style.getPropertyValue('--block-editor-node-colour'), '#ffab19');
+    assert.equal(section('grand').style.getPropertyValue('--block-editor-node-colour'), '#663399');
+    assert.equal(section('grand').style.getPropertyValue('--block-editor-node-tint'), 'rgba(102, 51, 153, 0.08)');
+    assert.equal(section('b').style.getPropertyValue('--block-editor-node-colour'), '');
+    assert.equal(icon('middle'), null);
+    assert.equal(icon('b'), null);
+    f.edit('grand', 'draft retained');
+    act(() => f.toggle('middle').click());
+    assert.equal(icon('grand'), null);
+    assert.equal(section('middle').style.getPropertyValue('--block-editor-node-colour'), '#ffab19');
+    act(() => f.toggle('middle').click());
+    assert.equal(icon('grand').getAttribute('src'), otherIcon);
+    assert.equal(f.field('grand').value, 'draft retained');
+    assert.equal(f.commits(), 0);
+});
+
+test('an image load failure removes only that node icon and survives collapsing its ancestor', async t => {
+    const iconURI = 'missing-icon.svg';
+    const f = await hierarchyFixture(t, {nodeAppearances: {
+        root: {iconURI}, grand: {iconURI, colour: '#663399', tint: 'rgba(102, 51, 153, 0.08)'}
+    }});
+    f.edit('grand', 'invalid');
+    act(() => { document.querySelector('[data-block-editor-node-icon="grand"]').dispatchEvent(
+        new dom.window.Event('error')); });
+    assert.equal(document.querySelector('[data-block-editor-node-icon="grand"]'), null);
+    assert.ok(document.querySelector('[data-block-editor-node-icon="root"]'));
+    assert.match(f.toggle('grand').textContent, /Grandchild/);
+    act(() => f.toggle('middle').click());
+    await act(async () => { f.save().click(); });
+    assert.equal(f.toggle('middle').getAttribute('aria-expanded'), 'true');
+    assert.equal(document.querySelector('[data-block-editor-node-icon="grand"]'), null);
+    assert.equal(f.field('grand').value, 'invalid');
+    assert.equal(f.commits(), 0);
 });

@@ -10,6 +10,7 @@ class DescendantTree extends React.Component {
     constructor (props) {
         super(props);
         this.nodes = props.session.getNodes();
+        this.handleIconError = this.handleIconError.bind(this);
         this.children = new Map();
         this.sections = new Map();
         this.bodyIds = new Map();
@@ -22,8 +23,9 @@ class DescendantTree extends React.Component {
             this.bodyIds.set(node.reference.blockId, `block-editor-node-${++nextBodyId}`);
             this.toggles.set(node.reference.blockId, this.toggle.bind(this, node.reference.blockId));
         }
-        this.state = {expanded: new Set(this.nodes.filter(node =>
-            this.nodes.length <= 30 || node.inputPath.length === 0).map(node => node.reference.blockId))};
+        this.state = {failedIcons: new Set(),
+            expanded: new Set(this.nodes.filter(node =>
+                this.nodes.length <= 30 || node.inputPath.length === 0).map(node => node.reference.blockId))};
     }
     componentWillUnmount () {
         cancelAnimationFrame(this.focusFrame);
@@ -56,13 +58,22 @@ class DescendantTree extends React.Component {
         else expanded.add(id);
         this.setState({expanded});
     }
+    handleIconError (event) {
+        const id = event.currentTarget.getAttribute('data-block-editor-node-icon');
+        this.setState(state => ({failedIcons: new Set([...state.failedIcons, id])}));
+    }
     renderNode (node) {
         const id = node.reference.blockId;
         const expanded = this.state.expanded.has(id);
         const editor = this.props.session.getEditor(id);
         const path = node.inputPath;
         const step = path.length ? path[path.length - 1] : null;
-        const label = this.props.nodeLabels[id] || node.opcode;
+        const appearance = this.props.nodeAppearances[id] || {};
+        const label = appearance.name || this.props.nodeLabels[id] || node.opcode;
+        const style = {
+            '--block-editor-node-colour': appearance.colour,
+            '--block-editor-node-tint': appearance.tint
+        };
         return (
             <section
                 className={styles.treeNode}
@@ -72,6 +83,7 @@ class DescendantTree extends React.Component {
                     if (section) this.sections.set(id, section);
                     else this.sections.delete(id);
                 }}
+                style={style}
             >
                 <h3 className={styles.nodeHeading}>
                     <button
@@ -83,11 +95,24 @@ class DescendantTree extends React.Component {
                         onClick={this.toggles.get(id)}
                     >
                         <span aria-hidden="true">{expanded ? '▾ ' : '▸ '}</span>
-                        {step ? <span className={styles.branchName}>
-                            {`${step.input} · ${step.index + 1}: `}
-                        </span> : null}
-                        {label}
-                        <span className={styles.nodeIdentity}>{id}</span>
+                        {appearance.iconURI && !this.state.failedIcons.has(id) ? <img
+                            alt=""
+                            aria-hidden="true"
+                            className={styles.nodeIcon}
+                            data-block-editor-node-icon={id}
+                            draggable={false}
+                            src={appearance.iconURI}
+                            onError={this.handleIconError}
+                        /> : null}
+                        <span className={styles.nodeCaption}>
+                            <span data-block-editor-node-name={id}>{label}</span>
+                            <span className={styles.nodeIdentity}>
+                                {step ? <span className={styles.branchName}>
+                                    {`${step.input} · ${step.index + 1}: `}
+                                </span> : null}
+                                {id}
+                            </span>
+                        </span>
                     </button>
                 </h3>
                 <div
@@ -122,9 +147,10 @@ class DescendantTree extends React.Component {
 DescendantTree.propTypes = {
     session: PropTypes.object.isRequired,
     disabled: PropTypes.bool,
+    nodeAppearances: PropTypes.object,
     nodeLabels: PropTypes.object,
     onError: PropTypes.func.isRequired
 };
-DescendantTree.defaultProps = {nodeLabels: {}, disabled: false};
+DescendantTree.defaultProps = {nodeAppearances: {}, nodeLabels: {}, disabled: false};
 
 export default DescendantTree;

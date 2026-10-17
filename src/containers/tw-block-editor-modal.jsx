@@ -119,6 +119,7 @@ class BlockEditorModal extends React.Component {
                         <div ref={this.handleBody}>
                             {hierarchy ? <DescendantTree
                                 disabled={saving}
+                                nodeAppearances={this.props.nodeAppearances}
                                 nodeLabels={this.props.nodeLabels}
                                 onError={this.handleMountError}
                                 ref={this.handleTree}
@@ -210,6 +211,7 @@ class BlockEditorModal extends React.Component {
 }
 
 BlockEditorModal.propTypes = {
+    nodeAppearances: PropTypes.object,
     nodeLabels: PropTypes.object,
     intl: intlShape,
     onClose: PropTypes.func.isRequired,

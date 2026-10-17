@@ -18,13 +18,19 @@ function bridgeFixture(t, overrides = {}, descendants = false) {
     field.setTooltip = value => { field.imageElement_.tooltip = value; };
     dom.window.document.body.appendChild(field.fieldGroup_);
     let session;
+    let appearances;
+    let nodeLabels;
     const bridge = createBlockEditorBridge({ScratchBlocks, workspace: f.workspace, vm: f.vm,
         descendants,
-        service, label: 'Edit', canOpen: () => true, onOpen: value => { session = value; },
+        service, label: 'Edit', canOpen: () => true, onOpen: (value, labels, metadata) => {
+            session = value;
+            appearances = metadata;
+            nodeLabels = labels;
+        },
         onError: error => { throw error; }});
     const element = field.fieldGroup_;
     t.after(() => { bridge.dispose(); element.remove(); });
-    return {...f, bridge, field, session: () => session,
+    return {...f, bridge, field, session: () => session, appearances: () => appearances, labels: () => nodeLabels,
         openIcon: () => field.fieldGroup_.dispatchEvent(new dom.window.KeyboardEvent('keydown', {
             key: 'Enter', bubbles: true, cancelable: true
         })),
@@ -102,6 +108,20 @@ test('the enabled bridge opens the aggregate API and unregister aborts pending v
     release([]);
     await Promise.resolve();
     assert.equal(f.vmValue('props'), '{}');
+    assert.equal(f.dirty(), 0);
+});
+
+test('the bridge passes block presentation data outside the aggregate snapshot and draft', t => {
+    const f = bridgeFixture(t, {}, true);
+    f.openIcon();
+    assert.equal(f.appearances().scene.iconURI, f.field.getValue());
+    assert.equal(f.appearances().scene.colour, f.block.getColour());
+    assert.equal(f.labels().scene, 'scene name');
+    assert.equal(f.appearances().scene.name, 'scene name');
+    const nodes = f.session().getNodes();
+    assert.equal(nodes[0].iconURI, undefined);
+    assert.equal(nodes[0].colour, undefined);
+    assert.deepEqual(f.session().getEditor('scene').getDraft(), {properties: '{}', name: 'opening'});
     assert.equal(f.dirty(), 0);
 });
 
