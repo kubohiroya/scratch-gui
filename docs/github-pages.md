@@ -1,7 +1,9 @@
 # GitHub Pages 公開
 
 対象: [Issue #4](https://github.com/kubohiroya/scratch-gui/issues/4)。
-公開ソースは `feat/site/github-pages`。既存の GUI 実装 branch を起点とし、`develop` とドラフト PR #3 の merge は含めません。
+開発の統合先は `develop`、Pages の公開ソースは `feat/site/github-pages` です。
+公開ブランチの YAML 互換・初版受け入れ修正・Pages 配信機構を `develop` に統合しています。
+Pages の自動配信は公開ソース branch の push で実行します。`develop` の変更を配信する際は、公開ソースへ反映した上で同じ workflow を使います。
 
 ## 公開物
 

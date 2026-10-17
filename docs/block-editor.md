@@ -1,8 +1,9 @@
 # 拡張ブロック編集の接続と受け入れ確認
 
 対象: [scratch-gui #1](https://github.com/kubohiroya/scratch-gui/issues/1)、依存: [共通 API #1](https://github.com/kubohiroya/turbowarp-block-editor/issues/1)。
-基盤はPR #3で`develop`へ、YAML互換はPR #5で`feat/site/github-pages`へ統合しました。
-本受け入れ修正のブランチは`fix/editor/issue-1-acceptance`、基点はサイト用ブランチの`be1183a90`です。
+基盤はPR #3で`develop`へ、YAML互換はPR #5、初版受け入れ修正はPR #6で`feat/site/github-pages`へ統合しました。
+開発の統合先である`develop`にも、公開ブランチのYAML互換・受け入れ修正とPages配信機構を取り込んでいます。
+初版の検証記録は当時の`fix/editor/issue-1-acceptance`とサイト用ブランチを対象にした履歴です。
 通常CIとPagesの共通API固定参照は、寿命管理修正を含む`21c7cf54df2f2f8768219252a2bc6e5b5ad5434f`へ更新しています。
 ローカル受け入れ結果と公開状態は[検証記録](block-editor-acceptance.md)を参照してください。
 
