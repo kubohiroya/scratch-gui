@@ -4,8 +4,9 @@
 基盤はPR #3で`develop`へ、YAML互換はPR #5、初版受け入れ修正はPR #6で`feat/site/github-pages`へ統合しました。
 開発の統合先である`develop`にも、公開ブランチのYAML互換・受け入れ修正とPages配信機構を取り込んでいます。
 初版の検証記録は当時の`fix/editor/issue-1-acceptance`とサイト用ブランチを対象にした履歴です。
-通常CIとPagesの共通API固定参照は、寿命管理修正を含む`21c7cf54df2f2f8768219252a2bc6e5b5ad5434f`へ更新しています。
+通常CIとPagesの共通API固定参照は、階層セッションを含む`ec338023ca8123b1db50787601ca8c78ab06917d`です。
 ローカル受け入れ結果と公開状態は[検証記録](block-editor-acceptance.md)を参照してください。
+Issue #2の階層編集は別の既定OFFフラグで追加しています。[階層編集の仕様と検証](block-editor-descendants.md)を参照してください。
 
 ## 起動
 

@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import createBlockEditorBridge from '../../../src/lib/tw-block-editor-bridge.js';
+import createBlockEditorBridge, {openBlockEditorSession} from '../../../src/lib/tw-block-editor-bridge.js';
+import {BlockEditorStructureError} from '@kubohiroya/turbowarp-block-editor';
 import {fixture, makeDefinition, ScratchBlocks, dom} from './helpers.mjs';
 
-function bridgeFixture(t, overrides = {}) {
+function bridgeFixture(t, overrides = {}, descendants = false) {
     t.mock.method(ScratchBlocks, 'hideChaff', () => {});
     const f = fixture(t, {definition: makeDefinition(overrides)});
     const listeners = new Set();
@@ -18,6 +19,7 @@ function bridgeFixture(t, overrides = {}) {
     dom.window.document.body.appendChild(field.fieldGroup_);
     let session;
     const bridge = createBlockEditorBridge({ScratchBlocks, workspace: f.workspace, vm: f.vm,
+        descendants,
         service, label: 'Edit', canOpen: () => true, onOpen: value => { session = value; },
         onError: error => { throw error; }});
     const element = field.fieldGroup_;
@@ -84,4 +86,36 @@ test('the bridge retains the draft after a host transaction rolls back', async t
     assert.equal(f.vmValue('name'), 'opening');
     assert.equal(f.dirty(), 0);
     assert.equal(f.workspace.undoStack_.length, 0);
+});
+
+test('the enabled bridge opens the aggregate API and unregister aborts pending validation immediately', async t => {
+    let release;
+    const f = bridgeFixture(t, {validate: () => new Promise(resolve => { release = resolve; })}, true);
+    f.openIcon();
+    const session = f.session();
+    assert.equal(typeof session.getNodes, 'function');
+    assert.equal(session.getNodes().length, 1);
+    session.getEditor('scene').setDraft({properties: '{"draft":1}', name: 'draft'});
+    const saving = session.save();
+    f.unregisterDefinition();
+    assert.deepEqual(await saving, {status: 'invalidated'});
+    release([]);
+    await Promise.resolve();
+    assert.equal(f.vmValue('props'), '{}');
+    assert.equal(f.dirty(), 0);
+});
+
+test('flag OFF or an unsupported host uses single editing; supported hierarchy errors never fall back', () => {
+    let singles = 0;
+    let aggregates = 0;
+    const registry = {open: () => { singles++; return 'single'; },
+        openDescendants: () => { aggregates++; throw new BlockEditorStructureError('Invalid tree', 'cycle'); }};
+    const host = {};
+    const reference = {targetId: 'target', blockId: 'block'};
+    assert.equal(openBlockEditorSession({registry, host, reference, descendants: true}), 'single');
+    host.descendants = {capability: 'descendant-editing-v1', readSubtree: () => {}, commitSubtree: () => {}};
+    assert.equal(openBlockEditorSession({registry, host, reference, descendants: false}), 'single');
+    assert.throws(() => openBlockEditorSession({registry, host, reference, descendants: true}), BlockEditorStructureError);
+    assert.equal(singles, 2);
+    assert.equal(aggregates, 1);
 });
