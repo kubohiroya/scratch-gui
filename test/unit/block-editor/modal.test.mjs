@@ -144,3 +144,39 @@ test('asynchronous validation disables Save and a repeated click cannot commit e
     assert.equal(f.commits(), 0);
     assert.equal(f.closes(), 0);
 });
+
+test('opening focuses the body after its portal and form are rendered', async t => {
+    const f = await fixture(t);
+    await act(async () => { await new Promise(resolve => window.requestAnimationFrame(resolve)); });
+    assert.equal(document.activeElement, f.input);
+});
+
+test('IME Escape and multiline Enter retain the draft; ordinary Escape cancels', async t => {
+    const f = await fixture(t);
+    f.edit('one\ntwo');
+    act(() => {
+        f.input.dispatchEvent(new dom.window.CompositionEvent('compositionstart', {bubbles: true}));
+        f.input.dispatchEvent(new dom.window.KeyboardEvent('keydown', {
+            key: 'Escape', keyCode: 27, bubbles: true, isComposing: true
+        }));
+        f.input.dispatchEvent(new dom.window.KeyboardEvent('keydown', {
+            key: 'Enter', keyCode: 13, bubbles: true, isComposing: true
+        }));
+    });
+    assert.equal(f.session.getState().status, 'editing');
+    assert.equal(f.commits(), 0);
+    act(() => {
+        f.input.dispatchEvent(new dom.window.CompositionEvent('compositionend', {bubbles: true}));
+        f.input.dispatchEvent(new dom.window.KeyboardEvent('keydown', {
+            key: 'Enter', keyCode: 13, bubbles: true
+        }));
+    });
+    assert.equal(f.session.getState().status, 'editing');
+    assert.equal(f.session.getDraft().properties, 'one\ntwo');
+    act(() => { f.input.dispatchEvent(new dom.window.KeyboardEvent('keydown', {
+        key: 'Escape', keyCode: 27, bubbles: true
+    })); });
+    assert.equal(f.session.getState().status, 'cancelled');
+    assert.equal(f.closes(), 1);
+    assert.equal(f.commits(), 0);
+});

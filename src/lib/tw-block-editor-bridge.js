@@ -7,6 +7,30 @@ const createBlockEditorBridge = ({ScratchBlocks, workspace, vm, service, label, 
     let disposed = false;
     let timer = null;
     let activeSession = null;
+    let openingSnapshot = null;
+    let stopWaiting = null;
+    const endSession = () => {
+        const session = activeSession;
+        if (!session) return;
+        // Normal close is refused while saving. Host invalidation also blocks commit,
+        // then releases the old view as soon as its pending validation settles.
+        if (session.dispose()) return;
+        if (!stopWaiting) {
+            stopWaiting = session.subscribe(() => {
+                if (session.getState().status === 'saving') return;
+                stopWaiting();
+                stopWaiting = null;
+                session.dispose();
+            });
+        }
+    };
+    const checkSession = () => {
+        // The host owns rollback. Its synchronous transaction must retain the draft on failure.
+        if (host.isCommitting()) return;
+        if (!activeSession || !['editing', 'saving'].includes(activeSession.getState().status)) return;
+        const current = host.readBlock(activeSession.reference);
+        if (!current || JSON.stringify(current) !== JSON.stringify(openingSnapshot)) endSession();
+    };
     const available = block => {
         if (disposed || !vm.editingTarget || !canOpen() || !service.registry.resolve(block.type)) return false;
         const snapshot = host.readBlock({targetId: vm.editingTarget.id, blockId: block.id});
@@ -21,6 +45,7 @@ const createBlockEditorBridge = ({ScratchBlocks, workspace, vm, service, label, 
             if (session) {
                 ScratchBlocks.hideChaff();
                 activeSession = session;
+                openingSnapshot = host.readBlock(session.reference);
                 onOpen(session);
             }
         } catch (error) {
@@ -33,7 +58,7 @@ const createBlockEditorBridge = ({ScratchBlocks, workspace, vm, service, label, 
         for (const block of workspace.getAllBlocks(false)) {
             const input = block.inputList[0];
             const field = input && input.fieldRow[0];
-            if (!service.registry.resolve(block.type) || !field ||
+            if (workspace.options.readOnly || !service.registry.resolve(block.type) || !field ||
                 !(field instanceof ScratchBlocks.FieldImage) || !field.fieldGroup_ ||
                 block.isInFlyout || block.isShadow() || !block.isEditable()) continue;
             seen.add(block.id);
@@ -62,16 +87,18 @@ const createBlockEditorBridge = ({ScratchBlocks, workspace, vm, service, label, 
         }
     };
     const schedule = () => {
+        checkSession();
         clearTimeout(timer);
         timer = setTimeout(refresh, 0);
     };
     const unregister = service.subscribe(() => {
         host.invalidate();
-        if (activeSession) activeSession.cancel();
+        endSession();
         schedule();
     });
     workspace.addChangeListener(schedule);
     vm.on('workspaceUpdate', schedule);
+    vm.on('targetsUpdate', schedule);
     refresh();
     return {
         refresh,
@@ -81,17 +108,9 @@ const createBlockEditorBridge = ({ScratchBlocks, workspace, vm, service, label, 
             unregister();
             workspace.removeChangeListener(schedule);
             vm.removeListener('workspaceUpdate', schedule);
+            vm.removeListener('targetsUpdate', schedule);
             host.dispose();
-            if (activeSession) {
-                if (!activeSession.dispose()) {
-                    const remove = activeSession.subscribe(() => {
-                        if (activeSession.getState().status !== 'saving') {
-                            remove();
-                            activeSession.dispose();
-                        }
-                    });
-                }
-            }
+            endSession();
             for (const decoration of decorations.values()) decoration.cleanup();
             decorations.clear();
         }
