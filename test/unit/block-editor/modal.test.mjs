@@ -1,0 +1,146 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {createRequire} from 'node:module';
+import {test, after} from 'node:test';
+import {JSDOM} from 'jsdom';
+import * as core from '@kubohiroya/turbowarp-block-editor';
+
+const dom = new JSDOM('<!doctype html><html><body></body></html>', {
+    url: 'http://localhost/', pretendToBeVisual: true
+});
+for (const name of [
+    'window', 'document', 'DOMParser', 'XMLSerializer', 'Element', 'HTMLElement',
+    'HTMLCollection', 'NodeList', 'Node', 'navigator'
+]) Object.defineProperty(globalThis, name, {value: dom.window[name], configurable: true});
+globalThis.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.window);
+globalThis.cancelAnimationFrame = dom.window.cancelAnimationFrame.bind(dom.window);
+// React 16's scheduler must use its timer fallback in this Node/jsdom test.
+Object.defineProperty(globalThis, 'MessageChannel', {value: undefined, configurable: true});
+after(() => dom.window.close());
+const require = createRequire(import.meta.url);
+const React = require('react');
+const ReactDOM = require('react-dom');
+const ReactModal = require('react-modal');
+const {act} = require('react-dom/test-utils');
+const intl = require('react-intl');
+const babel = require('@babel/core');
+const filename = new URL('../../../src/containers/tw-block-editor-modal.jsx', import.meta.url);
+// Reuse the project's JSX compiler. Keep the real ReactModal portal, replacing only its GUI/Redux wrapper.
+const {code} = babel.transformSync(fs.readFileSync(filename, 'utf8'), {
+    filename: filename.pathname, babelrc: false, configFile: false,
+    presets: [['@babel/preset-env', {targets: {node: 'current'}}], '@babel/preset-react']
+});
+const imports = {
+    'prop-types': require('prop-types'), react: React, 'react-intl': intl,
+    '@kubohiroya/turbowarp-block-editor': core,
+    './modal.jsx': props => React.createElement(ReactModal, {
+        isOpen: true, ariaHideApp: false, contentLabel: props.contentLabel,
+        onRequestClose: props.onRequestClose
+    }, props.children),
+    '../lib/log.js': {error: () => {}},
+    '../components/block-editor/block-editor.css': {}
+};
+const module = {exports: {}};
+new Function('require', 'module', 'exports', code)(name => {
+    assert.ok(Object.hasOwn(imports, name), `Unexpected component dependency: ${name}`);
+    return imports[name];
+}, module, module.exports);
+const Component = module.exports.default;
+
+async function fixture(t, {validate = () => []} = {}) {
+    const registry = new core.EditorRegistry();
+    let mounts = 0;
+    let cleanups = 0;
+    let commits = 0;
+    let closes = 0;
+    const block = {
+        targetId: 'sprite', blockId: 'scene', opcode: 'story_scene', revision: '1',
+        arguments: {PROPERTIES: {kind: 'literal', value: '{}'}}
+    };
+    registry.register({
+        apiVersion: 1, extensionId: 'story', editorId: 'properties', opcodes: ['story_scene'],
+        editableArguments: ['PROPERTIES'],
+        read: () => ({properties: '{}'}), validate,
+        createPatch: draft => [{argument: 'PROPERTIES', value: draft.properties}],
+        mount: (container, context) => {
+            assert.ok(container instanceof dom.window.HTMLElement);
+            mounts++;
+            const input = document.createElement('textarea');
+            input.value = context.getDraft().properties;
+            container.appendChild(input);
+            const onInput = () => context.setDraft({properties: input.value});
+            input.addEventListener('input', onInput);
+            return () => {
+                cleanups++;
+                input.removeEventListener('input', onInput);
+                input.remove();
+            };
+        }
+    });
+    const session = registry.open(block, {readBlock: () => block, commit: () => { commits++; }});
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    await act(async () => {
+        ReactDOM.render(React.createElement(intl.IntlProvider, {locale: 'en'},
+            React.createElement(Component, {session, onClose: () => { closes++; }})
+        ), root);
+        await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    t.after(() => {
+        act(() => { ReactDOM.unmountComponentAtNode(root); });
+        root.remove();
+    });
+    const input = document.querySelector('textarea');
+    assert.ok(input, 'The editor body mounts after the real ReactModal portal becomes available.');
+    return {
+        session, input,
+        mounts: () => mounts, cleanups: () => cleanups,
+        commits: () => commits, closes: () => closes,
+        edit: value => act(() => {
+            input.value = value;
+            input.dispatchEvent(new dom.window.Event('input', {bubbles: true}));
+        }),
+        save: () => document.querySelector('[data-block-editor-save]')
+    };
+}
+
+test('the body mounts exactly once after ReactModal creates its portal', async t => {
+    const f = await fixture(t);
+    assert.equal(f.mounts(), 1);
+    f.edit('{"duration":2}');
+    assert.equal(f.mounts(), 1);
+    assert.equal(f.commits(), 0);
+    assert.equal(f.closes(), 0);
+});
+
+test('invalid data stays open with its draft and errors; valid data alone reaches commit', async t => {
+    const f = await fixture(t, {validate: draft => draft.properties === 'invalid'
+        ? [{message: 'Enter valid data.'}] : []});
+    f.edit('invalid');
+    await act(async () => { f.save().click(); });
+    assert.equal(f.session.getState().status, 'editing');
+    assert.equal(f.commits(), 0);
+    assert.equal(f.closes(), 0);
+    assert.equal(f.input.value, 'invalid');
+    assert.match(document.querySelector('[role="status"]').textContent, /Enter valid data/);
+    f.edit('{"duration":2}');
+    await act(async () => { f.save().click(); });
+    assert.equal(f.commits(), 1);
+    assert.equal(f.closes(), 1);
+    assert.equal(f.cleanups(), 1);
+});
+
+test('asynchronous validation disables Save and a repeated click cannot commit early', async t => {
+    let release;
+    const f = await fixture(t, {validate: () => new Promise(resolve => { release = resolve; })});
+    f.edit('pending invalid data');
+    act(() => f.save().click());
+    assert.equal(f.save().disabled, true);
+    assert.equal(f.session.cancel(), false);
+    act(() => f.save().click());
+    assert.equal(f.commits(), 0);
+    await act(async () => { release([{message: 'Invalid.'}]); });
+    assert.equal(f.save().disabled, true);
+    assert.equal(f.commits(), 0);
+    assert.equal(f.closes(), 0);
+});
