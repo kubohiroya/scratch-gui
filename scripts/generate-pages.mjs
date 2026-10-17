@@ -15,7 +15,7 @@ export async function generatePages(output, revision) {
     const source = `${repository}/tree/${revision}`;
     const core = `https://github.com/kubohiroya/turbowarp-block-editor/tree/${coreRevision}`;
     await fs.mkdir(path.join(output, 'assets'), {recursive: true});
-    for (const file of ['style.css', 'language.js', 'redirect.js', 'site.js']) {
+    for (const file of ['style.css', 'language.js', 'redirect.js', 'site.js', 'github.svg', 'octicons-LICENSE.txt']) {
         await fs.copyFile(path.join(sourceRoot, 'site', file), path.join(output, 'assets', file));
     }
     for (const [language, text] of Object.entries(content)) {
@@ -29,7 +29,7 @@ export async function generatePages(output, revision) {
 <link rel="stylesheet" href="../assets/style.css"><script src="../assets/site.js" defer></script></head>
 <body><a class="skip" href="#main">${escape(text.skip)}</a><div class="wrap">
 <header class="header"><a class="brand" href="../"><span class="mark" aria-hidden="true">↗</span>TurboWarp Block Editor</a>
-<nav aria-label="Language and source"><a class="source" href="${source}">${escape(text.source)}</a><a href="../ja/" lang="ja" hreflang="ja" data-language="ja"${language === 'ja' ? ' aria-current="page"' : ''}>日本語</a><a href="../en/" lang="en" hreflang="en" data-language="en"${language === 'en' ? ' aria-current="page"' : ''}>English</a></nav></header>
+<nav aria-label="Language and source"><a class="source" href="${source}" aria-label="${escape(text.source)}" title="${escape(text.source)}"><img src="../assets/github.svg" width="24" height="24" alt="" aria-hidden="true"></a><a href="../ja/" lang="ja" hreflang="ja" data-language="ja"${language === 'ja' ? ' aria-current="page"' : ''}>日本語</a><a href="../en/" lang="en" hreflang="en" data-language="en"${language === 'en' ? ' aria-current="page"' : ''}>English</a></nav></header>
 <main id="main"><section class="hero"><div><p class="eyebrow">${escape(text.eyebrow)}</p><h1>${text.heading}</h1>
 <p class="intro">${escape(text.intro)}</p><span class="badge">${escape(text.badge)}</span>
 <div class="actions"><a class="button" href="${editor}">${escape(text.open)}</a><a class="button secondary" href="#try">${escape(text.try)}</a></div>
