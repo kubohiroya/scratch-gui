@@ -1,6 +1,7 @@
 const defaultsDeep = require('lodash.defaultsdeep');
 const path = require('path');
 const webpack = require('webpack');
+const {withBlockEditorWebpack4} = require('@kubohiroya/turbowarp-block-editor/webpack4');
 
 // Plugins
 const CopyWebpackPlugin = require('copy-webpack-plugin');
@@ -59,40 +60,13 @@ const base = {
         publicPath: root
     },
     resolve: {
-        // Resolve pnpm transitive dependencies in the linked editor package.
-        symlinks: true,
         alias: {
-            // webpack 4 does not resolve package exports subpaths.
-            '@kubohiroya/turbowarp-block-editor/rjsf$': path.resolve(
-                __dirname, 'node_modules/@kubohiroya/turbowarp-block-editor/dist/rjsf.js'
-            ),
-            '@kubohiroya/turbowarp-block-editor/react$': path.resolve(
-                __dirname, 'node_modules/@kubohiroya/turbowarp-block-editor/dist/react.js'
-            ),
-            '@kubohiroya/turbowarp-block-editor/react/styles.css$': path.resolve(
-                __dirname, 'node_modules/@kubohiroya/turbowarp-block-editor/dist/react.css'
-            ),
-            '@kubohiroya/turbowarp-block-editor/turbowarp$': path.resolve(
-                __dirname, 'node_modules/@kubohiroya/turbowarp-block-editor/dist/turbowarp.js'
-            ),
-            // Keep local editor/RJSF packages on the GUI's React instance.
-            'react$': path.resolve(__dirname, 'node_modules/react'),
-            'react-dom$': path.resolve(__dirname, 'node_modules/react-dom'),
             'text-encoding$': path.resolve(__dirname, 'src/lib/tw-text-encoder'),
             'scratch-render-fonts$': path.resolve(__dirname, 'src/lib/tw-scratch-render-fonts')
         }
     },
     module: {
         rules: [{
-            // RJSF v5 ships syntax newer than webpack 4's parser understands.
-            test: /\.js$/,
-            include: /node_modules[\\/](?:@rjsf|yaml)[\\/]/,
-            loader: 'babel-loader',
-            options: {
-                babelrc: false,
-                presets: [['@babel/preset-env', {targets: {ie: '11'}, modules: false}]]
-            }
-        }, {
             test: /\.jsx?$/,
             loader: 'babel-loader',
             include: [
@@ -164,7 +138,7 @@ if (!process.env.CI) {
     base.plugins.push(new webpack.ProgressPlugin());
 }
 
-module.exports = [
+module.exports = withBlockEditorWebpack4([
     // to run editor examples
     defaultsDeep({}, base, {
         entry: {
@@ -325,4 +299,4 @@ module.exports = [
                 })
             ])
         })) : []
-);
+), {hostRoot: __dirname});
