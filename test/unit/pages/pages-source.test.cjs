@@ -16,27 +16,35 @@ const environment = {
 const guard = import('../../../scripts/check-pages-source.mjs');
 const ok = sha => ({ok: true, json: async () => ({commit: {sha}})});
 
-test('only a manual develop run at the latest full SHA is accepted', async () => {
+test('develop push and manual runs at the latest full SHA are accepted', async () => {
     const {checkPagesSource} = await guard;
     const calls = [];
-    assert.equal(await checkPagesSource({env: environment, fetchImpl: async (...args) => {
-        calls.push(args);
-        return ok(revision);
-    }}), revision);
-    assert.equal(calls.length, 1);
-    assert.equal(calls[0][0], 'https://api.github.com/repos/example/editor/branches/develop');
-    assert.equal(calls[0][1].headers.Authorization, 'Bearer test-read-token');
+    for (const event of ['push', 'workflow_dispatch']) {
+        assert.equal(await checkPagesSource({env: {...environment, GITHUB_EVENT_NAME: event},
+            fetchImpl: async (...args) => {
+                calls.push(args);
+                return ok(revision);
+            }}), revision);
+    }
+    assert.equal(calls.length, 2);
+    for (const [url, options] of calls) {
+        assert.equal(url, 'https://api.github.com/repos/example/editor/branches/develop');
+        assert.equal(options.headers.Authorization, 'Bearer test-read-token');
+    }
 });
 
-test('pushes, other branches and tags are rejected before accessing GitHub', async () => {
+test('other events, branches and tags are rejected before accessing GitHub', async () => {
     const {checkPagesSource} = await guard;
     for (const override of [
-        {GITHUB_EVENT_NAME: 'push'}, {GITHUB_EVENT_NAME: 'pull_request'},
-        {GITHUB_REF: 'refs/heads/feat/site/github-pages'}, {GITHUB_REF: 'refs/tags/develop'}
+        {GITHUB_EVENT_NAME: 'pull_request'}, {GITHUB_EVENT_NAME: 'workflow_run'},
+        {GITHUB_EVENT_NAME: 'schedule'}, {GITHUB_REF: 'refs/heads/feat/site/github-pages'},
+        {GITHUB_REF: 'refs/tags/develop'},
+        {GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/heads/develop-other'},
+        {GITHUB_EVENT_NAME: 'push', GITHUB_REF: 'refs/tags/develop'}
     ]) {
         await assert.rejects(checkPagesSource({env: {...environment, ...override}, fetchImpl: () => {
             assert.fail('Invalid source must not access GitHub');
-        }}), /manually from develop/);
+        }}), /from develop by push or workflow_dispatch/);
     }
 });
 
@@ -52,15 +60,18 @@ test('missing, abbreviated or mismatched artifact SHAs cannot be published', asy
     }
 });
 
-test('a stale queued run or rerun fails, including after a successful build check', async () => {
+test('stale push and manual runs fail, including after a successful build check', async () => {
     const {checkPagesSource} = await guard;
-    let latest = revision;
-    const fetchImpl = async () => ok(latest);
-    const artifact = await checkPagesSource({env: environment, fetchImpl});
-    latest = newer;
-    await assert.rejects(checkPagesSource({env: environment, fetchImpl}), /no longer the current develop/);
-    await assert.rejects(checkPagesSource({env: {...environment, PAGES_REVISION: artifact}, fetchImpl}),
-        /Start a new run/);
+    for (const event of ['push', 'workflow_dispatch']) {
+        const env = {...environment, GITHUB_EVENT_NAME: event};
+        let latest = revision;
+        const fetchImpl = async () => ok(latest);
+        const artifact = await checkPagesSource({env, fetchImpl});
+        latest = newer;
+        await assert.rejects(checkPagesSource({env, fetchImpl}), /no longer the current develop/);
+        await assert.rejects(checkPagesSource({env: {...env, PAGES_REVISION: artifact}, fetchImpl}),
+            /Start a new run/);
+    }
 });
 
 test('API failures, missing branch data and network failures stop publication', async () => {

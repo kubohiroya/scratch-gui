@@ -3,8 +3,9 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 export async function checkPagesSource({env = process.env, fetchImpl = fetch} = {}) {
-    if (env.GITHUB_EVENT_NAME !== 'workflow_dispatch' || env.GITHUB_REF !== 'refs/heads/develop') {
-        throw new Error('Pages must be published manually from develop. Use workflow_dispatch with --ref develop.');
+    if (!['push', 'workflow_dispatch'].includes(env.GITHUB_EVENT_NAME) || env.GITHUB_REF !== 'refs/heads/develop') {
+        throw new Error('Pages must be published from develop by push or workflow_dispatch. ' +
+            'Use --ref develop for manual runs.');
     }
     const revision = env.PAGES_REVISION ?? env.GITHUB_SHA;
     if (!/^[a-f0-9]{40}$/.test(revision || '') || revision !== env.GITHUB_SHA) {
