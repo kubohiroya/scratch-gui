@@ -1,0 +1,38 @@
+# 段階3の固定引数フォーム
+
+この変更は共通エディターの固定引数フォームをGUIへ接続します。拡張側の新規登録はS3-4以降の対象であり、既存拡張の引数や保存データを変更しません。共通パッケージの`apiVersion: 1`と既存登録APIも維持します。
+
+## 起動時フラグ
+
+新しい`blockEditorFixedInputs`は既定OFFです。`?blockEditorDialogs=1&blockEditorFixedInputs=1`を指定して再読込した場合にのみ、共通パッケージが提供する`registerFixedInputEditor`と固定field adapterを有効にします。稼働中のURL変更では切り替わりません。
+
+`blockEditorSourceForms`、`blockEditorDescendants`は引き続き独立しています。4つのフラグの全16組合せは次の規則で判定します。
+
+- `blockEditorDialogs`がOFFの場合、他の3つもすべて無効です。
+- `blockEditorDialogs`がONの場合、SourceForms・Descendants・FixedInputsはそれぞれの値が正確に`1`の場合だけ有効です。
+
+SourceFormsがOFFでもFixedInputsのみを有効にできます。旧共通artifactに存在しないAPIをGUIが生成することはなく、その場合は既存機能を維持します。旧2引数のAPI表示ヘルパー呼出しでは固定登録APIを表示しません。
+
+FixedInputsがONの場合、既知の起動時addon `editor-searchable-dropdowns`による標準fieldの初期patch完了を待ってから、native methodの基準を一度だけ採取します。API・addon chunk・翻訳読込が遅れても先に基準を取らず、待機中にVM/workspaceが差し替わった場合やunmountした場合にはattachしません。初期patchが失敗した場合は固定capabilityを有効にせず、既存SOURCE/階層フォームのbridgeを接続します。FixedInputsがOFFの場合は従来どおり同期的に接続します。初期化後のprototype差替えは引き続き拒否し、動的なaddon有効化を理由に基準を取り直しません。
+
+## 編集と寿命
+
+固定登録のrootは、DescendantsもONであっても単一ブロックのフォームとして開きます。旧階層フォームに固定登録の子孫が混在する場合は、完全な一括保存契約が未対応のため開けません。単一編集へ黙って切り替えません。
+
+text・数値・静的enum・色の標準fieldを扱い、接続済みreporterや非対応fieldは読み取り専用で表示します。reporterは評価しません。数値の途中入力もdraftに保持し、不正なbufferは保存できません。非表示branchのdraftは同じ画面内で保持しますが、そのbranchが非表示のまま保存しても反映しません。
+
+同じtargetの外部変更による保存競合ではdialogとdraftを保持し、再保存時にも検査します。閉じて再度開くと現在のraw値を採取します。target・project・対象登録の差替えや終了ではdraftを破棄します。無関係な登録通知だけでは固定draftを破棄しません。
+
+フォームとダイアログの文言は、現在のGUIの`intl`を開く直前に取得して共通UIへ渡します。ブラウザの推測言語を使わず、GUIで選択した英語・日本語を検証対象にします。Schema・codec・owner検証にはUI文言providerを渡しません。
+
+## 依存と検証
+
+このGUIの共通パッケージ依存は、共通実装の[PR #38](https://github.com/kubohiroya/turbowarp-extension-data-editor/pull/38)をmergeしたcommit `485f0e550e622235624b5e9176820161aeeba252`へ固定します。`package.json`・`package-lock.json`・実解決を同じimmutable Git sourceへ揃え、配布実体の`build-info.json`でrevisionとsource hashを照合します。package versionが`0.2.0`でも、旧npm公開版と今回のGit依存は同じ配布実体ではありません。
+
+先行するローカルレビューでは、manifest/lockの旧pin `76fa1d50a3c188082ceef723ea018a9d8769ea6e`を保持したまま、未公開tarballを検証専用overlayとして使いました。この状態は旧実体・解決先・ハッシュとともに履歴へ保存済みです。今回のimmutable Git依存への更新後は、現行の依存状態と区別します。
+
+検証はGUIの全16フラグ分類、旧API互換、実`IntlProvider`による日英文言、共通側の実ScratchBlocks/VMによるbridge試験と、実GUIの固定引数E2Eを含みます。E2E専用の汎用拡張・projectは共通リポジトリの`test/e2e/turbowarp/fixed-project.cjs`に置き、通常の拡張機能セキュリティ画面を通じて読み込みます。Templateや製品ownerにテストブロックを追加しません。共通側のE2Eでは、既存Pages向けの`test:e2e:block-editor`と、`E2E_FIXED_INPUTS=1`で新しい固定フォームを検証する`test:e2e:fixed-inputs`を対象版別に使います。Pagesのsource pin更新とnpm公開は、このGUI依存更新には含めません。
+
+## 切戻し
+
+`blockEditorFixedInputs`をOFFにして再読込し、既存Dialogs・SourceForms・Descendantsを確認します。依存を切り戻す場合は、保存済みの旧manifest・root lock・実体を一組で戻し、実解決と一致させます。検証専用overlayを製品のGit依存として扱いません。既存raw値やsb3の形式移行は不要です。commit・push・PR・mergeの結果は公開後の検証記録へ追記し、npm公開は別工程として扱います。

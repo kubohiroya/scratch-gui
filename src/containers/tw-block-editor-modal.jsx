@@ -41,6 +41,11 @@ const BlockEditorModal = props => {
             defaultMessage: 'The block could not be edited. Close this dialog and try again.',
             description: 'Block editor failure message'
         }),
+        invalidInput: props.intl.formatMessage({
+            id: 'tw.blockEditor.fixed.invalidValue',
+            defaultMessage: 'Check this value before saving.',
+            description: 'A fixed input is invalid'
+        }),
         structuralNode: props.intl.formatMessage({
             id: 'tw.blockEditor.structuralNode',
             defaultMessage: 'No form for this block; its nested blocks are included.',
