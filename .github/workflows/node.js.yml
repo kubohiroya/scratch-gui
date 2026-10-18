@@ -10,37 +10,21 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: scratch-gui
     steps:
     - uses: actions/checkout@v4
       with:
+        fetch-depth: 0
         path: scratch-gui
         persist-credentials: false
     - name: Check out pinned editor package
       uses: actions/checkout@v4
       with:
         repository: kubohiroya/turbowarp-block-editor
-        ref: 90d53b68b6f7def6246e74ada9aa3a6652901b10
+        ref: 078c178d2987fd46e3cf90d6a61d8c234affc3bc
         path: turbowarp-block-editor
         persist-credentials: false
-    - name: Install Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 22
-        cache: npm
-        cache-dependency-path: scratch-gui/package-lock.json
-    - uses: pnpm/action-setup@v4
-      with:
-        version: 11.18.0
-    - name: Build local package dependency
-      working-directory: turbowarp-block-editor
-      run: |
-        pnpm install --frozen-lockfile
-        pnpm build
-    - run: npm ci
-    - run: npm run build
-    - run: npm run test:unit
-    - run: npm run test:block-editor
-    - run: npm run test:pages
+    - uses: ./turbowarp-block-editor/.github/actions/gui-checks
