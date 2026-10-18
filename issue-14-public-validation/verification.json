@@ -1,0 +1,291 @@
+{
+  "url": "https://kubohiroya.github.io/scratch-gui/editor.html?blockEditorDialogs=1&blockEditorDescendants=1&lang=en",
+  "build": {
+    "repository": "https://github.com/kubohiroya/scratch-gui",
+    "revision": "8515d30e7e7e205103b15c73aee16ba6efa999ce",
+    "coreRepository": "https://github.com/kubohiroya/turbowarp-block-editor",
+    "coreRevision": "078c178d2987fd46e3cf90d6a61d8c234affc3bc"
+  },
+  "results": [
+    {
+      "theme": "light",
+      "before": {
+        "blocks": {
+          "root": {
+            "border": "rgb(8, 127, 140)",
+            "background": "linear-gradient(rgba(8, 127, 140, 0.08), rgba(8, 127, 140, 0.08)), none",
+            "backgroundColor": "rgb(255, 255, 255)"
+          },
+          "grand": {
+            "border": "rgb(102, 51, 153)",
+            "background": "linear-gradient(rgba(102, 51, 153, 0.08), rgba(102, 51, 153, 0.08)), none",
+            "backgroundColor": "rgb(255, 255, 255)"
+          },
+          "sibling": {
+            "border": "rgb(8, 127, 140)",
+            "background": "linear-gradient(rgba(8, 127, 140, 0.08), rgba(8, 127, 140, 0.08)), none",
+            "backgroundColor": "rgb(255, 255, 255)"
+          }
+        },
+        "fields": {
+          "name": {
+            "border": "rgb(198, 40, 40)",
+            "background": "linear-gradient(rgba(198, 40, 40, 0.08), rgba(198, 40, 40, 0.08)), none",
+            "backgroundColor": "rgb(255, 255, 255)",
+            "invalid": "true",
+            "marker": "true",
+            "error": "must NOT have fewer than 1 characters",
+            "descriptions": "block-editor-2_name__error block-editor-2_name__description block-editor-2_name__help"
+          },
+          "amount": {
+            "border": "rgb(198, 40, 40)",
+            "background": "linear-gradient(rgba(198, 40, 40, 0.08), rgba(198, 40, 40, 0.08)), none",
+            "backgroundColor": "rgb(255, 255, 255)",
+            "invalid": "true",
+            "marker": "true",
+            "error": "must be >= 1",
+            "descriptions": "block-editor-2_amount__error block-editor-2_amount__description block-editor-2_amount__help"
+          },
+          "mode": {
+            "border": "rgb(198, 40, 40)",
+            "background": "linear-gradient(rgba(198, 40, 40, 0.08), rgba(198, 40, 40, 0.08)), none",
+            "backgroundColor": "rgb(255, 255, 255)",
+            "invalid": "true",
+            "marker": "true",
+            "error": "must be equal to one of the allowed values",
+            "descriptions": "block-editor-2_mode__error block-editor-2_mode__description block-editor-2_mode__help"
+          },
+          "notes": {
+            "border": "rgb(198, 40, 40)",
+            "background": "linear-gradient(rgba(198, 40, 40, 0.08), rgba(198, 40, 40, 0.08)), none",
+            "backgroundColor": "rgb(255, 255, 255)",
+            "invalid": "true",
+            "marker": "true",
+            "error": "must match pattern \"^OK\"",
+            "descriptions": "block-editor-2_notes__error block-editor-2_notes__description block-editor-2_notes__help"
+          },
+          "nested_invalid": {
+            "border": "rgb(198, 40, 40)",
+            "background": "linear-gradient(rgba(198, 40, 40, 0.08), rgba(198, 40, 40, 0.08)), none",
+            "backgroundColor": "rgb(255, 255, 255)",
+            "invalid": "true",
+            "marker": "true",
+            "error": "must match pattern \"^OK$\"",
+            "descriptions": "block-editor-2_nested_invalid__error block-editor-2_nested_invalid__description block-editor-2_nested_invalid__help"
+          }
+        }
+      },
+      "after": {
+        "blocks": {
+          "root": {
+            "border": "rgb(8, 127, 140)",
+            "background": "linear-gradient(rgba(8, 127, 140, 0.08), rgba(8, 127, 140, 0.08)), none",
+            "backgroundColor": "rgb(255, 255, 255)"
+          },
+          "grand": {
+            "border": "rgb(102, 51, 153)",
+            "background": "linear-gradient(rgba(102, 51, 153, 0.08), rgba(102, 51, 153, 0.08)), none",
+            "backgroundColor": "rgb(255, 255, 255)"
+          },
+          "sibling": {
+            "border": "rgb(8, 127, 140)",
+            "background": "linear-gradient(rgba(8, 127, 140, 0.08), rgba(8, 127, 140, 0.08)), none",
+            "backgroundColor": "rgb(255, 255, 255)"
+          }
+        },
+        "fields": {
+          "name": {
+            "border": "rgba(0, 0, 0, 0.15)",
+            "background": "none",
+            "backgroundColor": "rgb(255, 255, 255)",
+            "invalid": null,
+            "marker": null,
+            "error": "",
+            "descriptions": "block-editor-2_name__error block-editor-2_name__description block-editor-2_name__help"
+          },
+          "amount": {
+            "border": "rgba(0, 0, 0, 0.15)",
+            "background": "none",
+            "backgroundColor": "rgb(255, 255, 255)",
+            "invalid": null,
+            "marker": null,
+            "error": "",
+            "descriptions": "block-editor-2_amount__error block-editor-2_amount__description block-editor-2_amount__help"
+          },
+          "mode": {
+            "border": "rgba(0, 0, 0, 0.15)",
+            "background": "none",
+            "backgroundColor": "rgb(255, 255, 255)",
+            "invalid": null,
+            "marker": null,
+            "error": "",
+            "descriptions": "block-editor-2_mode__error block-editor-2_mode__description block-editor-2_mode__help"
+          },
+          "notes": {
+            "border": "rgba(0, 0, 0, 0.15)",
+            "background": "none",
+            "backgroundColor": "rgb(255, 255, 255)",
+            "invalid": null,
+            "marker": null,
+            "error": "",
+            "descriptions": "block-editor-2_notes__error block-editor-2_notes__description block-editor-2_notes__help"
+          },
+          "nested_invalid": {
+            "border": "rgba(0, 0, 0, 0.15)",
+            "background": "none",
+            "backgroundColor": "rgb(255, 255, 255)",
+            "invalid": null,
+            "marker": null,
+            "error": "",
+            "descriptions": "block-editor-2_nested_invalid__error block-editor-2_nested_invalid__description block-editor-2_nested_invalid__help"
+          }
+        }
+      },
+      "validSiblingUnaffected": true,
+      "blockAppearanceUnchanged": true,
+      "errorsCleared": true,
+      "saveEnabled": true,
+      "draftUncommitted": true
+    },
+    {
+      "theme": "dark",
+      "before": {
+        "blocks": {
+          "root": {
+            "border": "rgb(8, 127, 140)",
+            "background": "linear-gradient(rgba(8, 127, 140, 0.08), rgba(8, 127, 140, 0.08)), none",
+            "backgroundColor": "rgb(17, 17, 17)"
+          },
+          "grand": {
+            "border": "rgb(102, 51, 153)",
+            "background": "linear-gradient(rgba(102, 51, 153, 0.08), rgba(102, 51, 153, 0.08)), none",
+            "backgroundColor": "rgb(17, 17, 17)"
+          },
+          "sibling": {
+            "border": "rgb(8, 127, 140)",
+            "background": "linear-gradient(rgba(8, 127, 140, 0.08), rgba(8, 127, 140, 0.08)), none",
+            "backgroundColor": "rgb(17, 17, 17)"
+          }
+        },
+        "fields": {
+          "name": {
+            "border": "rgb(255, 138, 138)",
+            "background": "linear-gradient(rgba(255, 138, 138, 0.12), rgba(255, 138, 138, 0.12)), none",
+            "backgroundColor": "rgb(30, 30, 30)",
+            "invalid": "true",
+            "marker": "true",
+            "error": "must NOT have fewer than 1 characters",
+            "descriptions": "block-editor-5_name__error block-editor-5_name__description block-editor-5_name__help"
+          },
+          "amount": {
+            "border": "rgb(255, 138, 138)",
+            "background": "linear-gradient(rgba(255, 138, 138, 0.12), rgba(255, 138, 138, 0.12)), none",
+            "backgroundColor": "rgb(30, 30, 30)",
+            "invalid": "true",
+            "marker": "true",
+            "error": "must be >= 1",
+            "descriptions": "block-editor-5_amount__error block-editor-5_amount__description block-editor-5_amount__help"
+          },
+          "mode": {
+            "border": "rgb(255, 138, 138)",
+            "background": "linear-gradient(rgba(255, 138, 138, 0.12), rgba(255, 138, 138, 0.12)), none",
+            "backgroundColor": "rgb(30, 30, 30)",
+            "invalid": "true",
+            "marker": "true",
+            "error": "must be equal to one of the allowed values",
+            "descriptions": "block-editor-5_mode__error block-editor-5_mode__description block-editor-5_mode__help"
+          },
+          "notes": {
+            "border": "rgb(255, 138, 138)",
+            "background": "linear-gradient(rgba(255, 138, 138, 0.12), rgba(255, 138, 138, 0.12)), none",
+            "backgroundColor": "rgb(30, 30, 30)",
+            "invalid": "true",
+            "marker": "true",
+            "error": "must match pattern \"^OK\"",
+            "descriptions": "block-editor-5_notes__error block-editor-5_notes__description block-editor-5_notes__help"
+          },
+          "nested_invalid": {
+            "border": "rgb(255, 138, 138)",
+            "background": "linear-gradient(rgba(255, 138, 138, 0.12), rgba(255, 138, 138, 0.12)), none",
+            "backgroundColor": "rgb(30, 30, 30)",
+            "invalid": "true",
+            "marker": "true",
+            "error": "must match pattern \"^OK$\"",
+            "descriptions": "block-editor-5_nested_invalid__error block-editor-5_nested_invalid__description block-editor-5_nested_invalid__help"
+          }
+        }
+      },
+      "after": {
+        "blocks": {
+          "root": {
+            "border": "rgb(8, 127, 140)",
+            "background": "linear-gradient(rgba(8, 127, 140, 0.08), rgba(8, 127, 140, 0.08)), none",
+            "backgroundColor": "rgb(17, 17, 17)"
+          },
+          "grand": {
+            "border": "rgb(102, 51, 153)",
+            "background": "linear-gradient(rgba(102, 51, 153, 0.08), rgba(102, 51, 153, 0.08)), none",
+            "backgroundColor": "rgb(17, 17, 17)"
+          },
+          "sibling": {
+            "border": "rgb(8, 127, 140)",
+            "background": "linear-gradient(rgba(8, 127, 140, 0.08), rgba(8, 127, 140, 0.08)), none",
+            "backgroundColor": "rgb(17, 17, 17)"
+          }
+        },
+        "fields": {
+          "name": {
+            "border": "rgba(255, 255, 255, 0.15)",
+            "background": "none",
+            "backgroundColor": "rgb(30, 30, 30)",
+            "invalid": null,
+            "marker": null,
+            "error": "",
+            "descriptions": "block-editor-5_name__error block-editor-5_name__description block-editor-5_name__help"
+          },
+          "amount": {
+            "border": "rgba(255, 255, 255, 0.15)",
+            "background": "none",
+            "backgroundColor": "rgb(30, 30, 30)",
+            "invalid": null,
+            "marker": null,
+            "error": "",
+            "descriptions": "block-editor-5_amount__error block-editor-5_amount__description block-editor-5_amount__help"
+          },
+          "mode": {
+            "border": "rgba(255, 255, 255, 0.15)",
+            "background": "none",
+            "backgroundColor": "rgb(30, 30, 30)",
+            "invalid": null,
+            "marker": null,
+            "error": "",
+            "descriptions": "block-editor-5_mode__error block-editor-5_mode__description block-editor-5_mode__help"
+          },
+          "notes": {
+            "border": "rgba(255, 255, 255, 0.15)",
+            "background": "none",
+            "backgroundColor": "rgb(30, 30, 30)",
+            "invalid": null,
+            "marker": null,
+            "error": "",
+            "descriptions": "block-editor-5_notes__error block-editor-5_notes__description block-editor-5_notes__help"
+          },
+          "nested_invalid": {
+            "border": "rgba(255, 255, 255, 0.15)",
+            "background": "none",
+            "backgroundColor": "rgb(30, 30, 30)",
+            "invalid": null,
+            "marker": null,
+            "error": "",
+            "descriptions": "block-editor-5_nested_invalid__error block-editor-5_nested_invalid__description block-editor-5_nested_invalid__help"
+          }
+        }
+      },
+      "validSiblingUnaffected": true,
+      "blockAppearanceUnchanged": true,
+      "errorsCleared": true,
+      "saveEnabled": true,
+      "draftUncommitted": true
+    }
+  ]
+}
