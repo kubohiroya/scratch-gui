@@ -62,7 +62,7 @@ OSのネイティブpicker、全テーマ・全言語・全対応環境の組合
 
 初期データの検証と既存のlive validationに追従し、validに直すと強調を解除します。階層を折りたたんで再展開した場合も状態を再反映し、全体のエラー案内から展開・フォーカス移動できます。入力中のフォーカス表示と、invalid時の保存抑止は従来どおりです。
 
-`tw-block-editor-field-errors.js`はモーダル本文内のRJSFの項目別エラーDOMを監視し、入力欄の`aria-invalid`と`aria-describedby`を補完します。グループ制約は子の入力欄ではなくグループに対応づけます。validへの修正や終了時には補完した属性を復元し、監視を解除します。RJSF側が更新した属性は上書きせず、配列を並べ替えて項目IDが変わった場合も現在の説明を参照します。検証ルールやメッセージを再実装せず、カスタム非RJSFフォームは対象外です。
+共通パッケージの`/react`にある項目表示処理はモーダル本文内のRJSFの項目別エラーDOMを監視し、入力欄の`aria-invalid`と`aria-describedby`を補完します。グループ制約は子の入力欄ではなくグループに対応づけます。validへの修正や終了時には補完した属性を復元し、監視を解除します。RJSF側が更新した属性は上書きせず、配列を並べ替えて項目IDが変わった場合も現在の説明を参照します。検証ルールやメッセージを再実装せず、カスタム非RJSFフォームは対象外です。
 
 明色／暗色それぞれの`block-editor-error-border`、`block-editor-error-text`、`block-editor-error-tint`を使います。既存の起動時固定・既定OFFの`blockEditorDialogs`配下で動作し、階層編集は`blockEditorDescendants`に従います。フラグの正本は`src/lib/tw-feature-flags.js`です。共通API、スキーマ、保存形式の変更やデータ移行はありません。
 
@@ -107,3 +107,23 @@ npm run test:block-editor
 TurboWarpのコンパイラ有効時は、通常の引数編集と同様、既に走っているコンパイル済みスクリプトが開始時の値を使い続ける場合があります。次の実行で確定値を使うことを比較確認しています。専用エディターからスクリプトを自動で停止・再起動しません。
 
 対象を無効化したときに非同期検証が残っていても、ホストのsnapshot照合でcommitを拒否します。通常終了とは区別し、検証が解決した時点で古いセッション・ビューを解放します。非同期検証は呼び出し側が完了するPromiseを返す契約です。
+
+## 専用UI・登録サービスの責務分割（GUI #15 / 共通 #7）
+
+共通パッケージの `/react` がダイアログ・階層ツリー・保存/キャンセル・エラー表示を提供し、
+`/rjsf` の `createBlockEditorService()` がSchema検出と登録/解除・通知を担当します。
+GUIの `tw-block-editor-modal.jsx` は既存Modal、翻訳文言、テーマCSS変数、エラーログを注入する接続です。
+`tw-block-editor-service.js` はVMごとのWeakMap保持だけを担当します。
+専用CSS本体は共通側の `/react/styles.css` をCSS Modules（camelCase）で読み込みます。
+GUIのCSSにはテーマ変数だけを残します。React/ReactDOMの実体は既存webpack aliasで共有します。
+
+API v1の本文mount、起動時固定/既定OFFのフラグ、text shadowのJSON/YAML保存形式を維持します。
+Blockly/VMアダプター・アイコン・階層探索・Undo/Redo/rollbackは共通側の `/turbowarp` に移管しました。
+GUIは `attachTurboWarpBlockEditors()` へ実体とフラグ・画面コールバックを渡し、unmountでdisposeします。
+既定OFF・破棄の冪等性・別workspaceの独立性はアダプターAPIで保証します。
+webpack 4用の追加aliasは今回必要な接続です。互換配布物による設定縮小とE2E本体の移管は後続です。
+ロールバックはGUI接続と共通追加を対で戻し、以前の共通版とGUI内UIへ復帰します。
+即時停止は `blockEditorDialogs` をOFFにして再読込します。
+
+今回の検証は既存 #12 のE2E runnerから移管後のローカルPages形式ビルドへ接続します。
+公開版の結果と混同せず、両リポジトリの基準SHA・未コミット変更・ブラウザ・読込経路をIssueに記録します。

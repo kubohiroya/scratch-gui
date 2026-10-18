@@ -22,7 +22,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         repository: kubohiroya/turbowarp-block-editor
-        ref: ec338023ca8123b1db50787601ca8c78ab06917d
+        ref: 90d53b68b6f7def6246e74ada9aa3a6652901b10
         path: turbowarp-block-editor
         persist-credentials: false
     - name: Install Node.js
