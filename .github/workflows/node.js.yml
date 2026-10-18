@@ -24,7 +24,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         repository: kubohiroya/turbowarp-block-editor
-        ref: 5ec640304694e304892e2e5475eac33ed24b8265
+        ref: 078c178d2987fd46e3cf90d6a61d8c234affc3bc
         path: turbowarp-block-editor
         persist-credentials: false
     - uses: ./turbowarp-block-editor/.github/actions/gui-checks

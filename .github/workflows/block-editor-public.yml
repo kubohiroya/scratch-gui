@@ -33,8 +33,8 @@ concurrency:
 jobs:
   verify:
     # Keep the workflow implementation and runner checkout on the same commit.
-    uses: kubohiroya/turbowarp-block-editor/.github/workflows/turbowarp-public.yml@5ec640304694e304892e2e5475eac33ed24b8265
+    uses: kubohiroya/turbowarp-block-editor/.github/workflows/turbowarp-public.yml@078c178d2987fd46e3cf90d6a61d8c234affc3bc
     with:
-      runner_revision: 5ec640304694e304892e2e5475eac33ed24b8265
+      runner_revision: 078c178d2987fd46e3cf90d6a61d8c234affc3bc
       expected_revision: ${{ inputs.expected_revision || '' }}
       base_url: ${{ inputs.base_url || 'https://kubohiroya.github.io/scratch-gui/' }}
