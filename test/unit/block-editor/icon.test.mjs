@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {JSDOM} from 'jsdom';
-import {bindBlockEditorIcon} from '@kubohiroya/turbowarp-block-editor/turbowarp';
+import {bindBlockEditorIcon} from '@kubohiroya/turbowarp-extension-data-editor/turbowarp';
 import {readFeatureFlags} from '../../../src/lib/tw-feature-flags.js';
 import getBlockEditorService from '../../../src/lib/tw-block-editor-service.js';
 

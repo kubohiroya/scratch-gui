@@ -1,7 +1,7 @@
 const defaultsDeep = require('lodash.defaultsdeep');
 const path = require('path');
 const webpack = require('webpack');
-const {withBlockEditorWebpack4} = require('@kubohiroya/turbowarp-block-editor/webpack4');
+const {withBlockEditorWebpack4} = require('@kubohiroya/turbowarp-extension-data-editor/webpack4');
 
 // Plugins
 const CopyWebpackPlugin = require('copy-webpack-plugin');

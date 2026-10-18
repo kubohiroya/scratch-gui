@@ -27,11 +27,11 @@ jobs:
       - name: Check out pinned editor package
         uses: actions/checkout@v4
         with:
-          repository: kubohiroya/turbowarp-block-editor
-          ref: 078c178d2987fd46e3cf90d6a61d8c234affc3bc
-          path: turbowarp-block-editor
+          repository: kubohiroya/turbowarp-extension-data-editor
+          ref: 9e041e5278a1ea70146a76c10732d1401955a12a
+          path: turbowarp-extension-data-editor
           persist-credentials: false
-      - uses: ./turbowarp-block-editor/.github/actions/gui-checks
+      - uses: ./turbowarp-extension-data-editor/.github/actions/gui-checks
         with:
           mode: pages
       - uses: actions/upload-pages-artifact@v4

@@ -13,7 +13,7 @@ export async function generatePages(output, revision, coreRevision) {
     if (!/^[a-f0-9]{40}$/.test(revision)) throw new Error('A full source revision is required.');
     if (!/^[a-f0-9]{40}$/.test(coreRevision)) throw new Error('A full core source revision is required.');
     const source = `${repository}/tree/${revision}`;
-    const core = `https://github.com/kubohiroya/turbowarp-block-editor/tree/${coreRevision}`;
+    const core = `https://github.com/kubohiroya/turbowarp-extension-data-editor/tree/${coreRevision}`;
     await fs.mkdir(path.join(output, 'assets'), {recursive: true});
     for (const file of ['style.css', 'language.js', 'redirect.js', 'site.js', 'github.svg', 'octicons-LICENSE.txt']) {
         await fs.copyFile(path.join(sourceRoot, 'site', file), path.join(output, 'assets', file));
@@ -28,7 +28,7 @@ export async function generatePages(output, revision, coreRevision) {
 <link rel="alternate" hreflang="ja" href="../ja/"><link rel="alternate" hreflang="en" href="../en/">
 <link rel="stylesheet" href="../assets/style.css"><script src="../assets/site.js" defer></script></head>
 <body><a class="skip" href="#main">${escape(text.skip)}</a><div class="wrap">
-<header class="header"><a class="brand" href="../"><span class="mark" aria-hidden="true">↗</span>TurboWarp Block Editor</a>
+<header class="header"><a class="brand" href="../"><span class="mark" aria-hidden="true">↗</span>TurboWarp Extension Data Editor</a>
 <nav aria-label="Language and source"><a class="source" href="${source}" aria-label="${escape(text.source)}" title="${escape(text.source)}"><img src="../assets/github.svg" width="24" height="24" alt="" aria-hidden="true"></a><a href="../ja/" lang="ja" hreflang="ja" data-language="ja"${language === 'ja' ? ' aria-current="page"' : ''}>日本語</a><a href="../en/" lang="en" hreflang="en" data-language="en"${language === 'en' ? ' aria-current="page"' : ''}>English</a></nav></header>
 <main id="main"><section class="hero"><div><p class="eyebrow">${escape(text.eyebrow)}</p><h1>${text.heading}</h1>
 <p class="intro">${escape(text.intro)}</p><span class="badge">${escape(text.badge)}</span>
@@ -43,10 +43,10 @@ export async function generatePages(output, revision, coreRevision) {
         await fs.mkdir(path.join(output, language), {recursive: true});
         await fs.writeFile(path.join(output, language, 'index.html'), html);
     }
-    await fs.writeFile(path.join(output, 'index.html'), `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TurboWarp Block Editor — Choose language / 言語を選択</title><meta name="description" content="An independent TurboWarp fork by kubohiroya. 日本語とEnglishで独自拡張を紹介します。"><script src="assets/language.js" defer></script><script src="assets/redirect.js" defer></script><link rel="alternate" hreflang="ja" href="ja/"><link rel="alternate" hreflang="en" href="en/"></head><body><main><h1>TurboWarp Block Editor</h1><p><a href="ja/" lang="ja">日本語</a> · <a href="en/" lang="en">English</a></p><p>An independent TurboWarp fork by kubohiroya.</p></main></body></html>`);
+    await fs.writeFile(path.join(output, 'index.html'), `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TurboWarp Extension Data Editor — Choose language / 言語を選択</title><meta name="description" content="An independent TurboWarp fork by kubohiroya. 日本語とEnglishで独自拡張を紹介します。"><script src="assets/language.js" defer></script><script src="assets/redirect.js" defer></script><link rel="alternate" hreflang="ja" href="ja/"><link rel="alternate" hreflang="en" href="en/"></head><body><main><h1>TurboWarp Extension Data Editor</h1><p><a href="ja/" lang="ja">日本語</a> · <a href="en/" lang="en">English</a></p><p>An independent TurboWarp fork by kubohiroya.</p></main></body></html>`);
     await fs.copyFile(path.join(sourceRoot, 'LICENSE'), path.join(output, 'LICENSE'));
     await fs.writeFile(path.join(output, '.nojekyll'), '');
     await fs.writeFile(path.join(output, 'build-info.json'), JSON.stringify({
-        repository, revision, coreRepository: 'https://github.com/kubohiroya/turbowarp-block-editor', coreRevision
+        repository, revision, coreRepository: 'https://github.com/kubohiroya/turbowarp-extension-data-editor', coreRevision
     }, null, 2) + '\n');
 }
