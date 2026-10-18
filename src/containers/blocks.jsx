@@ -48,6 +48,7 @@ import {findTopBlock} from '../lib/backpack/code-payload.js';
 import {gentlyRequestPersistentStorage} from '../lib/tw-persistent-storage.js';
 import featureFlags from '../lib/tw-feature-flags.js';
 import getBlockEditorService from '../lib/tw-block-editor-service.js';
+import afterNativeFieldStartup from '../lib/tw-block-editor-startup.js';
 import {attachTurboWarpBlockEditors} from '@kubohiroya/turbowarp-extension-data-editor/turbowarp';
 import BlockEditorModal from './tw-block-editor-modal.jsx';
 
@@ -227,22 +228,34 @@ class Blocks extends React.Component {
 
         this.attachVM();
         if (featureFlags.blockEditorDialogs) {
-            this.blockEditorBridge = attachTurboWarpBlockEditors({
-                enabled: true,
-                descendants: featureFlags.blockEditorDescendants,
-                ScratchBlocks: this.ScratchBlocks,
-                workspace: this.workspace,
-                vm: this.props.vm,
-                service: getBlockEditorService(this.props.vm),
-                label: this.props.intl.formatMessage({
-                    id: 'tw.blockEditor.open',
-                    defaultMessage: 'Edit block',
-                    description: 'Tooltip for an extension block editor icon'
-                }),
-                canOpen: () => this.props.isVisible && !this.props.anyModalVisible && !this.state.blockEditorSession,
-                onOpen: this.handleOpenBlockEditor,
-                onError: error => log.error(error)
-            });
+            const startupWorkspace = this.workspace;
+            const startupVM = this.props.vm;
+            const startupBlocks = this.ScratchBlocks;
+            const attachBlockEditors = (fixedInputs = featureFlags.blockEditorFixedInputs) => {
+                this.blockEditorBridge = attachTurboWarpBlockEditors({
+                    enabled: true,
+                    descendants: featureFlags.blockEditorDescendants,
+                    fixedInputs,
+                    ScratchBlocks: this.ScratchBlocks,
+                    workspace: this.workspace,
+                    vm: this.props.vm,
+                    service: getBlockEditorService(this.props.vm, this.props.intl),
+                    label: this.props.intl.formatMessage({
+                        id: 'tw.blockEditor.open',
+                        defaultMessage: 'Edit block',
+                        description: 'Tooltip for an extension block editor icon'
+                    }),
+                    canOpen: () => this.props.isVisible && !this.props.anyModalVisible &&
+                        !this.state.blockEditorSession,
+                    onOpen: this.handleOpenBlockEditor,
+                    onError: error => log.error(error)
+                });
+            };
+            if (featureFlags.blockEditorFixedInputs) {
+                afterNativeFieldStartup(AddonHooks.startupFieldPatchesReady, attachBlockEditors,
+                    () => this.unmounted || this.workspace !== startupWorkspace || this.props.vm !== startupVM ||
+                        this.ScratchBlocks !== startupBlocks, error => log.error(error));
+            } else attachBlockEditors();
         }
         // Only update blocks/vm locale when visible to avoid sizing issues
         // If locale changes while not visible it will get handled in didUpdate
@@ -689,6 +702,7 @@ class Blocks extends React.Component {
             });
     }
     handleOpenBlockEditor (session, nodeLabels, nodeAppearances) {
+        getBlockEditorService(this.props.vm, this.props.intl);
         this.setState({blockEditorSession: session,
             blockEditorLabels: nodeLabels,
             blockEditorAppearances: nodeAppearances});

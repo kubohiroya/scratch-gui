@@ -950,7 +950,10 @@ class AddonRunner {
                     continue;
                 }
                 const fn = this.resources[userscript.url];
-                fn(this.publicAPI);
+                const pending = fn(this.publicAPI);
+                // This known startup patch changes protected FieldDropdown method identities.
+                // Other addons may have long-running userscripts and must remain independent.
+                if (this.id === 'editor-searchable-dropdowns') await pending;
             }
         }
 
@@ -961,7 +964,7 @@ AddonRunner.instances = [];
 
 const runAddon = addonId => {
     const runner = new AddonRunner(addonId);
-    runner.run();
+    return runner.run();
 };
 
 SettingsStore.addEventListener('addon-changed', e => {
@@ -983,9 +986,13 @@ SettingsStore.addEventListener('addon-changed', e => {
     }
 });
 
+const initialFieldPatches = [];
 for (const id of Object.keys(addons)) {
     if (!SettingsStore.getAddonEnabled(id)) {
         continue;
     }
-    runAddon(id);
+    const pending = runAddon(id);
+    if (id === 'editor-searchable-dropdowns') initialFieldPatches.push(pending);
 }
+
+export const startupFieldPatchesReady = Promise.all(initialFieldPatches);
