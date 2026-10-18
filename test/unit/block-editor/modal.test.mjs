@@ -3,9 +3,9 @@ import fs from 'node:fs';
 import {createRequire} from 'node:module';
 import {test, after} from 'node:test';
 import {JSDOM} from 'jsdom';
-import * as core from '@kubohiroya/turbowarp-block-editor';
-import * as sharedUI from '@kubohiroya/turbowarp-block-editor/react';
-import {createBlockEditorErrorSession} from '@kubohiroya/turbowarp-block-editor/turbowarp';
+import * as core from '@kubohiroya/turbowarp-extension-data-editor';
+import * as sharedUI from '@kubohiroya/turbowarp-extension-data-editor/react';
+import {createBlockEditorErrorSession} from '@kubohiroya/turbowarp-extension-data-editor/turbowarp';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', {
     url: 'http://localhost/', pretendToBeVisual: true
@@ -25,8 +25,8 @@ const ReactDOM = require('react-dom');
 const ReactModal = require('react-modal');
 const {act} = require('react-dom/test-utils');
 const {bindBlockEditorFieldErrors} = sharedUI;
-const {createSchemaEditor} = await import('@kubohiroya/turbowarp-block-editor/rjsf');
-const schemaRequire = createRequire(import.meta.resolve('@kubohiroya/turbowarp-block-editor/rjsf'));
+const {createSchemaEditor} = await import('@kubohiroya/turbowarp-extension-data-editor/rjsf');
+const schemaRequire = createRequire(import.meta.resolve('@kubohiroya/turbowarp-extension-data-editor/rjsf'));
 const {act: schemaAct, Simulate: schemaSimulate} = schemaRequire('react-dom/test-utils');
 const intl = require('react-intl');
 const babel = require('@babel/core');
@@ -38,8 +38,8 @@ const {code} = babel.transformSync(fs.readFileSync(filename, 'utf8'), {
 });
 const imports = {
     'prop-types': require('prop-types'), react: React, 'react-intl': intl,
-    '@kubohiroya/turbowarp-block-editor/react': sharedUI,
-    '@kubohiroya/turbowarp-block-editor/react/styles.css': {},
+    '@kubohiroya/turbowarp-extension-data-editor/react': sharedUI,
+    '@kubohiroya/turbowarp-extension-data-editor/react/styles.css': {},
     './modal.jsx': props => React.createElement(ReactModal, {
         isOpen: true, ariaHideApp: false, contentLabel: props.contentLabel,
         onRequestClose: props.onRequestClose

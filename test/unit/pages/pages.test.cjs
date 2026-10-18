@@ -34,7 +34,7 @@ test('generated language HTML has source credits, opt-in and rollback links, and
         assert.ok(links.some(url => url.pathname === '/scratch-gui/editor.html' && url.searchParams.get('blockEditorDialogs') === '1'));
         assert.ok(links.some(url => url.pathname === '/scratch-gui/editor.html' && !url.searchParams.has('blockEditorDialogs')));
         assert.ok(links.some(url => url.href === `https://github.com/kubohiroya/scratch-gui/tree/${revision}`));
-        assert.ok(links.some(url => url.href === `https://github.com/kubohiroya/turbowarp-block-editor/tree/${coreRevision}`));
+        assert.ok(links.some(url => url.href === `https://github.com/kubohiroya/turbowarp-extension-data-editor/tree/${coreRevision}`));
         assert.ok(links.some(url => url.pathname === '/scratch-gui/LICENSE'));
         assert.equal(new URL(document.querySelector('link[rel=stylesheet]').href).pathname, '/scratch-gui/assets/style.css');
         assert.equal(document.querySelectorAll('[data-language]').length, 2);
@@ -44,7 +44,7 @@ test('generated language HTML has source credits, opt-in and rollback links, and
     assert.deepEqual(info, {
         repository: 'https://github.com/kubohiroya/scratch-gui',
         revision,
-        coreRepository: 'https://github.com/kubohiroya/turbowarp-block-editor',
+        coreRepository: 'https://github.com/kubohiroya/turbowarp-extension-data-editor',
         coreRevision
     });
 });

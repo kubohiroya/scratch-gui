@@ -48,7 +48,7 @@ import {findTopBlock} from '../lib/backpack/code-payload.js';
 import {gentlyRequestPersistentStorage} from '../lib/tw-persistent-storage.js';
 import featureFlags from '../lib/tw-feature-flags.js';
 import getBlockEditorService from '../lib/tw-block-editor-service.js';
-import {attachTurboWarpBlockEditors} from '@kubohiroya/turbowarp-block-editor/turbowarp';
+import {attachTurboWarpBlockEditors} from '@kubohiroya/turbowarp-extension-data-editor/turbowarp';
 import BlockEditorModal from './tw-block-editor-modal.jsx';
 
 // TW: Strings we add to scratch-blocks are localized here

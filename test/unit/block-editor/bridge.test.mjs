@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {attachTurboWarpBlockEditors as createBlockEditorBridge, openBlockEditorSession}
-    from '@kubohiroya/turbowarp-block-editor/turbowarp';
-import {BlockEditorStructureError} from '@kubohiroya/turbowarp-block-editor';
+    from '@kubohiroya/turbowarp-extension-data-editor/turbowarp';
+import {BlockEditorStructureError} from '@kubohiroya/turbowarp-extension-data-editor';
 import {fixture, makeDefinition, ScratchBlocks, dom} from './helpers.mjs';
 
 function bridgeFixture(t, overrides = {}, descendants = false) {

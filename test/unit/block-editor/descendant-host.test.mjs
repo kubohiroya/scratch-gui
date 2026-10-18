@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {createRequire} from 'node:module';
-import {BlockEditorConflictError, BlockEditorStructureError} from '@kubohiroya/turbowarp-block-editor';
+import {BlockEditorConflictError, BlockEditorStructureError} from '@kubohiroya/turbowarp-extension-data-editor';
 import {fixture, makeDefinition, ScratchBlocks} from './helpers.mjs';
 
 const require = createRequire(import.meta.url);
