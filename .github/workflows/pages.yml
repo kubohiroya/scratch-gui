@@ -47,8 +47,22 @@ jobs:
         with:
           path: scratch-gui/build
 
-  deploy:
+  ci-gate:
     needs: build
+    if: github.ref == 'refs/heads/develop'
+    permissions:
+      contents: read
+      actions: read
+    uses: kubohiroya/turbowarp-extension-data-editor/.github/workflows/require-successful-ci.yml@612d36a7b9262c01406315be8cf37a85523389b5
+    with:
+      runner_revision: 612d36a7b9262c01406315be8cf37a85523389b5
+      expected_revision: ${{ needs.build.outputs.revision }}
+      workflow_file: node.js.yml
+      branch: develop
+      event: push
+
+  deploy:
+    needs: [build, ci-gate]
     runs-on: ubuntu-latest
     permissions:
       contents: read
