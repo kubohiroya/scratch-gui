@@ -1,8 +1,8 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 import {injectIntl, intlShape} from 'react-intl';
-import {BlockEditorDialog} from '@kubohiroya/turbowarp-block-editor/react';
-import styles from '@kubohiroya/turbowarp-block-editor/react/styles.css';
+import {BlockEditorDialog} from '@kubohiroya/turbowarp-extension-data-editor/react';
+import styles from '@kubohiroya/turbowarp-extension-data-editor/react/styles.css';
 import Modal from './modal.jsx';
 import log from '../lib/log.js';
 import theme from '../components/block-editor/block-editor.css';

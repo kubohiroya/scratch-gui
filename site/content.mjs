@@ -1,6 +1,6 @@
 export default {
     ja: {
-        title: 'TurboWarp Block Editor — ブロックに専用の編集画面を',
+        title: 'TurboWarp Extension Data Editor — ブロックに専用の編集画面を',
         description: 'kubohiroyaによるTurboWarpの独自拡張版。JSON Schemaから専用フォームを生成し、ブロックのデータを検証・編集できます。',
         skip: '本文へ', source: 'GitHubでソースコードを見る', badge: '実験版',
         eyebrow: 'TURBOWARP + CUSTOM BLOCK EDITORS',
@@ -35,7 +35,7 @@ export default {
         languageNote: 'ブラウザの優先言語で日英を選択します。言語はいつでも切り替えられます。'
     },
     en: {
-        title: 'TurboWarp Block Editor — Give every block its own editor',
+        title: 'TurboWarp Extension Data Editor — Give every block its own editor',
         description: 'An independent TurboWarp fork by kubohiroya. Generate dedicated forms from JSON Schema to validate and edit extension block data.',
         skip: 'Skip to content', source: 'View source on GitHub', badge: 'EXPERIMENTAL',
         eyebrow: 'TURBOWARP + CUSTOM BLOCK EDITORS',

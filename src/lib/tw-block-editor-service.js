@@ -1,4 +1,4 @@
-import {createBlockEditorService} from '@kubohiroya/turbowarp-block-editor/rjsf';
+import {createBlockEditorService} from '@kubohiroya/turbowarp-extension-data-editor/rjsf';
 
 const services = new WeakMap();
 

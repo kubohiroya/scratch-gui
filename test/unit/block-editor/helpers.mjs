@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
 import {JSDOM} from 'jsdom';
-import {EditorRegistry} from '@kubohiroya/turbowarp-block-editor';
-import {createTurboWarpBlockEditorHost as createBlockEditorHost} from '@kubohiroya/turbowarp-block-editor/turbowarp';
+import {EditorRegistry} from '@kubohiroya/turbowarp-extension-data-editor';
+import {createTurboWarpBlockEditorHost as createBlockEditorHost} from '@kubohiroya/turbowarp-extension-data-editor/turbowarp';
 
 export const dom = new JSDOM('<!doctype html><html><body></body></html>', {
     url: 'http://localhost/', runScripts: 'outside-only'

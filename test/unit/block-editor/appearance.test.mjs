@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {readBlockEditorAppearance} from '@kubohiroya/turbowarp-block-editor/turbowarp';
+import {readBlockEditorAppearance} from '@kubohiroya/turbowarp-extension-data-editor/turbowarp';
 import {fixture, ScratchBlocks} from './helpers.mjs';
 
 test('appearance follows each real block instance and does not mutate block or VM data', t => {

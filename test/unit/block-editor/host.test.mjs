@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {BlockEditorConflictError} from '@kubohiroya/turbowarp-block-editor';
+import {BlockEditorConflictError} from '@kubohiroya/turbowarp-extension-data-editor';
 import {fixture, ScratchBlocks} from './helpers.mjs';
 
 test('opening, drafting and cancelling do not change the real workspace, VM, dirty or history', t => {
