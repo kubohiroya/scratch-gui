@@ -28,37 +28,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: kubohiroya/turbowarp-block-editor
-          ref: 90d53b68b6f7def6246e74ada9aa3a6652901b10
+          ref: b8ae85aa889bebecff5fd88b4f344e815cf8430b
           path: turbowarp-block-editor
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: ./turbowarp-block-editor/.github/actions/gui-checks
         with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: scratch-gui/package-lock.json
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11.18.0
-      - name: Build and verify shared package
-        working-directory: turbowarp-block-editor
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm typecheck
-          pnpm test
-      - name: Install GUI dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Prepare upstream microbit assets
-        run: node scripts/prepublish.mjs
-      - name: Verify changed features
-        run: |
-          npm run test:block-editor
-          npm run test:pages
-      - name: Build Pages application
-        env:
-          ROOT: /scratch-gui/
-          BUILD_REVISION: ${{ github.sha }}
-          NODE_OPTIONS: --max-old-space-size=6144
-        run: npm run build:pages
+          mode: pages
       - uses: actions/upload-pages-artifact@v4
         with:
           path: scratch-gui/build
@@ -76,3 +51,12 @@ jobs:
       - name: Publish GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  verify-public:
+    needs: deploy
+    permissions:
+      contents: read
+      deployments: read
+    uses: ./.github/workflows/block-editor-public.yml
+    with:
+      expected_revision: ${{ github.sha }}
