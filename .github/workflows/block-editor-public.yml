@@ -33,7 +33,7 @@ concurrency:
 jobs:
   verify:
     # Keep the workflow implementation and runner checkout on the same commit.
-    uses: kubohiroya/turbowarp-block-editor/.github/workflows/turbowarp-public.yml@078c178d2987fd46e3cf90d6a61d8c234affc3bc
+    uses: kubohiroya/turbowarp-extension-data-editor/.github/workflows/turbowarp-public.yml@078c178d2987fd46e3cf90d6a61d8c234affc3bc
     with:
       runner_revision: 078c178d2987fd46e3cf90d6a61d8c234affc3bc
       expected_revision: ${{ inputs.expected_revision || '' }}
