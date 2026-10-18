@@ -50,7 +50,8 @@ ScratchBlocks.Blocks.story_scene = {
 
 export function fixture(t, {definition = makeDefinition(), registry = new EditorRegistry(), xmlText,
     enableDescendants = false} = {}) {
-    const unregisterDefinition = registry.register(definition);
+    const unregisterDefinition = definition.saveContract === 'prepared-source-v1'
+        ? registry.registerPrepared(definition) : registry.register(definition);
     const workspace = new ScratchBlocks.Workspace();
     // Headless workspaces have no procedure-return renderer to update.
     workspace.procedureReturnsWillChange = () => {};
