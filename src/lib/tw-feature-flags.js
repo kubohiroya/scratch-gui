@@ -3,6 +3,7 @@ const readFeatureFlags = search => {
     const blockEditorDialogs = query.get('blockEditorDialogs') === '1';
     return Object.freeze({
         blockEditorDialogs,
+        blockEditorSourceForms: blockEditorDialogs && query.get('blockEditorSourceForms') === '1',
         blockEditorDescendants: blockEditorDialogs && query.get('blockEditorDescendants') === '1'
     });
 };
