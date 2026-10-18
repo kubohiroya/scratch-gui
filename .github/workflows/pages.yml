@@ -17,14 +17,22 @@ jobs:
     if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      revision: ${{ steps.source.outputs.revision }}
     defaults:
       run:
         working-directory: scratch-gui
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.sha }}
           path: scratch-gui
           persist-credentials: false
+      - name: Require the current develop revision
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/check-pages-source.mjs
       - name: Check out pinned editor package
         uses: actions/checkout@v4
         with:
@@ -43,21 +51,31 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.build.outputs.revision }}
+          persist-credentials: false
+      - name: Recheck develop immediately before publishing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PAGES_REVISION: ${{ needs.build.outputs.revision }}
+        run: node scripts/check-pages-source.mjs
       - name: Publish GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
 
   verify-public:
-    needs: deploy
+    needs: [build, deploy]
     permissions:
       contents: read
       deployments: read
     uses: ./.github/workflows/block-editor-public.yml
     with:
-      expected_revision: ${{ github.sha }}
+      expected_revision: ${{ needs.build.outputs.revision }}
