@@ -25,9 +25,7 @@
     "test:unit": "jest test[\\\\/]unit[\\\\/]addons",
     "test:smoke": "jest --runInBand test[\\\\/]smoke",
     "watch": "webpack --colors --watch",
-    "test:block-editor": "node --test test/unit/block-editor/*.test.mjs",
-    "build:pages": "node scripts/build-pages.mjs",
-    "test:pages": "node --test test/unit/pages/*.test.cjs"
+    "test:block-editor": "node --test test/unit/block-editor/*.test.mjs"
   },
   "config": {
     "commitizen": {
