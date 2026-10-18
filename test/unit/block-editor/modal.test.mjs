@@ -4,8 +4,8 @@ import {createRequire} from 'node:module';
 import {test, after} from 'node:test';
 import {JSDOM} from 'jsdom';
 import * as core from '@kubohiroya/turbowarp-block-editor';
-import createBlockEditorErrorSession from '../../../src/lib/tw-block-editor-error-session.js';
-import bindBlockEditorFieldErrors from '../../../src/lib/tw-block-editor-field-errors.js';
+import * as sharedUI from '@kubohiroya/turbowarp-block-editor/react';
+import {createBlockEditorErrorSession} from '@kubohiroya/turbowarp-block-editor/turbowarp';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', {
     url: 'http://localhost/', pretendToBeVisual: true
@@ -24,27 +24,12 @@ const React = require('react');
 const ReactDOM = require('react-dom');
 const ReactModal = require('react-modal');
 const {act} = require('react-dom/test-utils');
+const {bindBlockEditorFieldErrors} = sharedUI;
 const {createSchemaEditor} = await import('@kubohiroya/turbowarp-block-editor/rjsf');
 const schemaRequire = createRequire(import.meta.resolve('@kubohiroya/turbowarp-block-editor/rjsf'));
 const {act: schemaAct, Simulate: schemaSimulate} = schemaRequire('react-dom/test-utils');
 const intl = require('react-intl');
 const babel = require('@babel/core');
-const treeFile = new URL('../../../src/components/block-editor/descendant-tree.jsx', import.meta.url);
-const treeSource = babel.transformSync(fs.readFileSync(treeFile, 'utf8'), {
-    filename: treeFile.pathname, babelrc: false, configFile: false,
-    presets: [['@babel/preset-env', {targets: {node: 'current'}}], '@babel/preset-react']
-});
-const treeModule = {exports: {}};
-const bodyFile = new URL('../../../src/components/block-editor/node-body.jsx', import.meta.url);
-const bodySource = babel.transformSync(fs.readFileSync(bodyFile, 'utf8'), {
-    filename: bodyFile.pathname, babelrc: false, configFile: false,
-    presets: [['@babel/preset-env', {targets: {node: 'current'}}], '@babel/preset-react']
-});
-const bodyModule = {exports: {}};
-new Function('require', 'module', 'exports', bodySource.code)(require, bodyModule, bodyModule.exports);
-new Function('require', 'module', 'exports', treeSource.code)(name => name === './node-body.jsx'
-    ? bodyModule.exports.default : name.endsWith('.css') ? {} : require(name),
-    treeModule, treeModule.exports);
 const filename = new URL('../../../src/containers/tw-block-editor-modal.jsx', import.meta.url);
 // Reuse the project's JSX compiler. Keep the real ReactModal portal, replacing only its GUI/Redux wrapper.
 const {code} = babel.transformSync(fs.readFileSync(filename, 'utf8'), {
@@ -53,14 +38,13 @@ const {code} = babel.transformSync(fs.readFileSync(filename, 'utf8'), {
 });
 const imports = {
     'prop-types': require('prop-types'), react: React, 'react-intl': intl,
-    '@kubohiroya/turbowarp-block-editor': core,
-    '../components/block-editor/descendant-tree.jsx': treeModule.exports.default,
+    '@kubohiroya/turbowarp-block-editor/react': sharedUI,
+    '@kubohiroya/turbowarp-block-editor/react/styles.css': {},
     './modal.jsx': props => React.createElement(ReactModal, {
         isOpen: true, ariaHideApp: false, contentLabel: props.contentLabel,
         onRequestClose: props.onRequestClose
     }, props.children),
     '../lib/log.js': {error: () => {}},
-    '../lib/tw-block-editor-field-errors.js': bindBlockEditorFieldErrors,
     '../components/block-editor/block-editor.css': {}
 };
 const module = {exports: {}};
@@ -428,8 +412,6 @@ test('an image load failure removes only that node icon and survives collapsing 
     assert.equal(f.field('grand').value, 'invalid');
     assert.equal(f.commits(), 0);
 });
-
-
 
 async function schemaModalFixture(t, {schema, data, uiSchema, descendants} = {}) {
     const registry = new core.EditorRegistry();

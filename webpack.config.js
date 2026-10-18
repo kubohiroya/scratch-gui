@@ -66,6 +66,15 @@ const base = {
             '@kubohiroya/turbowarp-block-editor/rjsf$': path.resolve(
                 __dirname, 'node_modules/@kubohiroya/turbowarp-block-editor/dist/rjsf.js'
             ),
+            '@kubohiroya/turbowarp-block-editor/react$': path.resolve(
+                __dirname, 'node_modules/@kubohiroya/turbowarp-block-editor/dist/react.js'
+            ),
+            '@kubohiroya/turbowarp-block-editor/react/styles.css$': path.resolve(
+                __dirname, 'node_modules/@kubohiroya/turbowarp-block-editor/dist/react.css'
+            ),
+            '@kubohiroya/turbowarp-block-editor/turbowarp$': path.resolve(
+                __dirname, 'node_modules/@kubohiroya/turbowarp-block-editor/dist/turbowarp.js'
+            ),
             // Keep local editor/RJSF packages on the GUI's React instance.
             'react$': path.resolve(__dirname, 'node_modules/react'),
             'react-dom$': path.resolve(__dirname, 'node_modules/react-dom'),

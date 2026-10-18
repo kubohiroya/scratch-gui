@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: kubohiroya/turbowarp-block-editor
-          ref: ec338023ca8123b1db50787601ca8c78ab06917d
+          ref: 87f960eb5732b3982c644d95bdaf819069a6f129
           path: turbowarp-block-editor
           persist-credentials: false
       - uses: actions/setup-node@v4
