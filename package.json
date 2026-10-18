@@ -33,7 +33,7 @@
     }
   },
   "dependencies": {
-    "@kubohiroya/turbowarp-extension-data-editor": "github:kubohiroya/turbowarp-extension-data-editor#14e6a8d4d9552dd382021b9c7913a7b295ccf822",
+    "@kubohiroya/turbowarp-extension-data-editor": "github:kubohiroya/turbowarp-extension-data-editor#76fa1d50a3c188082ceef723ea018a9d8769ea6e",
     "@microbit/microbit-universal-hex": "0.2.2",
     "@turbowarp/jszip": "^3.11.1",
     "@turbowarp/nanolog": "^1.0.1",

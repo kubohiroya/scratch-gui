@@ -15,7 +15,7 @@
 
 先行する全体659ケースと実GUI代表5ケース×8手順は、ローカルfile artifactに対する保存済み結果です。公開Git SHAへの移行後の結果とは区別し、その履歴を保持します。
 
-## 公開Git依存への移行記録
+## 初回公開Git依存への移行記録（履歴）
 
 共通artifactは [先行PR #32](https://github.com/kubohiroya/turbowarp-extension-data-editor/pull/32) の完全SHA `14e6a8d4d9552dd382021b9c7913a7b295ccf822` に固定しました。`package.json` とnpm lockのroot指定・resolvedが同じSHAを指します。Node 22.16.0 / npm 10.9.2の標準resolverでlockを生成し、common entryとroot spec以外のpackage entryが更新前と一致することを確認しました。React / React DOMのlock・実解決は16.14.0です。
 
@@ -26,3 +26,12 @@ npmが当該Git SHAから取得・prepareしてcacheへ保存したtarballを、
 ## ロールバック
 
 `blockEditorSourceForms` をOFFにして再読込します。差分の切戻しが必要な場合は本変更と依存manifest/npm lockを一体でrevertします。拡張のconsumer→producer→共通artifactの逆依存順を守り、既存rawを自動移行しません。本作業ではmerge・npm公開・Pagesの直接変更を実施しません。
+
+
+## 安定版公開前の最終依存
+
+共通0.2.0のsecurity修正を含むmain SHA `76fa1d50a3c188082ceef723ea018a9d8769ea6e` にmanifestとnpm lockを更新します。共通[security PR #33](https://github.com/kubohiroya/turbowarp-extension-data-editor/pull/33)はdirect fast-uriを3.1.8へ揃えた変更で、共通API・Schemaの正本・owner・保存形式は変更しません。GUI lockでも直接・間接fast-uriを3.1.8へ統一し、不要になった共通配下の3.1.0を削除します。React/React DOM 16.14.0と、それ以外の既存package entryを維持します。
+
+初回のローカルfile artifact・0.1.0 Git artifact・中間4818a4dの検証結果は履歴として保持します。最終配布の検証とは加算・混同しません。最終検証は隔離clone自身でnpm ciを行い、primary依存への再利用symlinkを排除します。最終local検証ではNode22.16.0/npm10.9.2で `npm ci --ignore-scripts` を実行し、1994 packageをclone内へ再インストールしました。既存prepublishを別途実行して公式microbit HEXの組込SHAを検証しました。全runtime依存34edgeのlock版と物理実解決が一致し、common build-infoのversion0.2.0/revision/source hashとGitcache tarballのlock integrity一致を確認しました。62 block-editorテストと33既存addonテストが成功し、全6browser entryのproduction buildもminifyを維持したまま成功しました。最終GitHub CIはPR checksを正本とします。Issue #28は保持し、PRはRefsで参照します。
+
+最終npm Gitcache tarball SHA-256は `e59412b919dc3f88da7e2dd026d93ea6c69d4ddf1e91cc70781ca725f12b1828`、common source SHA-256は `912efc0438710958698527aa5c26a33b0b1c2da280f91d36b048f6f2389a48f0` です。GUI package名は上流の `scratch-gui` を維持し、このforkをnpmへpublishしません。Gitと共通repoのPages配布で扱います。
