@@ -5,6 +5,7 @@ import {test, after} from 'node:test';
 import {JSDOM} from 'jsdom';
 import * as core from '@kubohiroya/turbowarp-block-editor';
 import createBlockEditorErrorSession from '../../../src/lib/tw-block-editor-error-session.js';
+import bindBlockEditorFieldErrors from '../../../src/lib/tw-block-editor-field-errors.js';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', {
     url: 'http://localhost/', pretendToBeVisual: true
@@ -23,6 +24,9 @@ const React = require('react');
 const ReactDOM = require('react-dom');
 const ReactModal = require('react-modal');
 const {act} = require('react-dom/test-utils');
+const {createSchemaEditor} = await import('@kubohiroya/turbowarp-block-editor/rjsf');
+const schemaRequire = createRequire(import.meta.resolve('@kubohiroya/turbowarp-block-editor/rjsf'));
+const {act: schemaAct, Simulate: schemaSimulate} = schemaRequire('react-dom/test-utils');
 const intl = require('react-intl');
 const babel = require('@babel/core');
 const treeFile = new URL('../../../src/components/block-editor/descendant-tree.jsx', import.meta.url);
@@ -56,6 +60,7 @@ const imports = {
         onRequestClose: props.onRequestClose
     }, props.children),
     '../lib/log.js': {error: () => {}},
+    '../lib/tw-block-editor-field-errors.js': bindBlockEditorFieldErrors,
     '../components/block-editor/block-editor.css': {}
 };
 const module = {exports: {}};
@@ -422,4 +427,191 @@ test('an image load failure removes only that node icon and survives collapsing 
     assert.equal(document.querySelector('[data-block-editor-node-icon="grand"]'), null);
     assert.equal(f.field('grand').value, 'invalid');
     assert.equal(f.commits(), 0);
+});
+
+
+
+async function schemaModalFixture(t, {schema, data, uiSchema, descendants} = {}) {
+    const registry = new core.EditorRegistry();
+    registry.register(createSchemaEditor({apiVersion: 1, extensionId: 'demo', editorId: 'schema',
+        opcodes: ['demo_node'], argument: 'VALUE', schema, uiSchema}));
+    const node = (id, value, branches = []) => ({block: {
+        targetId: 'target', blockId: id, opcode: 'demo_node', revision: '1',
+        arguments: {VALUE: {kind: 'literal', value: JSON.stringify(value)}}
+    }, branches});
+    const snapshot = {targetId: 'target', blockId: 'root', generation: '1', nodes: descendants ? [
+        node('root', data, [{input:'BODY',blockIds:['grand']}]), node('grand', descendants)
+    ] : [node('root', data)]};
+    let commits = 0;
+    const host = {readBlock: () => snapshot.nodes[0].block, commit: () => { commits++; },
+        descendants: {capability: core.DESCENDANT_EDITING_CAPABILITY,
+            readSubtree: () => snapshot, commitSubtree: () => { commits++; }}};
+    const session = descendants ? registry.openDescendants(snapshot, host) : registry.open(snapshot, host);
+    const root = document.createElement('div');
+    document.body.appendChild(root);
+    await act(async () => {
+        ReactDOM.render(React.createElement(intl.IntlProvider, {locale:'en'},
+            React.createElement(Component, {session, onClose: () => {}, nodeAppearances: {
+                root:{name:'Parent',colour:'#087f8c',tint:'rgba(8, 127, 140, 0.08)'},
+                grand:{name:'Grandchild',colour:'#663399',tint:'rgba(102, 51, 153, 0.08)'}
+            }})), root);
+        await new Promise(resolve=>setTimeout(resolve,0));
+    });
+    let mounted = true;
+    const unmount = () => {
+        if (mounted) act(() => { ReactDOM.unmountComponentAtNode(root); });
+        mounted = false;
+    };
+    t.after(() => { unmount(); root.remove(); });
+    const field = (name, id) => {
+        const container = id ? document.querySelector(`[data-block-editor-node="${id}"]`) : document;
+        return [...container.querySelectorAll('input,textarea,select')].find(control=>control.id.endsWith(`_${name}`));
+    };
+    return {session, snapshot, unmount, commits:()=>commits, field,
+        change: async (control,value) => {
+            await schemaAct(async()=> { schemaSimulate.change(control,{target:{value}}); });
+            await new Promise(resolve=>setTimeout(resolve,0));
+        }};
+}
+
+test('real RJSF highlights initial field errors and preserves valid nested siblings and group constraints', async t => {
+    const f = await schemaModalFixture(t, {schema:{type:'object',required:['name','amount'],properties:{
+        name:{type:'string',minLength:1}, amount:{type:'integer',minimum:1},
+        mode:{type:'string',enum:['a','b']}, notes:{type:'string',pattern:'^OK',title:'Notes'},
+        nested:{type:'object',properties:{valid:{type:'string'},invalid:{type:'string',pattern:'^OK$'}}},
+        list:{type:'array',maxItems:1,items:{type:'object',properties:{label:{type:'string',minLength:1}},required:['label']}}
+    }}, uiSchema:{notes:{'ui:widget':'textarea'}},
+    data:{amount:0,mode:'outside',notes:'bad',nested:{valid:'fine',invalid:'bad'},list:[{label:'valid'},{label:'also valid'}]}});
+    for (const name of ['name','amount','mode','notes','nested_invalid']) {
+        const control=f.field(name);
+        assert.equal(control.getAttribute('aria-invalid'),'true', name);
+        assert.equal(control.getAttribute('data-block-editor-invalid'),'true', name);
+        const error=document.getElementById(`${control.id}__error`);
+        assert.ok(error && error.textContent.trim(), name);
+        assert.ok(control.getAttribute('aria-describedby').split(/\s+/).includes(error.id));
+        assert.equal(error.closest('.field'),control.closest('.field'));
+    }
+    for (const name of ['nested_valid','list_0_label']) {
+        assert.equal(f.field(name).hasAttribute('aria-invalid'),false, name);
+        assert.equal(f.field(name).hasAttribute('data-block-editor-invalid'),false, name);
+    }
+    const array=f.field('list_0_label').closest('.field-array.has-error');
+    assert.equal(array.getAttribute('data-block-editor-invalid'),'group');
+    assert.equal(array.getAttribute('role'),'group');
+    assert.ok(document.getElementById(array.getAttribute('aria-labelledby')));
+    assert.match(array.querySelector('.error-detail').textContent,/1/);
+    assert.equal(f.session.getState().canSave,false);
+    assert.equal(f.commits(),0);
+});
+
+test('correcting real RJSF errors removes field decoration without losing focus, and unmount restores attributes', async t => {
+    const f=await schemaModalFixture(t,{schema:{type:'object',required:['name','amount'],properties:{
+        name:{type:'string',minLength:1},amount:{type:'integer',minimum:1}
+    }},data:{name:'',amount:0}});
+    const name=f.field('name');
+    const amount=f.field('amount');
+    name.focus();
+    await f.change(name,'Valid');
+    assert.equal(document.activeElement,name);
+    assert.equal(name.hasAttribute('data-block-editor-invalid'),false);
+    assert.equal(name.hasAttribute('aria-invalid'),false);
+    assert.equal(amount.getAttribute('aria-invalid'),'true');
+    await f.change(amount,'2');
+    assert.equal(amount.hasAttribute('aria-invalid'),false);
+    assert.equal(document.querySelectorAll('[data-block-editor-invalid]').length,0);
+    assert.equal(f.session.getState().canSave,true);
+    assert.equal(f.commits(),0);
+    await f.change(amount,'0');
+    assert.equal(amount.getAttribute('aria-invalid'),'true');
+    f.unmount();
+    assert.equal(amount.hasAttribute('aria-invalid'),false);
+    assert.equal(amount.hasAttribute('data-block-editor-invalid'),false);
+    assert.equal(f.commits(),0);
+});
+
+test('real nested RJSF error display survives collapse and reveal while block appearance remains intact', async t => {
+    const f=await schemaModalFixture(t,{schema:{type:'object',required:['amount'],properties:{
+        amount:{type:'integer',minimum:1}
+    }},data:{amount:1},descendants:{amount:0}});
+    const root=document.querySelector('[data-block-editor-node="root"]');
+    const grand=document.querySelector('[data-block-editor-node="grand"]');
+    assert.equal(root.style.getPropertyValue('--block-editor-node-colour'),'#087f8c');
+    assert.equal(grand.style.getPropertyValue('--block-editor-node-colour'),'#663399');
+    assert.equal(f.field('amount','root').hasAttribute('aria-invalid'),false);
+    assert.equal(f.field('amount','grand').getAttribute('aria-invalid'),'true');
+    act(()=>document.querySelector('[data-block-editor-toggle="grand"]').click());
+    assert.equal(f.field('amount','grand'),undefined);
+    const issue=document.querySelector('[data-block-editor-issue]');
+    assert.ok(issue);
+    await act(async()=> { issue.click(); await new Promise(resolve=>setTimeout(resolve,30)); });
+    const control=f.field('amount','grand');
+    assert.equal(control.getAttribute('aria-invalid'),'true');
+    assert.equal(control.value,'0');
+    assert.equal(document.activeElement,control);
+    assert.equal(grand.style.getPropertyValue('--block-editor-node-tint'),'rgba(102, 51, 153, 0.08)');
+    await f.change(control,'2');
+    assert.equal(control.hasAttribute('aria-invalid'),false);
+    assert.equal(f.session.getState().canSave,true);
+    assert.equal(f.commits(),0);
+});
+
+test('the error adapter leaves custom non-RJSF forms untouched and releases its observer', async () => {
+    const container=document.createElement('div');
+    container.innerHTML='<div class="field has-error"><input id="custom" aria-describedby="custom__error">'+
+        '<ul class="error-detail" id="custom__error"><li>Custom error</li></ul></div>';
+    const stop=bindBlockEditorFieldErrors(container);
+    const input=container.querySelector('input');
+    assert.equal(input.hasAttribute('aria-invalid'),false);
+    stop();
+    container.firstChild.classList.add('rjsf');
+    await Promise.resolve();
+    assert.equal(input.hasAttribute('data-block-editor-invalid'),false);
+});
+
+
+test('object-wide errors describe the group without marking its valid controls', async t => {
+    const f = await schemaModalFixture(t, {schema: {type: 'object', properties: {
+        group: {type: 'object', title: 'Settings group', minProperties: 2, properties: {
+            valid: {type: 'string'}, other: {type: 'string'}
+        }}
+    }}, data: {group: {valid: 'Keep this value'}}});
+    const valid = f.field('group_valid');
+    const group = valid.closest('.field-object.has-error');
+    assert.ok(group);
+    assert.equal(group.getAttribute('data-block-editor-invalid'), 'group');
+    assert.equal(group.getAttribute('aria-invalid'), 'true');
+    assert.ok(document.getElementById(group.getAttribute('aria-labelledby')));
+    assert.equal(valid.hasAttribute('aria-invalid'), false);
+    assert.equal(f.field('group_other').hasAttribute('aria-invalid'), false);
+    assert.equal(f.session.getState().canSave, false);
+    await f.change(f.field('group_other'), 'Another value');
+    assert.equal(group.hasAttribute('aria-invalid'), false);
+    assert.equal(group.hasAttribute('data-block-editor-invalid'), false);
+    assert.equal(group.hasAttribute('role'), false);
+    assert.equal(f.session.getState().canSave, true);
+});
+
+
+test('array reordering keeps error descriptions attached to the current field IDs', async t => {
+    const f = await schemaModalFixture(t, {schema: {type: 'object', properties: {
+        list: {type: 'array', items: {type: 'object', properties: {
+            label: {type: 'string', minLength: 1}
+        }}}
+    }}, data: {list: [{label: ''}, {label: 'Valid sibling'}]}});
+    const initial = f.field('list_0_label');
+    const oldId = initial.id;
+    assert.equal(initial.getAttribute('aria-invalid'), 'true');
+    const move = initial.closest('.array-item').querySelector('button[title="Move down"]');
+    assert.ok(move);
+    await schemaAct(async () => { schemaSimulate.click(move); });
+    await new Promise(resolve => setTimeout(resolve, 0));
+    const moved = f.field('list_1_label');
+    assert.equal(moved.value, '');
+    assert.equal(moved.getAttribute('aria-invalid'), 'true');
+    assert.ok(moved.getAttribute('aria-describedby').split(/\s+/).includes(`${moved.id}__error`));
+    await f.change(moved, 'Corrected after move');
+    assert.equal(moved.hasAttribute('aria-invalid'), false);
+    assert.ok(moved.getAttribute('aria-describedby').split(/\s+/).includes(`${moved.id}__description`));
+    assert.ok(!moved.getAttribute('aria-describedby').split(/\s+/).includes(`${oldId}__error`));
+    assert.equal(f.field('list_0_label').value, 'Valid sibling');
 });

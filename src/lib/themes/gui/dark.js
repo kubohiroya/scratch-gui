@@ -23,6 +23,10 @@ const guiColors = {
 
     'input-background': '#1e1e1e',
 
+    'block-editor-error-border': '#ff8a8a',
+    'block-editor-error-text': '#ffb3b3',
+    'block-editor-error-tint': 'rgba(255, 138, 138, 0.12)',
+
     'popover-background': '#1e1e1e',
 
     'badge-background': '#16202c',
