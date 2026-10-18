@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import createBlockEditorBridge, {openBlockEditorSession} from '../../../src/lib/tw-block-editor-bridge.js';
+import {attachTurboWarpBlockEditors as createBlockEditorBridge, openBlockEditorSession}
+    from '@kubohiroya/turbowarp-block-editor/turbowarp';
 import {BlockEditorStructureError} from '@kubohiroya/turbowarp-block-editor';
 import {fixture, makeDefinition, ScratchBlocks, dom} from './helpers.mjs';
 
@@ -20,7 +21,7 @@ function bridgeFixture(t, overrides = {}, descendants = false) {
     let session;
     let appearances;
     let nodeLabels;
-    const bridge = createBlockEditorBridge({ScratchBlocks, workspace: f.workspace, vm: f.vm,
+    const bridge = createBlockEditorBridge({enabled: true, ScratchBlocks, workspace: f.workspace, vm: f.vm,
         descendants,
         service, label: 'Edit', canOpen: () => true, onOpen: (value, labels, metadata) => {
             session = value;
@@ -138,4 +139,33 @@ test('flag OFF or an unsupported host uses single editing; supported hierarchy e
     assert.throws(() => openBlockEditorSession({registry, host, reference, descendants: true}), BlockEditorStructureError);
     assert.equal(singles, 2);
     assert.equal(aggregates, 1);
+});
+
+test('the public attachment disposes once, removes its listeners and restores its icon', t => {
+    const f = bridgeFixture(t);
+    const workspaceListeners = f.vm.listeners('workspaceUpdate').length;
+    const targetListeners = f.vm.listeners('targetsUpdate').length;
+    f.openIcon();
+    assert.equal(f.session().getState().status, 'editing');
+    f.bridge.dispose();
+    assert.equal(f.session().getState().status, 'disposed');
+    assert.equal(f.field.fieldGroup_.hasAttribute('data-block-editor-icon'), false);
+    assert.equal(f.vm.listeners('workspaceUpdate').length, workspaceListeners - 2);
+    assert.equal(f.vm.listeners('targetsUpdate').length, targetListeners - 2);
+    f.bridge.dispose();
+    f.bridge.refresh();
+    assert.equal(f.field.fieldGroup_.hasAttribute('data-block-editor-icon'), false);
+    assert.equal(f.vm.listeners('workspaceUpdate').length, workspaceListeners - 2);
+    assert.equal(f.vm.listeners('targetsUpdate').length, targetListeners - 2);
+});
+
+test('disposing one public attachment leaves another workspace usable', t => {
+    const first = bridgeFixture(t);
+    const second = bridgeFixture(t);
+    first.bridge.dispose();
+    assert.equal(first.field.fieldGroup_.hasAttribute('data-block-editor-icon'), false);
+    assert.equal(second.field.fieldGroup_.hasAttribute('data-block-editor-icon'), true);
+    second.openIcon();
+    assert.equal(second.session().getState().status, 'editing');
+    assert.equal(second.session().reference.targetId, second.target.id);
 });

@@ -48,7 +48,7 @@ import {findTopBlock} from '../lib/backpack/code-payload.js';
 import {gentlyRequestPersistentStorage} from '../lib/tw-persistent-storage.js';
 import featureFlags from '../lib/tw-feature-flags.js';
 import getBlockEditorService from '../lib/tw-block-editor-service.js';
-import createBlockEditorBridge from '../lib/tw-block-editor-bridge.js';
+import {attachTurboWarpBlockEditors} from '@kubohiroya/turbowarp-block-editor/turbowarp';
 import BlockEditorModal from './tw-block-editor-modal.jsx';
 
 // TW: Strings we add to scratch-blocks are localized here
@@ -227,7 +227,9 @@ class Blocks extends React.Component {
 
         this.attachVM();
         if (featureFlags.blockEditorDialogs) {
-            this.blockEditorBridge = createBlockEditorBridge({
+            this.blockEditorBridge = attachTurboWarpBlockEditors({
+                enabled: true,
+                descendants: featureFlags.blockEditorDescendants,
                 ScratchBlocks: this.ScratchBlocks,
                 workspace: this.workspace,
                 vm: this.props.vm,
