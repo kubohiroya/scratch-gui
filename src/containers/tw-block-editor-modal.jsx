@@ -3,6 +3,7 @@ import React from 'react';
 import {FormattedMessage, injectIntl, intlShape} from 'react-intl';
 import {BlockEditorConflictError, BlockEditorStructureError} from '@kubohiroya/turbowarp-block-editor';
 import DescendantTree from '../components/block-editor/descendant-tree.jsx';
+import bindBlockEditorFieldErrors from '../lib/tw-block-editor-field-errors.js';
 import Modal from './modal.jsx';
 import log from '../lib/log.js';
 import styles from '../components/block-editor/block-editor.css';
@@ -35,6 +36,7 @@ class BlockEditorModal extends React.Component {
         this.mounted = false;
         cancelAnimationFrame(this.focusFrame);
         this.removeListener();
+        if (this.stopFieldErrors) this.stopFieldErrors();
         try {
             if (this.unmountBody) this.unmountBody();
         } catch (error) {
@@ -51,6 +53,7 @@ class BlockEditorModal extends React.Component {
         // ReactModal renders portal contents after this container has mounted.
         if (!this.body || this.unmountBody || this.state.mountFailed) return;
         try {
+            if (!this.stopFieldErrors) this.stopFieldErrors = bindBlockEditorFieldErrors(this.body);
             if (typeof this.props.session.getNodes !== 'function') {
                 this.unmountBody = this.props.session.mount(this.body);
             }

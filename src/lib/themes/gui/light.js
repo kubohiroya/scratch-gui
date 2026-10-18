@@ -44,6 +44,10 @@ const guiColors = {
     'pen-transparent': 'hsla(163, 85%, 40%, 0.25)', /* #0FBD8C */
     'pen-tertiary': 'hsla(163, 86%, 30%, 1)', /* #0B8E69 */
 
+    'block-editor-error-border': '#c62828',
+    'block-editor-error-text': '#a61b1b',
+    'block-editor-error-tint': 'rgba(198, 40, 40, 0.08)',
+
     'error-primary': 'hsla(30, 100%, 55%, 1)', /* #FF8C1A */
     'error-light': 'hsla(30, 100%, 70%, 1)', /* #FFB366 */
     'error-transparent': 'hsla(30, 100%, 55%, 0.25)', /* #FF8C1A */

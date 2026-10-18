@@ -154,8 +154,23 @@
     margin-bottom: 1rem;
 }
 
-.body :global(.error-detail) {
+/* The adapter marks only controls belonging to the field's own RJSF errors. */
+.body :global(.rjsf) input:global([data-block-editor-invalid="true"]),
+.body :global(.rjsf) select:global([data-block-editor-invalid="true"]),
+.body :global(.rjsf) textarea:global([data-block-editor-invalid="true"]) {
+    border-color: var(--block-editor-error-border);
+    box-shadow: 0 0 0 1px var(--block-editor-error-border);
+    background: linear-gradient(var(--block-editor-error-tint), var(--block-editor-error-tint)), $input-background;
+}
+
+.body :global(.rjsf) :global(.error-detail) {
     margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem 0.5rem 1.75rem;
+    color: var(--block-editor-error-text);
+    background: var(--block-editor-error-tint);
+    border-left: 3px solid var(--block-editor-error-border);
+    border-radius: $space;
+    overflow-wrap: anywhere;
 }
 
 .body textarea {
