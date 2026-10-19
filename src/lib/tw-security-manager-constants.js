@@ -1,5 +1,6 @@
 const SecurityModals = {
     LoadExtension: 'LoadExtension',
+    LoadExtensions: 'LoadExtensions',
     Fetch: 'Fetch',
     OpenWindow: 'OpenWindow',
     Redirect: 'Redirect',

@@ -6,6 +6,13 @@ import bindAll from 'lodash.bindall';
 import SecurityManagerModal from '../components/tw-security-manager-modal/security-manager-modal.jsx';
 import SecurityModals from '../lib/tw-security-manager-constants';
 import {getPersistedUnsandboxed, setPersistedUnsandboxed} from '../lib/tw-persisted-unsandboxed.js';
+import featureFlags from '../lib/tw-feature-flags';
+import {installBatchExtensionLoader} from '@kubohiroya/turbowarp-extension-security-dialog/turbowarp';
+import {ExtensionSecurityDialog} from '@kubohiroya/turbowarp-extension-security-dialog/react';
+import '@kubohiroya/turbowarp-extension-security-dialog/webpack4.css';
+import Modal from './modal.jsx';
+import extensionLibrary from '../lib/libraries/extensions/index.jsx';
+import defaultExtensionURLs from 'scratch-vm/src/extension-support/tw-default-extension-urls';
 
 /* eslint-disable require-atomic-updates */
 
@@ -149,7 +156,8 @@ class TWSecurityManagerComponent extends React.Component {
         super(props);
         bindAll(this, [
             'handleAllowed',
-            'handleDenied'
+            'handleDenied',
+            'handleBatchComplete'
         ]);
         bindAll(this, SECURITY_MANAGER_METHODS);
         this.nextModalCallbacks = [];
@@ -168,6 +176,25 @@ class TWSecurityManagerComponent extends React.Component {
         for (const method of SECURITY_MANAGER_METHODS) {
             vmSecurityManager[method] = propsSecurityManager[method] || this[method];
         }
+        // Host-provided permission policies retain ownership of their loading path.
+        if (featureFlags.extensionSecurityBatch && !propsSecurityManager.canLoadExtensionFromProject &&
+            !propsSecurityManager.getSandboxMode) {
+            this.restoreBatchLoader = installBatchExtensionLoader(this.props.vm, async (entries, initialChoices) => {
+                const {showModal} = await this.acquireModalLock();
+                return showModal(SecurityModals.LoadExtensions, {initialChoices,
+                    entries: entries.map(entry => {
+                        const libraryItem = extensionLibrary.find(item => entry.ids.includes(item.extensionId) ||
+                        (item.extensionURL && item.extensionURL === entry.url));
+                        return {...entry, banner: libraryItem && libraryItem.iconURL};
+                    })});
+            }, defaultExtensionURLs);
+        }
+    }
+
+    componentWillUnmount () {
+        this.isUnmounting = true;
+        if (this.restoreBatchLoader) this.restoreBatchLoader();
+        if (this.state.type === SecurityModals.LoadExtensions && this.state.callback) this.state.callback(null);
     }
 
     // eslint-disable-next-line valid-jsdoc
@@ -195,10 +222,12 @@ class TWSecurityManagerComponent extends React.Component {
                 nextModalCallback();
             } else {
                 this.modalLocked = false;
-                this.setState({
+                if (!this.isUnmounting) {
+                    this.setState({
                     // only clear type in case other data needs to be accessed
-                    type: null
-                });
+                        type: null
+                    });
+                }
             }
         };
 
@@ -227,6 +256,10 @@ class TWSecurityManagerComponent extends React.Component {
 
     handleDenied () {
         this.state.callback(false);
+    }
+
+    handleBatchComplete (result) {
+        this.state.callback(result);
     }
 
     /**
@@ -440,6 +473,15 @@ class TWSecurityManagerComponent extends React.Component {
     }
 
     render () {
+        if (this.state.type === SecurityModals.LoadExtensions) {
+            return (<ExtensionSecurityDialog
+                entries={this.state.data.entries}
+                initialChoices={this.state.data.initialChoices}
+                locale={this.props.locale}
+                DialogFrame={Modal}
+                onComplete={this.handleBatchComplete}
+            />);
+        }
         if (this.state.type) {
             return (
                 <SecurityManagerModal
@@ -456,6 +498,7 @@ class TWSecurityManagerComponent extends React.Component {
 }
 
 TWSecurityManagerComponent.propTypes = {
+    locale: PropTypes.string,
     vm: PropTypes.shape({
         extensionManager: PropTypes.shape({
             securityManager: PropTypes.shape(
@@ -474,7 +517,8 @@ TWSecurityManagerComponent.defaultProps = {
 };
 
 const mapStateToProps = state => ({
-    vm: state.scratchGui.vm
+    vm: state.scratchGui.vm,
+    locale: state.locales.locale
 });
 
 const mapDispatchToProps = () => ({});

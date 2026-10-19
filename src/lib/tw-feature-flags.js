@@ -2,6 +2,7 @@ const readFeatureFlags = search => {
     const query = new URLSearchParams(search);
     const blockEditorDialogs = query.get('blockEditorDialogs') === '1';
     return Object.freeze({
+        extensionSecurityBatch: query.get('extensionSecurityBatch') === '1',
         blockEditorDialogs,
         blockEditorFixedInputs: blockEditorDialogs && query.get('blockEditorFixedInputs') === '1',
         blockEditorSourceForms: blockEditorDialogs && query.get('blockEditorSourceForms') === '1',

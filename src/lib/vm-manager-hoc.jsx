@@ -14,6 +14,8 @@ import {
     projectError
 } from '../reducers/project-state';
 import log from './log';
+import {isExtensionSecurityCancelled} from '@kubohiroya/turbowarp-extension-security-dialog/turbowarp';
+import returnToEditorStart from './tw-extension-security-cancel';
 
 /**
  * List of fonts that could be used by security prompts.
@@ -90,7 +92,8 @@ const vmManagerHOC = function (WrappedComponent) {
                     }
                 })
                 .catch(e => {
-                    this.props.onError(e);
+                    if (isExtensionSecurityCancelled(e)) this.props.onSecurityLoadCancelled();
+                    else this.props.onError(e);
                 });
         }
         render () {
@@ -104,6 +107,7 @@ const vmManagerHOC = function (WrappedComponent) {
                 onError: onErrorProp,
                 onLoadedProject: onLoadedProjectProp,
                 onSetProjectUnchanged,
+                onSecurityLoadCancelled,
                 projectData,
                 /* eslint-enable no-unused-vars */
                 isLoadingWithId: isLoadingWithIdProp,
@@ -133,6 +137,7 @@ const vmManagerHOC = function (WrappedComponent) {
         onError: PropTypes.func,
         onLoadedProject: PropTypes.func,
         onSetProjectUnchanged: PropTypes.func,
+        onSecurityLoadCancelled: PropTypes.func,
         projectData: PropTypes.oneOfType([PropTypes.object, PropTypes.string]),
         projectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         username: PropTypes.string,
@@ -155,6 +160,7 @@ const vmManagerHOC = function (WrappedComponent) {
     };
 
     const mapDispatchToProps = dispatch => ({
+        onSecurityLoadCancelled: () => returnToEditorStart(dispatch),
         onError: error => dispatch(projectError(error)),
         onLoadedProject: (loadingState, canSave) =>
             dispatch(onLoadedProject(loadingState, canSave, true)),
