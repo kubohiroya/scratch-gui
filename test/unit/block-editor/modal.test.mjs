@@ -583,7 +583,7 @@ test('array reordering keeps error descriptions attached to the current field ID
     const initial = f.field('list_0_label');
     const oldId = initial.id;
     assert.equal(initial.getAttribute('aria-invalid'), 'true');
-    const move = initial.closest('.array-item').querySelector('button[title="Move down"]');
+    const move = initial.closest('.array-item').querySelector('button[aria-label="項目を下へ移動"]');
     assert.ok(move);
     await schemaAct(async () => { schemaSimulate.click(move); });
     await new Promise(resolve => setTimeout(resolve, 0));
