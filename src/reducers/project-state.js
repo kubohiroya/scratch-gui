@@ -12,6 +12,7 @@ const DONE_UPDATING = 'scratch-gui/project-state/DONE_UPDATING';
 const DONE_UPDATING_BEFORE_COPY = 'scratch-gui/project-state/DONE_UPDATING_BEFORE_COPY';
 const DONE_UPDATING_BEFORE_NEW = 'scratch-gui/project-state/DONE_UPDATING_BEFORE_NEW';
 const RETURN_TO_SHOWING = 'scratch-gui/project-state/RETURN_TO_SHOWING';
+const CANCEL_SECURITY_LOAD = 'scratch-gui/project-state/CANCEL_SECURITY_LOAD';
 const SET_PROJECT_ID = 'scratch-gui/project-state/SET_PROJECT_ID';
 const START_AUTO_UPDATING = 'scratch-gui/project-state/START_AUTO_UPDATING';
 const START_CREATING_NEW = 'scratch-gui/project-state/START_CREATING_NEW';
@@ -115,6 +116,11 @@ const reducer = function (state, action) {
     if (typeof state === 'undefined') state = initialState;
 
     switch (action.type) {
+    case CANCEL_SECURITY_LOAD:
+        return Object.assign({}, initialState, {
+            loadingState: LoadingState.FETCHING_NEW_DEFAULT,
+            projectId: defaultProjectId
+        });
     case DONE_CREATING_NEW:
         // We need to set project id since we just created new project on the server.
         // No need to load, we should have data already in vm.
@@ -470,6 +476,8 @@ const setProjectId = id => ({
     projectId: id
 });
 
+const cancelSecurityLoad = () => ({type: CANCEL_SECURITY_LOAD});
+
 const requestNewProject = needSave => {
     if (needSave) return {type: START_UPDATING_BEFORE_CREATING_NEW};
     return {type: START_FETCHING_NEW};
@@ -510,6 +518,7 @@ export {
     LoadingState,
     LoadingStates,
     autoUpdateProject,
+    cancelSecurityLoad,
     createProject,
     defaultProjectId,
     doneCreatingProject,

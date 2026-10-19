@@ -6,6 +6,8 @@ import {connect} from 'react-redux';
 import log from '../lib/log';
 import sharedMessages from './shared-messages';
 import {setFileHandle, setProjectError} from '../reducers/tw';
+import {isExtensionSecurityCancelled} from '@kubohiroya/turbowarp-extension-security-dialog/turbowarp';
+import returnToEditorStart from './tw-extension-security-cancel';
 
 import {
     LoadingStates,
@@ -197,6 +199,7 @@ const SBFileUploaderHOC = function (WrappedComponent) {
                 this.props.onLoadingStarted();
                 const filename = this.fileToUpload && this.fileToUpload.name;
                 let loadingSuccess = false;
+                let cancelled = false;
                 // tw: stop when loading new project
                 this.props.vm.quit();
                 this.props.vm.loadProject(this.fileReader.result)
@@ -209,11 +212,16 @@ const SBFileUploaderHOC = function (WrappedComponent) {
                         loadingSuccess = true;
                     })
                     .catch(error => {
-                        log.error(error);
-                        this.props.onLoadingFailed(error);
+                        if (isExtensionSecurityCancelled(error)) {
+                            cancelled = true;
+                            this.props.onSecurityLoadCancelled();
+                        } else {
+                            log.error(error);
+                            this.props.onLoadingFailed(error);
+                        }
                     })
                     .then(() => {
-                        this.props.onLoadingFinished(this.props.loadingState, loadingSuccess);
+                        if (!cancelled) this.props.onLoadingFinished(this.props.loadingState, loadingSuccess);
                         // go back to step 7: whether project loading succeeded
                         // or failed, reset file objects
                         this.removeFileObjects();
@@ -240,6 +248,7 @@ const SBFileUploaderHOC = function (WrappedComponent) {
                 isShowingWithoutId,
                 loadingState,
                 onLoadingFailed,
+                onSecurityLoadCancelled,
                 onLoadingFinished,
                 onLoadingStarted,
                 onSetFileHandle,
@@ -271,6 +280,7 @@ const SBFileUploaderHOC = function (WrappedComponent) {
         isShowingWithoutId: PropTypes.bool,
         loadingState: PropTypes.oneOf(LoadingStates),
         onLoadingFailed: PropTypes.func,
+        onSecurityLoadCancelled: PropTypes.func,
         onLoadingFinished: PropTypes.func,
         onLoadingStarted: PropTypes.func,
         onSetProjectTitle: PropTypes.func,
@@ -307,6 +317,7 @@ const SBFileUploaderHOC = function (WrappedComponent) {
         };
     };
     const mapDispatchToProps = (dispatch, ownProps) => ({
+        onSecurityLoadCancelled: () => returnToEditorStart(dispatch),
         cancelFileUpload: loadingState => dispatch(onLoadedProject(loadingState, false, false)),
         closeFileMenu: () => dispatch(closeFileMenu()),
         onLoadingFailed: error => {

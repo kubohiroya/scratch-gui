@@ -64,7 +64,7 @@ const ModalComponent = props => (
                     ) : null}
                     {props.contentLabel}
                 </div>
-                <div
+                {!props.hideCloseButton && <div
                     className={classNames(
                         styles.headerItem,
                         styles.headerItemClose
@@ -88,7 +88,7 @@ const ModalComponent = props => (
                             onClick={props.onRequestClose}
                         />
                     )}
-                </div>
+                </div>}
             </div>
             {props.children}
         </Box>
@@ -105,6 +105,7 @@ ModalComponent.propTypes = {
     fullScreen: PropTypes.bool,
     headerClassName: PropTypes.string,
     headerImage: PropTypes.string,
+    hideCloseButton: PropTypes.bool,
     isRtl: PropTypes.bool,
     onHelp: PropTypes.func,
     onRequestClose: PropTypes.func
