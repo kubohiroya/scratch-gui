@@ -1,0 +1,75 @@
+@import "../../css/units.css";
+@import "../../css/colors.css";
+@import "../../css/z-index.css";
+
+/* Published DSL 4 runtimes position this overlay in viewport coordinates. */
+.stage {
+    --dsl4-reload-toolbar-inset: calc($menu-bar-height + $stage-menu-height);
+}
+
+.stage.full-screen {
+    --dsl4-reload-toolbar-inset: $stage-menu-height;
+}
+
+.stage :global(#dsl4-preview-reload-overlay) {
+    position: relative;
+    z-index: $z-index-stage-wrapper-overlay;
+}
+
+.stage :global(#dsl4-preview-reload-status-button) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font: 9px/1.2 sans-serif;
+    cursor: pointer;
+}
+
+.stage :global(#dsl4-preview-reload-status-icon) {
+    font-size: 16px;
+}
+
+/* Keep the runtime's anchor selection while reserving the host toolbars. */
+.stage :global(#dsl4-preview-reload-status-button[data-resolved-anchor^="top-"]) {
+    translate: 0 var(--dsl4-reload-toolbar-inset);
+}
+
+/* Leave the stage's own top-right close control accessible as well. */
+.stage :global(#dsl4-preview-reload-status-button[data-resolved-anchor="top-right"]) {
+    translate: calc(-44px - 2 * $space) var(--dsl4-reload-toolbar-inset);
+}
+
+.stage :global(#dsl4-preview-reload-status-dialog) {
+    position: fixed;
+    top: calc(var(--dsl4-reload-toolbar-inset) + $space);
+    right: $space;
+    width: min(32rem, calc(100vw - 2 * $space));
+    max-height: calc(100vh - var(--dsl4-reload-toolbar-inset) - 2 * $space);
+    overflow: auto;
+    padding: 1rem;
+    border: 1px solid $ui-black-transparent;
+    border-radius: $space;
+    background: $ui-primary;
+    color: $text-primary;
+    box-shadow: 0 0.25rem 1rem $ui-black-transparent;
+    font: 0.875rem/1.5 sans-serif;
+}
+
+.stage :global(#dsl4-preview-reload-status-dialog) button {
+    min-height: 2rem;
+    margin: 0.125rem;
+}
+
+.stage :global(#dsl4-preview-reload-status-dialog) button[aria-checked="true"] {
+    outline: 2px solid $looks-secondary;
+}
+
+/* Live announcements must not change the stage's visual layout. */
+.stage :global(#dsl4-preview-reload-live-status),
+.stage :global(#dsl4-preview-reload-live-diagnostic) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
