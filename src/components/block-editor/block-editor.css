@@ -13,3 +13,8 @@
 .commonLayout {
     width: min(820px, calc(100vw - 32px));
 }
+
+/* Common form wrappers must not offset labels inside a key/value row. */
+.theme.commonLayout :global([data-block-editor-pair-row]) label {
+    margin-bottom: 0;
+}
