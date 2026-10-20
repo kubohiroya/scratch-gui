@@ -6,6 +6,7 @@ const readFeatureFlags = search => {
         blockEditorDialogs,
         blockEditorFixedInputs: blockEditorDialogs && query.get('blockEditorFixedInputs') === '1',
         blockEditorSourceForms: blockEditorDialogs && query.get('blockEditorSourceForms') === '1',
+        blockEditorCommonLayout: blockEditorDialogs && query.get('blockEditorCommonLayout') === '1',
         blockEditorDescendants: blockEditorDialogs && query.get('blockEditorDescendants') === '1'
     });
 };

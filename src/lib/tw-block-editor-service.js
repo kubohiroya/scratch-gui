@@ -35,6 +35,7 @@ const getBlockEditorService = (vm, intl) => {
     if (intl) presentation.set(vm, intl);
     if (!services.has(vm)) {
         const service = createBlockEditorService({
+            commonLayout: featureFlags.blockEditorCommonLayout,
             fixedInputs: featureFlags.blockEditorFixedInputs,
             fixedInputMessages: () => (presentation.has(vm) ? fixedMessages(presentation.get(vm)) : {})
         });

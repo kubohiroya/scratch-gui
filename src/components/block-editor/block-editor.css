@@ -9,3 +9,7 @@
     --block-editor-border: $ui-black-transparent;
     --block-editor-radius: $space;
 }
+
+.commonLayout {
+    width: min(820px, calc(100vw - 32px));
+}

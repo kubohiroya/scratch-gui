@@ -1,0 +1,12 @@
+{
+  "formatVersion": 1,
+  "editor": {
+    "name": "@kubohiroya/turbowarp-extension-data-editor",
+    "version": "0.2.2",
+    "repository": "https://github.com/kubohiroya/turbowarp-extension-data-editor",
+    "revision": "72818f01ba5a5b7585c088ba62dd679f9a6b223e",
+    "artifact": "vendor/local/editor-0.2.2-72818f01ba5a-175ee6a2fe51.tgz",
+    "sha256": "175ee6a2fe5144cb02898ebed8220adc3a80a75c0211d24cde725fa4e6c5c7ff",
+    "integrity": "sha512-IrbQ53uUDx3HBCqKyzXOx7fdmrzeBK8Y0blk128JO2JqwrT8mtmsBQvVcQX7KEm1ooP0UrMLraEkCOsJsjjrug=="
+  }
+}
