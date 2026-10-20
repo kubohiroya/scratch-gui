@@ -2,13 +2,8 @@ require('./helpers.cjs');
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {installBatchExtensionLoader}=require('@kubohiroya/turbowarp-extension-security-dialog/turbowarp');
-const {readFeatureFlags}=require('../../../src/lib/tw-feature-flags');
 
-test('batch security is fixed at startup and defaults off',()=>{
-    assert.equal(readFeatureFlags('').extensionSecurityBatch,false);
-    assert.equal(readFeatureFlags('?extensionSecurityBatch=1').extensionSecurityBatch,true);
-    assert.equal(Object.isFrozen(readFeatureFlags('')),true);
-});
+
 
 test('real VM opens refused-extension projects and preserves their blocks and source URLs on save', async () => {
     const VM = require('scratch-vm');

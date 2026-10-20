@@ -2,21 +2,9 @@ import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {JSDOM} from 'jsdom';
 import {bindBlockEditorIcon} from '@kubohiroya/turbowarp-extension-data-editor/turbowarp';
-import {readFeatureFlags} from '../../../src/lib/tw-feature-flags.js';
 import getBlockEditorService from '../../../src/lib/tw-block-editor-service.js';
 
-test('startup flags default OFF and accept only the explicit opt-in', () => {
-    for (const query of ['', '?blockEditorDialogs=0', '?blockEditorDialogs=true']) {
-        assert.equal(readFeatureFlags(query).blockEditorDialogs, false);
-    }
-    assert.equal(readFeatureFlags('?blockEditorDialogs=1').blockEditorDialogs, true);
-    for (const query of ['', '?blockEditorDescendants=1', '?blockEditorDialogs=1',
-        '?blockEditorDialogs=1&blockEditorDescendants=true']) {
-        assert.equal(readFeatureFlags(query).blockEditorDescendants, false);
-    }
-    assert.equal(readFeatureFlags('?blockEditorDialogs=1&blockEditorDescendants=1').blockEditorDescendants, true);
-    assert.ok(Object.isFrozen(readFeatureFlags('')));
-});
+
 
 test('pointer and keyboard activation use only the icon and release all listeners', () => {
     const dom = new JSDOM('<!doctype html><body><div id="block"><svg><g id="icon"></g></svg></div></body>');

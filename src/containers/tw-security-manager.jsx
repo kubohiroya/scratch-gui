@@ -6,7 +6,6 @@ import bindAll from 'lodash.bindall';
 import SecurityManagerModal from '../components/tw-security-manager-modal/security-manager-modal.jsx';
 import SecurityModals from '../lib/tw-security-manager-constants';
 import {getPersistedUnsandboxed, setPersistedUnsandboxed} from '../lib/tw-persisted-unsandboxed.js';
-import featureFlags from '../lib/tw-feature-flags';
 import {installBatchExtensionLoader} from '@kubohiroya/turbowarp-extension-security-dialog/turbowarp';
 import {ExtensionSecurityDialog} from '@kubohiroya/turbowarp-extension-security-dialog/react';
 import '@kubohiroya/turbowarp-extension-security-dialog/webpack4.css';
@@ -177,7 +176,7 @@ class TWSecurityManagerComponent extends React.Component {
             vmSecurityManager[method] = propsSecurityManager[method] || this[method];
         }
         // Host-provided permission policies retain ownership of their loading path.
-        if (featureFlags.extensionSecurityBatch && !propsSecurityManager.canLoadExtensionFromProject &&
+        if (!propsSecurityManager.canLoadExtensionFromProject &&
             !propsSecurityManager.getSandboxMode) {
             this.restoreBatchLoader = installBatchExtensionLoader(this.props.vm, async (entries, initialChoices) => {
                 const {showModal} = await this.acquireModalLock();
