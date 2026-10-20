@@ -297,3 +297,7 @@ Here's what will happen in the project state machine:
 ## Donate
 We provide [Scratch](https://scratch.mit.edu) free of charge, and want to keep it that way! Please consider making a [donation](https://www.scratchfoundation.org/donate) to support our continued engineering, design, community, and resource development efforts. Donations of any size are appreciated. Thank you!
 -->
+
+## 機能拡張セキュリティのローカル確認
+
+`npm run preview:security` で必要なファイルを検証してから確認用エディターを配信できます。起動・停止・再ビルド・復旧は[ローカル確認手順](docs/local-security-preview.ja.md)を参照してください。
