@@ -37,7 +37,6 @@ const {code} = babel.transformSync(fs.readFileSync(filename, 'utf8'), {
     presets: [['@babel/preset-env', {targets: {node: 'current'}}], '@babel/preset-react']
 });
 const imports = {
-    '../lib/tw-feature-flags.js': {default: {blockEditorCommonLayout: false}, __esModule: true},
     'prop-types': require('prop-types'), react: React, 'react-intl': intl,
     '@kubohiroya/turbowarp-extension-data-editor/react': sharedUI,
     '@kubohiroya/turbowarp-extension-data-editor/react/styles.css': {},

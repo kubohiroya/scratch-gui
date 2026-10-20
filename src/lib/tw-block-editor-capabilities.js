@@ -1,9 +1,9 @@
-// Capability exposure is fixed by the host at startup; legacy registration stays available.
-const exposeBlockEditorAPI = (api, sourceForms, fixedInputs = false) => {
+// Expose every capability provided by the installed artifact, without URL gating.
+const exposeBlockEditorAPI = api => {
     const visible = {...api};
     let changed = false;
-    for (const [key, enabled] of [['registerSourceEditor', sourceForms], ['registerFixedInputEditor', fixedInputs]]) {
-        if ((!enabled || typeof visible[key] !== 'function') && key in api) {
+    for (const key of ['registerSourceEditor', 'registerFixedInputEditor']) {
+        if (typeof api[key] !== 'function' && key in api) {
             delete visible[key];
             changed = true;
         }

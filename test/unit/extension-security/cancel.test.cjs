@@ -6,7 +6,7 @@ const {default:reducer,LoadingState,onFetchedProjectData,onLoadedProject}=requir
 const returnToEditorStart=require('../../../src/lib/tw-extension-security-cancel').default;
 
 test('confirmed cancellation resets loading state, title/handle/mode and removes project_url before fetching default',()=>{
-    const dom=new JSDOM('',{url:'http://localhost/editor.html?extensionSecurityBatch=1&project_url=https://example.test/project.sb3&token=secret#123'});
+    const dom=new JSDOM('',{url:'http://localhost/editor.html?project_url=https://example.test/project.sb3&token=secret#123'});
     globalThis.window=dom.window;
     let state={loadingState:LoadingState.LOADING_VM_FILE_UPLOAD,projectId:'123',projectData:'old',error:new Error('old')};
     const actions=[];
@@ -17,7 +17,6 @@ test('confirmed cancellation resets loading state, title/handle/mode and removes
     });
     assert.equal(state.loadingState,LoadingState.FETCHING_NEW_DEFAULT);
     assert.equal(state.projectId,'0');assert.equal(state.projectData,null);assert.equal(state.error,null);
-    assert.equal(new URL(window.location.href).searchParams.get('extensionSecurityBatch'),'1');
     assert.equal(new URL(window.location.href).searchParams.has('token'),false);
     assert.ok(actions.some(action=>action.type==='projectTitle/SET_PROJECT_TITLE'&&action.title===''));
     assert.ok(actions.some(action=>action.type.endsWith('/SET_PLAYER')&&action.isPlayerOnly===false));

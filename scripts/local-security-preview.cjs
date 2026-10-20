@@ -258,7 +258,7 @@ async function main () {
         throw error;
     }
     const url = new URL(`http://127.0.0.1:${port}/editor.html`);
-    url.search = new URLSearchParams({lang: 'ja', extensionSecurityBatch: '1',
+    url.search = new URLSearchParams({lang: 'ja',
         project_url: `http://127.0.0.1:${port}/${fixturePath}/extension-security-preview.sb3`}).toString();
     console.log(`\n確認URL: ${url}\n配信先: ${directory}\n停止: このターミナルでCtrl+C`);
     for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => server.close(() => process.exit(0)));

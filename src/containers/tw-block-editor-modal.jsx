@@ -6,7 +6,6 @@ import styles from '@kubohiroya/turbowarp-extension-data-editor/react/styles.css
 import Modal from './modal.jsx';
 import log from '../lib/log.js';
 import theme from '../components/block-editor/block-editor.css';
-import featureFlags from '../lib/tw-feature-flags.js';
 
 const reportError = error => log.error(error);
 
@@ -54,7 +53,7 @@ const BlockEditorModal = props => {
         })
     };
     return (<BlockEditorDialog
-        className={`${theme.theme} ${featureFlags.blockEditorCommonLayout ? theme.commonLayout : ''}`}
+        className={`${theme.theme} ${theme.commonLayout}`}
         messages={messages}
         ModalComponent={Modal}
         nodeAppearances={props.nodeAppearances}

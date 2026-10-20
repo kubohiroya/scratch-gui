@@ -1,6 +1,5 @@
 import {createBlockEditorService} from '@kubohiroya/turbowarp-extension-data-editor/rjsf';
 
-import featureFlags from './tw-feature-flags.js';
 import exposeBlockEditorAPI from './tw-block-editor-capabilities.js';
 
 const services = new WeakMap();
@@ -35,14 +34,13 @@ const getBlockEditorService = (vm, intl) => {
     if (intl) presentation.set(vm, intl);
     if (!services.has(vm)) {
         const service = createBlockEditorService({
-            commonLayout: featureFlags.blockEditorCommonLayout,
-            fixedInputs: featureFlags.blockEditorFixedInputs,
+            commonLayout: true,
+            fixedInputs: true,
             fixedInputMessages: () => (presentation.has(vm) ? fixedMessages(presentation.get(vm)) : {})
         });
         services.set(vm, {
             ...service,
-            api: exposeBlockEditorAPI(service.api,
-                featureFlags.blockEditorSourceForms, featureFlags.blockEditorFixedInputs)
+            api: exposeBlockEditorAPI(service.api)
         });
     }
     return services.get(vm);
