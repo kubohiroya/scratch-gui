@@ -5,14 +5,33 @@ import VM from 'scratch-vm';
 import {connect} from 'react-redux';
 
 import ControlsComponent from '../components/controls/controls.jsx';
+import getStageControls from '../lib/tw-stage-controls.js';
+import getCameraControls from '../lib/tw-camera-controls.js';
 
 class Controls extends React.Component {
     constructor (props) {
         super(props);
+        this.stageControls = getStageControls(props.vm);
+        this.cameraControls = getCameraControls(props.vm);
+        this.state = {cameraSnapshot: this.cameraControls.snapshot(), extensionControls: this.stageControls.snapshot()};
         bindAll(this, [
+            'handleControlsChange',
             'handleGreenFlagClick',
             'handleStopAllClick'
         ]);
+    }
+    componentDidMount () {
+        this.unsubscribeControls = this.stageControls.subscribe(this.handleControlsChange);
+        this.unsubscribeCamera = this.cameraControls.subscribe(this.handleControlsChange);
+        this.handleControlsChange();
+    }
+    componentWillUnmount () {
+        this.unsubscribeControls();
+        this.unsubscribeCamera();
+    }
+    handleControlsChange () {
+        this.setState({cameraSnapshot: this.cameraControls.snapshot(),
+            extensionControls: this.stageControls.snapshot()});
     }
     handleGreenFlagClick (e) {
         e.preventDefault();
@@ -51,6 +70,9 @@ class Controls extends React.Component {
             <ControlsComponent
                 {...props}
                 active={projectRunning && isStarted}
+                cameraService={this.cameraControls}
+                cameraSnapshot={this.state.cameraSnapshot}
+                extensionControls={this.state.extensionControls}
                 turbo={turbo}
                 onGreenFlagClick={this.handleGreenFlagClick}
                 onStopAllClick={this.handleStopAllClick}

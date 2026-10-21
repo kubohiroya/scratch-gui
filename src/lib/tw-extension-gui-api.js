@@ -1,5 +1,7 @@
 import LazyScratchBlocks from './tw-lazy-scratch-blocks';
 import AddonHooks from '../addons/hooks';
+import getStageControls from './tw-stage-controls.js';
+import getCameraControls from './tw-camera-controls.js';
 import getBlockEditorService from './tw-block-editor-service.js';
 
 /**
@@ -37,6 +39,8 @@ const implementGuiAPI = Scratch => {
          */
         getBlocklyEagerly: () => LazyScratchBlocks.load()
     };
+    Scratch.gui.cameraControls = getCameraControls(Scratch.vm).api;
+    Scratch.gui.stageControls = getStageControls(Scratch.vm).api;
     Scratch.gui.blockEditors = getBlockEditorService(Scratch.vm).api;
 };
 
