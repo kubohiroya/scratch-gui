@@ -34,11 +34,6 @@
     translate: 0 var(--dsl4-reload-toolbar-inset);
 }
 
-/* Leave the stage's own top-right close control accessible as well. */
-.stage :global(#dsl4-preview-reload-status-button[data-resolved-anchor="top-right"]) {
-    translate: calc(-44px - 2 * $space) var(--dsl4-reload-toolbar-inset);
-}
-
 .stage :global(#dsl4-preview-reload-status-dialog) {
     position: fixed;
     top: calc(var(--dsl4-reload-toolbar-inset) + $space);
@@ -72,4 +67,187 @@
     height: 1px;
     overflow: hidden;
     clip-path: inset(50%);
+}
+
+/* Runtime owns visibility; hidden controls must never cover the editor. */
+.stage :global(#dsl4-preview-reload-overlay[hidden]) {
+    display: none;
+}
+
+.stage :global(#dsl4-preview-reload-overlay[lang="ja"] #dsl4-preview-reload-status-badge) {
+    font-size: 10px;
+}
+
+.stage :global(#dsl4-preview-reload-overlay[data-dialog-open="true"])::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    background: $ui-modal-overlay;
+}
+
+/* The structured runtime dialog uses the same theme as Modal and Prompt. */
+.stage :global(#dsl4-preview-reload-status-dialog[data-layout="editor"]) {
+    box-sizing: border-box;
+    padding: 0;
+    overflow: hidden;
+    border: 4px solid $ui-white-transparent;
+    background: $ui-modal-background;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.stage :global(#dsl4-preview-reload-status-dialog[data-layout="editor"]:not([hidden])) {
+    display: flex;
+    flex-direction: column;
+}
+
+.stage :global(#dsl4-preview-reload-status-dialog[data-layout="editor"]) * {
+    box-sizing: border-box;
+}
+
+.stage :global(#dsl4-preview-reload-dialog-header) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    gap: 1rem;
+    padding: 0.5rem 1rem;
+    background: $ui-modal-header-background;
+    color: $ui-modal-header-foreground;
+}
+
+.stage :global(#dsl4-preview-reload-dialog-title) {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.stage :global(#dsl4-preview-reload-dialog-body) {
+    min-height: 0;
+    overflow-y: auto;
+    padding: 1.5rem;
+}
+
+.stage :global(#dsl4-preview-reload-dialog-body) p {
+    margin: 0 0 0.75rem;
+}
+
+.stage :global(#dsl4-preview-reload-dialog-body) h3 {
+    margin: 1.5rem 0 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.stage :global(#dsl4-preview-reload-status-dialog[data-layout="editor"]) button {
+    min-height: 44px;
+    margin: 0;
+    padding: 0.75rem 1rem;
+    border: 1px solid $ui-black-transparent;
+    border-radius: 0.25rem;
+    background: $input-background;
+    color: $text-primary;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.stage :global(#dsl4-preview-reload-status-dialog[data-layout="editor"]) button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.stage :global(#dsl4-preview-reload-status-dialog[data-layout="editor"]) button:focus-visible {
+    outline: 2px solid $looks-secondary;
+    outline-offset: 2px;
+}
+
+.stage :global(#dsl4-preview-reload-status-dialog[data-layout="editor"]) button[aria-checked="true"] {
+    outline: none;
+    border-color: $looks-secondary;
+    background: $looks-transparent;
+    box-shadow: inset 0 0 0 1px $looks-secondary;
+}
+
+.stage :global(#dsl4-preview-reload-status-dialog[data-layout="editor"]) button[aria-checked="true"]:focus-visible {
+    outline: 2px solid $looks-secondary;
+}
+
+.stage :global(#dsl4-preview-reload-status-dialog[data-layout="editor"] #dsl4-preview-reload-dialog-close) {
+    flex-shrink: 0;
+    width: 44px;
+    padding: 0;
+    border: 2px solid $ui-white-transparent;
+    border-radius: 50%;
+    background: $ui-black-transparent;
+    color: $ui-modal-header-foreground;
+    font-size: 1.5rem;
+}
+
+.stage :global(#dsl4-preview-reload-position-step),
+.stage :global(#dsl4-preview-reload-scope-step),
+.stage :global(#dsl4-preview-debug-mode-selector) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.stage :global(#dsl4-preview-reload-position-step[hidden]),
+.stage :global(#dsl4-preview-reload-scope-step[hidden]),
+.stage :global(#dsl4-preview-reload-anchor-selector[hidden]) {
+    display: none;
+}
+
+.stage :global(#dsl4-preview-reload-anchor-selector) {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.stage :global(#dsl4-preview-reload-anchor-bottom-left) {
+    grid-column: 1;
+    grid-row: 3;
+}
+
+.stage :global(#dsl4-preview-reload-anchor-left-center) {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.stage :global(#dsl4-preview-reload-anchor-right-center) {
+    grid-column: 3;
+    grid-row: 2;
+}
+
+.stage :global(#dsl4-preview-reload-anchor-bottom-center) {
+    grid-column: 2;
+    grid-row: 3;
+}
+
+.stage :global(#dsl4-preview-reload-anchor-bottom-right) {
+    grid-column: 3;
+    grid-row: 3;
+}
+
+.stage :global(#dsl4-preview-reload-dialog-footer) {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid $ui-black-transparent;
+}
+
+.stage :global(#dsl4-preview-reload-dialog-footer) p {
+    flex: 1;
+    margin: 0;
+    font-size: 0.75rem;
+}
+
+.stage :global(#dsl4-preview-reload-status-dialog[data-layout="editor"] #dsl4-preview-reload-dialog-done) {
+    flex-shrink: 0;
+    border-color: $looks-secondary;
+    background: $looks-secondary;
+    color: white;
 }
