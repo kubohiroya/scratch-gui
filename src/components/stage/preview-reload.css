@@ -34,6 +34,12 @@
     translate: 0 var(--dsl4-reload-toolbar-inset);
 }
 
+/* Legacy dialogs have no structured layout marker; keep their Close control clear. */
+.stage:has(:global(#dsl4-preview-reload-status-dialog:not([data-layout="editor"])))
+    :global(#dsl4-preview-reload-status-button[data-resolved-anchor="top-right"]) {
+    translate: calc(-44px - 2 * $space) var(--dsl4-reload-toolbar-inset);
+}
+
 .stage :global(#dsl4-preview-reload-status-dialog) {
     position: fixed;
     top: calc(var(--dsl4-reload-toolbar-inset) + $space);
