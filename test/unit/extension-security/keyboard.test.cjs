@@ -4,8 +4,13 @@ const assert=require('node:assert/strict');
 const {JSDOM}=require('jsdom');
 
 test('security dialog keyup preserves native activation without forwarding keys to the VM',()=>{
-    const dom=new JSDOM('<div class="twextsec-modal"><input type="radio"><button>OK</button></div><button id="outside">Outside</button>');
+    const dom=new JSDOM('<div class="twextsec-modal"><input type="radio"><button>OK</button></div><button id="outside">Outside</button>',{url:'http://localhost/'});
     globalThis.document=dom.window.document;
+    globalThis.location=dom.window.location;
+    // GUI API registration is unrelated to the keyboard event boundary under test.
+    const apiPath=require.resolve('../../../src/lib/tw-extension-gui-api');
+    const previousAPI=require.cache[apiPath];
+    require.cache[apiPath]={id:apiPath,filename:apiPath,loaded:true,exports:{__esModule:true,default:()=>{}}};
     const VMListener=require('../../../src/lib/vm-listener-hoc.jsx').default(()=>null).WrappedComponent;
     const posted=[];
     const listener=new VMListener({vm:{on(){},runtime:{on(){}},postIOData:(...args)=>posted.push(args)}});
@@ -23,6 +28,8 @@ test('security dialog keyup preserves native activation without forwarding keys 
         assert.deepEqual(posted,[['keyboard',{key:' ',keyCode:32,isDown:false}]]);
     } finally {
         document.removeEventListener('keyup',listener.handleKeyUp);
-        dom.window.close();delete globalThis.document;
+        if(previousAPI) require.cache[apiPath]=previousAPI;
+        else delete require.cache[apiPath];
+        dom.window.close();delete globalThis.document;delete globalThis.location;
     }
 });
