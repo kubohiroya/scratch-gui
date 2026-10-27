@@ -200,6 +200,8 @@ const vmListenerHOC = function (WrappedComponent) {
             }
         }
         handleKeyUp (e) {
+            // Preserve native keyboard activation of the extension approval controls.
+            if (e.target.closest && e.target.closest('.twextsec-modal')) return;
             // Always capture up events,
             // even those that have switched to other targets.
             const key = (!e.key || e.key === 'Dead') ? e.keyCode : e.key;
