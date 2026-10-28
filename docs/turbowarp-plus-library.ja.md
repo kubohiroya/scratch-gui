@@ -61,9 +61,13 @@ Editorは従来どおり返された拡張配列を `ExtensionSelectionList` へ
 
 ## ローカル検証
 
-共通UIは `package.json` / lockfileで次のmerge SHAへ固定しています。
-
-`efda2fdf89b5eb0e8dcd844eb6a7dc6a8c812b7e`
+共通UIは `package.json` / lockfileでnpm公開版 `0.3.1` へ完全固定しています。
+merge SHA `efda2fdf89b5eb0e8dcd844eb6a7dc6a8c812b7e` の配布物と、
+展開後の全18ファイル（Webpack 4向けCJS・型宣言・CSSを含む）がbyte一致することを確認しています。
+共通フォームはnpm公開版 `^0.5.0` を使用し、lockfileでは `0.5.0` へ固定します。
+この版の配布物はmerge SHA `df1e78b6982ccc0c1ddb8a741a8d57848519c74d` を識別し、
+共通側の候補ブラウザ検証と、merge後の差分がbuild-infoのrevisionだけであることを確認しています。
+今回の依存追従は [family公開 #24](https://github.com/kubohiroya/turbowarp-plus-packages/issues/24) に含まれます。
 
 通常の依存インストール後は、この確定版のAPIを使ってビルドします。
 セクション表示と選択状態の改善もこの固定版に含まれます。
@@ -91,8 +95,8 @@ node --test test/unit/extension-security/plus-library.test.cjs
 
 ## 公開順と切り戻し
 
-公開操作には別途明示承認が必要です。順序は共通UIをmergeして参照可能なSHAを確定、
-GUIの依存SHAとlockfileを更新・最小検証、GUIをmerge、Pagesのカタログを公開です。
+公開操作には対象と操作の明示承認が必要です。順序は共通パッケージの公開版を確定、
+GUIの依存指定とlockfileを更新・最小検証、GUIをmerge、Pagesのカタログを公開です。
 Pagesを先に公開してもGUIの既定OFFは維持します。3リポジトリの参照先が揃ってから有効化します。
 
 切り戻しは `twPlusExtensions=1` をURLから除去してEditorを再読み込みします。
