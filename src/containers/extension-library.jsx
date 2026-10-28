@@ -14,6 +14,10 @@ import extensionTags from '../lib/libraries/tw-extension-tags';
 
 import LibraryComponent from '../components/library/library.jsx';
 import extensionIcon from '../components/action-menu/icon--sprite.svg';
+import {TURBOWARP_PLUS_LIBRARY_ENABLED} from '../config/feature-flags';
+import PlusLibrary from './tw-plus-library.jsx';
+import plusIcon from '../components/tw-plus-library/icon.svg';
+import plusStyles from '../components/tw-plus-library/plus-library.css';
 
 const messages = defineMessages({
     extensionTitle: {
@@ -88,9 +92,13 @@ class ExtensionLibrary extends React.PureComponent {
     constructor (props) {
         super(props);
         bindAll(this, [
-            'handleItemSelect'
+            'handleItemSelect',
+            'handlePlusBusyChange',
+            'handlePlusKeyDown',
+            'renderPlusContent'
         ]);
         this.state = {
+            plusBusy: false,
             gallery: cachedGallery,
             galleryError: null,
             galleryTimedOut: false
@@ -156,6 +164,25 @@ class ExtensionLibrary extends React.PureComponent {
             }
         }
     }
+    handlePlusBusyChange (plusBusy) {
+        this.setState({plusBusy});
+    }
+    handlePlusKeyDown (event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            event.currentTarget.click();
+        }
+    }
+    renderPlusContent (filterQuery) {
+        return (<PlusLibrary
+            filterQuery={filterQuery}
+            locale={this.props.intl.locale}
+            vm={this.props.vm}
+            onBusyChange={this.handlePlusBusyChange}
+            onCategorySelected={this.props.onCategorySelected}
+            onRequestClose={this.props.onRequestClose}
+        />);
+    }
     render () {
         let library = null;
         if (this.state.gallery || this.state.galleryError || this.state.galleryTimedOut) {
@@ -179,11 +206,21 @@ class ExtensionLibrary extends React.PureComponent {
 
         return (
             <LibraryComponent
+                busy={this.state.plusBusy}
+                customTag={TURBOWARP_PLUS_LIBRARY_ENABLED ? 'twplus' : null}
+                renderCustomContent={TURBOWARP_PLUS_LIBRARY_ENABLED ? this.renderPlusContent : null}
                 data={library}
                 filterable
                 persistableKey="extensionId"
                 id="extensionLibrary"
-                tags={extensionTags}
+                tags={TURBOWARP_PLUS_LIBRARY_ENABLED ? extensionTags.concat({
+                    tag: 'twplus',
+                    intlLabel: 'TurboWarp Plus',
+                    iconSrc: plusIcon,
+                    className: plusStyles.plusTag,
+                    tabIndex: 0,
+                    onKeyDown: this.handlePlusKeyDown
+                }) : extensionTags}
                 title={this.props.intl.formatMessage(messages.extensionTitle)}
                 visible={this.props.visible}
                 onItemSelected={this.handleItemSelect}

@@ -19,6 +19,20 @@
     height: calc(100% - $library-header-height - $library-filter-bar-height - 2rem);
 }
 
+.custom-content {
+    display: block;
+    padding: 1rem;
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+}
+
+.custom-library > div {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+}
+
 .filter-bar {
     display: flex;
     flex-direction: row;
@@ -59,6 +73,16 @@
     flex-wrap: wrap;
     height: $library-filter-bar-height;
     overflow: hidden;
+}
+
+.extended-tags {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    min-width: 0;
+}
+
+.extended-tags > * {
+    flex-shrink: 0;
 }
 
 .spinner-wrapper {
