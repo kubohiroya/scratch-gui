@@ -11,6 +11,12 @@
     min-width: 0;
 }
 
+.root > :global(.twextsec-modal) {
+    height: 100%;
+    max-height: 100%;
+    margin: 0 auto;
+}
+
 .root :global(.twextsec-selection) {
     height: 100%;
     min-width: 0;
@@ -27,7 +33,7 @@
 
 @media (max-width: 580px) {
     .root :global(.twextsec-selection) :global(.twextsec-row-main) {
-        grid-template-columns: minmax(0, 1fr) 42px 44px;
+        grid-template-columns: minmax(0, 1fr) 44px;
     }
 }
 
