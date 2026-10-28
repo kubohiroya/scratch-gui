@@ -20,6 +20,17 @@
     overflow-wrap: anywhere;
 }
 
+.root :global(.twextsec-selection) input[type="checkbox"] {
+    width: 32px;
+    height: 32px;
+}
+
+@media (max-width: 580px) {
+    .root :global(.twextsec-selection) :global(.twextsec-row-main) {
+        grid-template-columns: minmax(0, 1fr) 42px 44px;
+    }
+}
+
 .message {
     padding: 1rem;
     background: white;
