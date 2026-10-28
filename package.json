@@ -36,7 +36,7 @@
   },
   "dependencies": {
     "@kubohiroya/turbowarp-extension-data-editor": "^0.5.0",
-    "@kubohiroya/turbowarp-extension-security-dialog": "0.3.1",
+    "@kubohiroya/turbowarp-extension-security-dialog": "0.3.2",
     "@microbit/microbit-universal-hex": "0.2.2",
     "@turbowarp/jszip": "^3.11.1",
     "@turbowarp/nanolog": "^1.0.1",

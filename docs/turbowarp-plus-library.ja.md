@@ -61,9 +61,12 @@ Editorは従来どおり返された拡張配列を `ExtensionSelectionList` へ
 
 ## ローカル検証
 
-共通UIは `package.json` / lockfileでnpm公開版 `0.3.1` へ完全固定しています。
-merge SHA `efda2fdf89b5eb0e8dcd844eb6a7dc6a8c812b7e` の配布物と、
-展開後の全18ファイル（Webpack 4向けCJS・型宣言・CSSを含む）がbyte一致することを確認しています。
+共通UIは `package.json` / lockfileでnpm公開版 `0.3.2` へ完全固定しています。
+merge SHA `f189d3d6d4e3458a5d5d55265b21da4ba67be710` の配布物について、
+ローカル・GitHub Release・npmのアーカイブがbyte一致することを確認しています。
+埋め込みバンドルの `Author URL`・`Docs URL`・`Package` ヘッダーを読み取り、
+セキュリティ確認にも明示された製作者・ドキュメント・npmのリンクを表示します。
+URLがない旧メタデータの表示、実行条件、実行許可の確認は維持します。
 共通フォームはnpm公開版 `^0.5.0` を使用し、lockfileでは `0.5.0` へ固定します。
 この版の配布物はmerge SHA `df1e78b6982ccc0c1ddb8a741a8d57848519c74d` を識別し、
 共通側の候補ブラウザ検証と、merge後の差分がbuild-infoのrevisionだけであることを確認しています。
