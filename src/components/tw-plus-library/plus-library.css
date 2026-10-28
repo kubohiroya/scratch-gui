@@ -1,0 +1,40 @@
+.root {
+    height: 100%;
+    width: 100%;
+    min-width: 0;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.root > div:not([hidden]) {
+    height: 100%;
+    min-width: 0;
+}
+
+.root :global(.twextsec-selection) {
+    height: 100%;
+    min-width: 0;
+}
+
+.root :global(.twextsec-intro) {
+    overflow-wrap: anywhere;
+}
+
+.message {
+    padding: 1rem;
+    background: white;
+    border-radius: .5rem;
+}
+
+.error {
+    color: #9b2020;
+}
+
+.plus-tag {
+    background: #d8f3ff;
+    color: #16465e;
+}
+
+.plus-tag[aria-pressed="true"] {
+    background: #a5e3ff;
+}

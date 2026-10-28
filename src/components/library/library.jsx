@@ -112,9 +112,10 @@ class LibraryComponent extends React.Component {
         }));
     }
     handleClose () {
-        this.props.onRequestClose();
+        if (!this.props.busy) this.props.onRequestClose();
     }
     handleTagClick (tag) {
+        if (this.props.busy) return;
         if (this.state.playingItem === null) {
             this.setState({
                 filterQuery: '',
@@ -154,22 +155,24 @@ class LibraryComponent extends React.Component {
         }
     }
     handleFilterChange (event) {
+        if (this.props.busy) return;
+        const selectedTag = this.state.selectedTag === this.props.customTag ? this.props.customTag : ALL_TAG.tag;
         if (this.state.playingItem === null) {
             this.setState({
                 filterQuery: event.target.value,
-                selectedTag: ALL_TAG.tag
+                selectedTag
             });
         } else {
             this.props.onItemMouseLeave(this.getFilteredData()[[this.state.playingItem]]);
             this.setState({
                 filterQuery: event.target.value,
                 playingItem: null,
-                selectedTag: ALL_TAG.tag
+                selectedTag
             });
         }
     }
     handleFilterClear () {
-        this.setState({filterQuery: ''});
+        if (!this.props.busy) this.setState({filterQuery: ''});
     }
     getFilteredData () {
         // When no filtering, favorites get their own section
@@ -247,15 +250,17 @@ class LibraryComponent extends React.Component {
         return filteredItems;
     }
     scrollToTop () {
-        this.filteredDataRef.scrollTop = 0;
+        if (this.filteredDataRef) this.filteredDataRef.scrollTop = 0;
     }
     setFilteredDataRef (ref) {
         this.filteredDataRef = ref;
     }
     render () {
+        const customContent = this.props.renderCustomContent && this.state.selectedTag === this.props.customTag;
         const filteredData = this.state.canDisplay && this.props.data && this.getFilteredData();
         return (
             <Modal
+                className={this.props.customTag ? styles.customLibrary : null}
                 fullScreen
                 contentLabel={this.props.title}
                 id={this.props.id}
@@ -280,9 +285,15 @@ class LibraryComponent extends React.Component {
                             <Divider className={classNames(styles.filterBarItem, styles.divider)} />
                         )}
                         {this.props.tags &&
-                            <div className={styles.tagWrapper}>
+                            <div
+                                className={classNames(styles.tagWrapper, {
+                                    [styles.extendedTags]: this.props.customTag
+                                })}
+                            >
                                 {tagListPrefix.concat(this.props.tags).map((tagProps, id) => (
                                     <TagButton
+                                        disabled={this.props.busy}
+                                        aria-pressed={this.state.selectedTag === tagProps.tag.toLowerCase()}
                                         active={this.state.selectedTag === tagProps.tag.toLowerCase()}
                                         className={classNames(
                                             styles.filterBarItem,
@@ -300,11 +311,13 @@ class LibraryComponent extends React.Component {
                 )}
                 <div
                     className={classNames(styles.libraryScrollGrid, {
-                        [styles.withFilterBar]: this.props.filterable || this.props.tags
+                        [styles.withFilterBar]: this.props.filterable || this.props.tags,
+                        [styles.customContent]: customContent
                     })}
                     ref={this.setFilteredDataRef}
                 >
-                    {filteredData && this.getFilteredData().map((dataItem, index) => (
+                    {customContent && this.props.renderCustomContent(this.state.filterQuery)}
+                    {!customContent && filteredData && this.getFilteredData().map((dataItem, index) => (
                         dataItem === '---' ? (
                             <Separator key={index} />
                         ) : (
@@ -343,7 +356,7 @@ class LibraryComponent extends React.Component {
                             />
                         )
                     ))}
-                    {filteredData && this.props.removedTrademarks && (
+                    {!customContent && filteredData && this.props.removedTrademarks && (
                         <React.Fragment>
                             {filteredData.length > 0 && (
                                 <Separator />
@@ -351,7 +364,7 @@ class LibraryComponent extends React.Component {
                             <RemovedTrademarks />
                         </React.Fragment>
                     )}
-                    {!filteredData && (
+                    {!customContent && !filteredData && (
                         <div className={styles.spinnerWrapper}>
                             <Spinner
                                 large
@@ -366,6 +379,8 @@ class LibraryComponent extends React.Component {
 }
 
 LibraryComponent.propTypes = {
+    busy: PropTypes.bool,
+    customTag: PropTypes.string,
     data: PropTypes.oneOfType([
         PropTypes.arrayOf(PropTypes.oneOfType([
             /* eslint-disable react/no-unused-prop-types, lines-around-comment */
@@ -392,6 +407,7 @@ LibraryComponent.propTypes = {
     onItemMouseLeave: PropTypes.func,
     onItemSelected: PropTypes.func,
     onRequestClose: PropTypes.func,
+    renderCustomContent: PropTypes.func,
     setStopHandler: PropTypes.func,
     showPlayButton: PropTypes.bool,
     tags: PropTypes.arrayOf(PropTypes.shape(TagButton.propTypes)),
@@ -406,3 +422,4 @@ LibraryComponent.defaultProps = {
 };
 
 export default injectIntl(LibraryComponent);
+export {LibraryComponent};

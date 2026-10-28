@@ -12,6 +12,7 @@ import '@kubohiroya/turbowarp-extension-security-dialog/webpack4.css';
 import Modal from './modal.jsx';
 import extensionLibrary from '../lib/libraries/extensions/index.jsx';
 import defaultExtensionURLs from 'scratch-vm/src/extension-support/tw-default-extension-urls';
+import {getPlusReviewedMode, setPlusHostPolicy} from '../lib/tw-plus-extension-permissions';
 
 /* eslint-disable require-atomic-updates */
 
@@ -172,6 +173,7 @@ class TWSecurityManagerComponent extends React.Component {
     componentDidMount () {
         const vmSecurityManager = this.props.vm.extensionManager.securityManager;
         const propsSecurityManager = this.props.securityManager;
+        setPlusHostPolicy(vmSecurityManager, propsSecurityManager.canLoadExtensionFromProject);
         for (const method of SECURITY_MANAGER_METHODS) {
             vmSecurityManager[method] = propsSecurityManager[method] || this[method];
         }
@@ -192,6 +194,7 @@ class TWSecurityManagerComponent extends React.Component {
 
     componentWillUnmount () {
         this.isUnmounting = true;
+        setPlusHostPolicy(this.props.vm.extensionManager.securityManager, null);
         if (this.restoreBatchLoader) this.restoreBatchLoader();
         if (this.state.type === SecurityModals.LoadExtensions && this.state.callback) this.state.callback(null);
     }
@@ -266,6 +269,8 @@ class TWSecurityManagerComponent extends React.Component {
      * @returns {string} The VM worker mode to use
      */
     getSandboxMode (url) {
+        const reviewedMode = getPlusReviewedMode(this.props.vm.extensionManager.securityManager, url);
+        if (reviewedMode) return reviewedMode;
         if (isTrustedExtension(url)) {
             log.info(`Loading extension ${url} unsandboxed`);
             return 'unsandboxed';
