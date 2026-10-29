@@ -1,5 +1,11 @@
 scratch-gui modified for use in [TurboWarp](https://turbowarp.org/)
 
+## TurboWarp-Plus-Editor distribution
+
+This fork owns the GUI source and host integration. [TurboWarp-Plus-Editor](https://github.com/kubohiroya/turbowarp-plus-editor) owns the integrated Editor build, integration tests, branding, and GitHub Pages distribution.
+
+This repository no longer publishes GitHub Pages. Its CI continues to build and test the GUI. The data-editor and security-dialog repositories provide libraries and do not distribute the integrated Editor.
+
 ## Setup
 
 See https://docs.turbowarp.org/development/getting-started to setup the complete TurboWarp environment.
