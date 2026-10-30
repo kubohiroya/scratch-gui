@@ -3,6 +3,7 @@ import AddonHooks from '../addons/hooks';
 import getStageControls from './tw-stage-controls.js';
 import getCameraControls from './tw-camera-controls.js';
 import getBlockEditorService from './tw-block-editor-service.js';
+import createPreviewVm from './tw-preview-vm.js';
 
 /**
  * Implements Scratch.gui API for unsandboxed extensions.
@@ -39,6 +40,7 @@ const implementGuiAPI = Scratch => {
          */
         getBlocklyEagerly: () => LazyScratchBlocks.load()
     };
+    Scratch.gui.createPreviewVm = () => createPreviewVm(Scratch.vm.constructor);
     Scratch.gui.cameraControls = getCameraControls(Scratch.vm).api;
     Scratch.gui.stageControls = getStageControls(Scratch.vm).api;
     Scratch.gui.blockEditors = getBlockEditorService(Scratch.vm).api;
