@@ -1,0 +1,69 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {createPlusPermissionUI} from '../../../src/lib/tw-plus-permission-ui.js';
+const require = createRequire(import.meta.url);
+const {JSDOM} = require('jsdom');
+const code = {id: 'sample', source: {type: 'remote', url: 'https://example.org/sample.js'},
+    sha256: 'a'.repeat(64), publisher: '<img src=x onerror=alert(1)>', capabilities: ['vm'], execution: 'unsandboxed'};
+function fixture(locale) {
+    const dom = new JSDOM('<!DOCTYPE html><html><head></head><body><button id="previous">Before</button></body></html>');
+    dom.window.HTMLDialogElement.prototype.showModal = function() { this.open = true; };
+    const document = dom.window.document;
+    return {dom, document, ui: createPlusPermissionUI(document, locale)};
+}
+
+test('approval dialog displays exact source, digest, requested mode and unverified publisher as text', async () => {
+    const {dom, document, ui} = fixture('ja');
+    const review = ui.requestApproval(code);
+    const dialog = document.querySelector('[data-testid="tw-plus-permission"]');
+    assert.equal(dialog.open, true);
+    assert.equal(dialog.querySelector('[data-field="source"]').textContent, code.source.url);
+    assert.equal(dialog.querySelector('[data-field="sha256"]').textContent, code.sha256);
+    assert.equal(dialog.querySelector('[data-field="execution"]').textContent, 'unsandboxed');
+    assert.equal(dialog.querySelector('[data-field="publisher"]').textContent.includes('本人性は未検証'), true);
+    assert.equal(dialog.querySelector('img'), null);
+    assert.equal(document.activeElement, dialog.querySelector('[data-testid="tw-plus-deny"]'));
+    dialog.querySelector('[data-testid="tw-plus-allow"]').click();
+    assert.equal(await review, true);
+    assert.equal(document.querySelector('dialog'), null);
+    ui.dispose(); dom.window.close();
+});
+
+test('denial, escape, close, abort and host disposal all refuse execution', async () => {
+    for (const action of ['deny', 'escape', 'close', 'abort', 'dispose']) {
+        const {dom, document, ui} = fixture('en');
+        const controller = new AbortController();
+        const review = ui.requestApproval(code, {signal: controller.signal});
+        const dialog = document.querySelector('dialog');
+        if (action === 'deny') dialog.querySelector('[data-testid="tw-plus-deny"]').click();
+        if (action === 'escape') dialog.dispatchEvent(new dom.window.Event('cancel', {cancelable: true}));
+        if (action === 'close') dialog.dispatchEvent(new dom.window.Event('close'));
+        if (action === 'abort') controller.abort();
+        if (action === 'dispose') ui.dispose();
+        assert.equal(await review, false, action);
+        assert.equal(document.querySelector('dialog'), null);
+        ui.dispose(); dom.window.close();
+    }
+});
+
+test('unsupported dialog and already aborted requests fail closed', async () => {
+    const {dom, document, ui} = fixture('en');
+    assert.equal(await ui.requestApproval(code, {signal: AbortSignal.abort()}), false);
+    delete dom.window.HTMLDialogElement.prototype.showModal;
+    assert.equal(await ui.requestApproval(code), false);
+    assert.equal(document.querySelector('dialog'), null);
+    ui.dispose(); dom.window.close();
+});
+
+test('diagnostics are bounded text and show an explicit failure reason', () => {
+    const {dom, document, ui} = fixture('en');
+    for (let i = 0; i < 60; i++) ui.diagnostics({type: 'verified', id: 'sample', sha256: code.sha256});
+    ui.diagnostics({type: 'project-error', code: 'DIGEST_MISMATCH', message: '<script>unsafe</script>'});
+    const status = document.querySelector('[data-testid="tw-plus-extension-status"]');
+    assert.equal(status.open, true);
+    assert.equal(status.querySelectorAll('li').length, 50);
+    assert.equal(status.querySelector('li:last-child').textContent.includes('DIGEST_MISMATCH'), true);
+    assert.equal(status.querySelector('script'), null);
+    ui.dispose(); dom.window.close();
+});

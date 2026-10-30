@@ -1,3 +1,4 @@
+const {withExtensionLoaderWebpack4} = require('@kubohiroya/turbowarp-extension-loader/webpack4');
 const defaultsDeep = require('lodash.defaultsdeep');
 const path = require('path');
 const webpack = require('webpack');
@@ -138,7 +139,7 @@ if (!process.env.CI) {
     base.plugins.push(new webpack.ProgressPlugin());
 }
 
-module.exports = withBlockEditorWebpack4([
+const guiConfigs = withBlockEditorWebpack4([
     // to run editor examples
     defaultsDeep({}, base, {
         entry: {
@@ -300,3 +301,5 @@ module.exports = withBlockEditorWebpack4([
             ])
         })) : []
 ), {hostRoot: __dirname});
+
+module.exports = withExtensionLoaderWebpack4(guiConfigs, {hostRoot: __dirname});

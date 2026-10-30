@@ -13,6 +13,7 @@ import Modal from './modal.jsx';
 import extensionLibrary from '../lib/libraries/extensions/index.jsx';
 import defaultExtensionURLs from 'scratch-vm/src/extension-support/tw-default-extension-urls';
 import {getPlusReviewedMode, setPlusHostPolicy} from '../lib/tw-plus-extension-permissions';
+import {startupPlusExtensionHost} from '../lib/tw-plus-extension-host';
 
 /* eslint-disable require-atomic-updates */
 
@@ -190,12 +191,23 @@ class TWSecurityManagerComponent extends React.Component {
                     })});
             }, defaultExtensionURLs);
         }
+        // Install after the ordinary permission bridge and before project loading begins.
+        const plusHostPolicy = {};
+        for (const method of ['canLoadExtensionFromProject', 'getSandboxMode']) {
+            if (propsSecurityManager[method]) plusHostPolicy[method] = propsSecurityManager[method].bind(vmSecurityManager);
+        }
+        this.plusExtensionHost = startupPlusExtensionHost(this.props.vm, {locale: this.props.locale,
+            hostPolicy: plusHostPolicy});
     }
 
     componentWillUnmount () {
         this.isUnmounting = true;
         setPlusHostPolicy(this.props.vm.extensionManager.securityManager, null);
-        if (this.restoreBatchLoader) this.restoreBatchLoader();
+        if (this.plusExtensionHost && this.plusExtensionHost.enabled) {
+            this.plusExtensionHost.dispose().then(() => {
+                if (this.restoreBatchLoader) this.restoreBatchLoader();
+            }).catch(error => log.error('Could not dispose the Plus extension host', error));
+        } else if (this.restoreBatchLoader) this.restoreBatchLoader();
         if (this.state.type === SecurityModals.LoadExtensions && this.state.callback) this.state.callback(null);
     }
 

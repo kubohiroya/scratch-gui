@@ -16,6 +16,7 @@ import {
 import log from './log';
 import {isExtensionSecurityCancelled} from '@kubohiroya/turbowarp-extension-security-dialog/turbowarp';
 import returnToEditorStart from './tw-extension-security-cancel';
+import {isPlusPermissionDenied} from './tw-plus-extension-host';
 
 /**
  * List of fonts that could be used by security prompts.
@@ -92,7 +93,7 @@ const vmManagerHOC = function (WrappedComponent) {
                     }
                 })
                 .catch(e => {
-                    if (isExtensionSecurityCancelled(e)) this.props.onSecurityLoadCancelled();
+                    if (isExtensionSecurityCancelled(e) || isPlusPermissionDenied(e)) this.props.onSecurityLoadCancelled();
                     else this.props.onError(e);
                 });
         }

@@ -1,0 +1,45 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {createHash} from 'node:crypto';
+import {packagePlusHTML, configurePlusPackager} from '../../../src/lib/tw-plus-packager.js';
+import {prepareOfflinePackage} from '@kubohiroya/turbowarp-extension-loader/packager';
+import Zip from '@turbowarp/jszip';
+const require = createRequire(import.meta.url);
+const {Packager} = require('@turbowarp/packager');
+const bytes = new TextEncoder().encode('Scratch.extensions.register({getInfo(){return {id:"sample",blocks:[]}}});');
+const sha256 = createHash('sha256').update(bytes).digest('hex');
+const project = {targets: [{isStage: true, name: 'Stage', variables: {}, lists: {}, broadcasts: {}, blocks: {}, comments: {},
+    currentCostume: 0, costumes: [], sounds: [], volume: 100, layerOrder: 0, tempo: 60, videoTransparency: 50, videoState: 'on', textToSpeechLanguage: null}],
+    monitors: [], extensions: ['sample'], extensionURLs: {}, meta: {semver: '3.0.0', vm: '2.0.0', agent: 'Plus fixture'},
+    turboWarpPlus: {schemaVersion: 1, extensions: [{id: 'sample', execution: 'unsandboxed', sha256, source: {type: 'remote', url: 'https://example.test/code.js'}}]}};
+const ports = {
+    fetcher: {async fetch(url) { return {bytes, finalURL: url, redirects: []}; }},
+    trustProvider: {async authorize(code) { return {allowed: true, scope: 'digest', sha256: code.sha256}; }}
+};
+const prepare = () => prepareOfflinePackage(project, ports, {zip: Zip, resourceDependencies: {sample: []}});
+
+test('actual TurboWarp Packager embeds an opaque verified SB3, runtime bootstrap and restrictive CSP into single HTML', async () => {
+    const prepared = await prepare();
+    const packager = new Packager();
+    const result = await packagePlusHTML(packager, prepared, {runtimeBundle: 'globalThis.TurboWarpPlusExtensionHost={installPlusExtensionHost:()=>({enabled:true})};'});
+    assert.equal(result.type, 'text/html');
+    const html = new TextDecoder().decode(result.data);
+    assert.ok(html.startsWith('<!DOCTYPE html>'));
+    assert.ok(html.includes('Plus runtime bootstrap did not complete'));
+    assert.ok(html.includes("connect-src 'none'"));
+    assert.ok(!html.includes('https://example.test/code.js'));
+    assert.equal(packager.project.type, 'blob');
+    assert.equal(packager.options.cloudVariables.mode, 'none');
+    assert.deepEqual(packager.project.analysis.extensions, []);
+});
+
+test('packaging refuses missing trusted bootstrap, prior custom JS and reused instances', async () => {
+    const prepared = await prepare();
+    assert.throws(() => configurePlusPackager(new Packager(), prepared), {code: 'MISSING_BOOTSTRAP'});
+    const packager = new Packager();
+    packager.options.custom.js = 'unreviewed()';
+    assert.throws(() => configurePlusPackager(packager, prepared, {runtimeBundle: 'trusted()'}), {code: 'UNREVIEWED_CUSTOM_CODE'});
+    packager.used = true;
+    assert.throws(() => configurePlusPackager(packager, prepared, {runtimeBundle: 'trusted()'}), {code: 'PACKAGE_BUSY'});
+});

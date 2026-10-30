@@ -3,6 +3,8 @@ import {connect} from 'react-redux';
 import PropTypes from 'prop-types';
 import log from './log';
 import {getIsShowingProject} from '../reducers/project-state';
+import JSZip from '@turbowarp/jszip';
+import {createProjectIO} from '@kubohiroya/turbowarp-extension-loader/project-codec';
 
 const PACKAGER_URL = 'https://packager.turbowarp.org';
 const PACKAGER_ORIGIN = PACKAGER_URL;
@@ -13,6 +15,9 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
             super(props);
             this.handleClickPackager = this.handleClickPackager.bind(this);
             this.handleMessage = this.handleMessage.bind(this);
+            this.plusLoaderEnabled = new URLSearchParams(location.search).get('twPlusExtensionLoader') === '1';
+            this.plusPackagerWindow = null;
+            this.plusPackagerBuffer = null;
         }
         componentDidMount () {
             window.addEventListener('message', this.handleMessage);
@@ -21,11 +26,40 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
             window.removeEventListener('message', this.handleMessage);
         }
         handleClickPackager () {
-            if (this.props.canOpenPackager) {
+            if (!this.props.canOpenPackager) return;
+            if (!this.plusLoaderEnabled) {
                 window.open(`${PACKAGER_URL}/?import_from=${location.origin}`);
+                return;
             }
+            // Reserve the browsing context during the user gesture, before serializing.
+            const popup = window.open('about:blank');
+            if (!popup) return;
+            this.props.vm.saveProjectSb3('arraybuffer').then(async buffer => {
+                const {manifest} = await createProjectIO({zip: JSZip}).prepare(buffer);
+                if (popup.closed) return;
+                if (manifest === null) {
+                    popup.location.href = `${PACKAGER_URL}/?import_from=${location.origin}`;
+                    return;
+                }
+                this.plusPackagerWindow = popup;
+                this.plusPackagerBuffer = buffer;
+                popup.location.href = new URL(`${process.env.ROOT || './'}plus-packager.html`, location.href).href;
+            }).catch(error => {
+                popup.close();
+                log.error(error);
+                window.alert(`Plus HTML出力を開始できませんでした: ${error.message}`);
+            });
         }
         handleMessage (e) {
+            const plusData = e.data && e.data.twPlusPackage;
+            if (e.origin === location.origin && e.source === this.plusPackagerWindow &&
+                plusData && plusData.type === 'ready' && this.plusPackagerBuffer) {
+                const buffer = this.plusPackagerBuffer;
+                this.plusPackagerBuffer = null;
+                e.source.postMessage({twPlusPackage: {type: 'project', bytes: buffer,
+                    name: `${this.props.reduxProjectTitle}.sb3`}}, location.origin, [buffer]);
+                return;
+            }
             if (e.origin !== PACKAGER_ORIGIN) {
                 return;
             }
@@ -34,8 +68,8 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
                 return;
             }
 
-            const packagerData = e.data.p4;
-            if (packagerData.type !== 'ready-for-import') {
+            const packagerData = e.data && e.data.p4;
+            if (!packagerData || packagerData.type !== 'ready-for-import') {
                 return;
             }
 
@@ -47,7 +81,18 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
             }, e.origin);
 
             this.props.vm.saveProjectSb3('arraybuffer')
-                .then(buffer => {
+                .then(async buffer => {
+                    // Recheck after an asynchronous import request: the Editor may have changed projects.
+                    if (this.plusLoaderEnabled) {
+                        const {manifest} = await createProjectIO({zip: JSZip}).prepare(buffer);
+                        if (manifest !== null) {
+                            e.source.postMessage({p4: {type: 'cancel-import'}}, e.origin);
+                            this.plusPackagerWindow = e.source;
+                            this.plusPackagerBuffer = buffer;
+                            e.source.location.href = new URL(`${process.env.ROOT || './'}plus-packager.html`, location.href).href;
+                            return;
+                        }
+                    }
                     const name = `${this.props.reduxProjectTitle}.sb3`;
                     e.source.postMessage({
                         p4: {

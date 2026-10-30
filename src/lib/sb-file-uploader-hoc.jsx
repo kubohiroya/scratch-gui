@@ -7,6 +7,7 @@ import log from '../lib/log';
 import sharedMessages from './shared-messages';
 import {setFileHandle, setProjectError} from '../reducers/tw';
 import {isExtensionSecurityCancelled} from '@kubohiroya/turbowarp-extension-security-dialog/turbowarp';
+import {isPlusPermissionDenied} from './tw-plus-extension-host';
 import returnToEditorStart from './tw-extension-security-cancel';
 
 import {
@@ -212,7 +213,7 @@ const SBFileUploaderHOC = function (WrappedComponent) {
                         loadingSuccess = true;
                     })
                     .catch(error => {
-                        if (isExtensionSecurityCancelled(error)) {
+                        if (isExtensionSecurityCancelled(error) || isPlusPermissionDenied(error)) {
                             cancelled = true;
                             this.props.onSecurityLoadCancelled();
                         } else {
