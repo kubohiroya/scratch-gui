@@ -27,7 +27,8 @@
     "test:smoke": "jest --runInBand test[\\\\/]smoke",
     "watch": "webpack --colors --watch",
     "test:block-editor": "node --test test/unit/block-editor/*.test.mjs",
-    "test:extension-security": "node --test test/unit/extension-security/*.test.cjs"
+    "test:extension-security": "node --test test/unit/extension-security/*.test.cjs",
+    "test:plus-extension-loader": "node --test test/unit/extension-loader/*.test.mjs"
   },
   "config": {
     "commitizen": {
@@ -36,6 +37,7 @@
   },
   "dependencies": {
     "@kubohiroya/turbowarp-extension-data-editor": "^0.5.0",
+    "@kubohiroya/turbowarp-extension-loader": "git+https://github.com/kubohiroya/turbowarp-extension-loader.git#9dc2689a8e2b5416687f27d1ec089b3531fd03c7",
     "@kubohiroya/turbowarp-extension-security-dialog": "0.3.3",
     "@microbit/microbit-universal-hex": "0.2.2",
     "@turbowarp/jszip": "^3.11.1",
@@ -97,7 +99,7 @@
     "scratch-blocks": "github:TurboWarp/scratch-blocks#develop-builds",
     "scratch-paint": "github:TurboWarp/scratch-paint#develop",
     "scratch-render": "github:TurboWarp/scratch-render#develop",
-    "scratch-vm": "github:TurboWarp/scratch-vm#develop",
+    "scratch-vm": "git+https://github.com/kubohiroya/scratch-vm.git#c7ed7b24a9dfbec4ec64f654dbbee2ebb17a8b06",
     "style-loader": "^0.23.0",
     "text-encoding": "0.7.0",
     "to-style": "1.3.3",
@@ -116,6 +118,7 @@
     "@babel/plugin-transform-async-to-generator": "7.14.5",
     "@babel/preset-env": "7.14.8",
     "@babel/preset-react": "7.14.5",
+    "@turbowarp/packager": "3.14.0",
     "babel-core": "7.0.0-bridge.0",
     "babel-eslint": "10.1.0",
     "babel-loader": "8.3.0",

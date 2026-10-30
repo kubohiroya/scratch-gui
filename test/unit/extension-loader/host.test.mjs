@@ -1,0 +1,93 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
+import {createRequire} from 'node:module';
+import VM from 'scratch-vm';
+import {installPlusExtensionHost, startupPlusExtensionHost} from '../../../src/lib/tw-plus-extension-host.js';
+const require = createRequire(import.meta.url);
+const {JSDOM} = require('jsdom');
+const bytes = new TextEncoder().encode('(function(Scratch){Scratch.vm.plusHostExecuted=true;Scratch.extensions.register({getInfo(){return {id:"hostfixture",name:"Host fixture",blocks:[]}}});})(Scratch);');
+const sha256 = createHash('sha256').update(bytes).digest('hex');
+const manifest = {schemaVersion: 1, extensions: [{id: 'hostfixture', execution: 'unsandboxed',
+    source: {type: 'remote', url: 'https://example.org/host-fixture.js'}, sha256}]};
+const project = {targets: [{isStage: true, name: 'Stage', variables: {}, lists: {}, broadcasts: {}, blocks: {},
+    comments: {}, currentCostume: 0, costumes: [], sounds: [], volume: 100, layerOrder: 0, tempo: 60,
+    videoTransparency: 50, videoState: 'on', textToSpeechLanguage: null}], monitors: [], extensions: [],
+    meta: {semver: '3.0.0', vm: '0.2.0', agent: 'host integration test'}, turboWarpPlus: manifest};
+
+test('disabled host does not access a VM or permission document', async () => {
+    const forbidden = new Proxy({}, {get() { throw new Error('unexpected access'); }});
+    const host = installPlusExtensionHost(forbidden, {document: forbidden});
+    assert.equal(host.enabled, false);
+    await host.dispose();
+});
+
+test('startup configuration is fixed before later URL changes', async () => {
+    const previous = globalThis.location;
+    globalThis.location = {search: '?twPlusExtensionLoader=1'};
+    try {
+        const forbidden = new Proxy({}, {get() { throw new Error('unexpected access'); }});
+        const host = startupPlusExtensionHost(forbidden, {document: forbidden});
+        assert.equal(host.enabled, false);
+        await host.dispose();
+    } finally {
+        if (previous === undefined) delete globalThis.location;
+        else globalThis.location = previous;
+    }
+});
+
+test('injected host policy denial blocks the new project path before user consent or evaluation', async () => {
+    const vm = new VM();
+    let prompts = 0;
+    const host = installPlusExtensionHost(vm, {enabled: true, document: undefined,
+        requestApproval: async () => { prompts++; return true; },
+        hostPolicy: {canLoadExtensionFromProject: async () => false},
+        async fetchImpl(url) { const response = new Response(bytes); Object.defineProperty(response, 'url', {value: url}); return response; }});
+    try {
+        await assert.rejects(vm.loadProject(JSON.stringify(project)), {code: 'TRUST_DENIED'});
+        assert.equal(vm.plusHostExecuted, undefined);
+        assert.equal(prompts, 0);
+    } finally { await host.dispose(); vm.runtime.dispose(); }
+});
+
+test('real VM project loading waits for DOM consent, preserves metadata and reopens offline from verified cache', async () => {
+    const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>');
+    dom.window.HTMLDialogElement.prototype.showModal = function() { this.open = true; };
+    const vm = new VM();
+    let fetches = 0;
+    const host = installPlusExtensionHost(vm, {enabled: true, document: dom.window.document,
+        async fetchImpl(url) {
+            fetches++;
+            if (fetches > 1) throw new Error('offline');
+            const response = new Response(bytes);
+            Object.defineProperty(response, 'url', {value: url});
+            return response;
+        }});
+    try {
+        const loading = vm.loadProject(JSON.stringify(project));
+        let dialog;
+        for (let i = 0; i < 100 && !dialog; i++) {
+            await new Promise(resolve => setTimeout(resolve, 5));
+            dialog = dom.window.document.querySelector('[data-testid="tw-plus-permission"]');
+        }
+        assert.ok(dialog, 'The host displays a permission dialog');
+        assert.equal(vm.plusHostExecuted, undefined);
+        dialog.querySelector('[data-testid="tw-plus-allow"]').click();
+        await loading;
+        assert.equal(vm.plusHostExecuted, true);
+        const saved = JSON.parse(vm.toJSON());
+        assert.equal(saved.turboWarpPlus.extensions[0].sha256, sha256);
+        vm.plusHostExecuted = false;
+        await vm.loadProject(JSON.stringify(saved));
+        assert.equal(vm.plusHostExecuted, true);
+        assert.equal(fetches, 1);
+        assert.equal(dom.window.document.querySelector('dialog'), null);
+        assert.equal(vm.extensionManager.isExtensionLoaded('hostfixture'), true);
+        await host.dispose();
+        assert.equal(vm.extensionManager.isExtensionLoaded('hostfixture'), false);
+    } finally {
+        await host.dispose();
+        vm.runtime.dispose();
+        dom.window.close();
+    }
+});
