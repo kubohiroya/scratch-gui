@@ -1,4 +1,5 @@
 import React from 'react';
+import {isExtensionLoaderEnabled} from '../config/extension-loader-flag.js';
 import {connect} from 'react-redux';
 import PropTypes from 'prop-types';
 import log from './log';
@@ -15,7 +16,7 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
             super(props);
             this.handleClickPackager = this.handleClickPackager.bind(this);
             this.handleMessage = this.handleMessage.bind(this);
-            this.plusLoaderEnabled = new URLSearchParams(location.search).get('twPlusExtensionLoader') === '1';
+            this.plusLoaderEnabled = isExtensionLoaderEnabled(location.search);
             this.plusPackagerWindow = null;
             this.plusPackagerBuffer = null;
         }

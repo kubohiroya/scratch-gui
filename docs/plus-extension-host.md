@@ -2,7 +2,7 @@
 
 対象: [Editor Issue #4](https://github.com/kubohiroya/turbowarp-plus-editor/issues/4)
 
-`tw-security-manager` は通常拡張の確認フックを接続した後、`startupPlusExtensionHost(vm)` を同期的に呼ぶ。`twPlusExtensionLoader=1` を起動時に指定した場合のみ有効となり、作品ロード前にフックが設置される。起動後のURL変更や作品のManifestは設定を変更しない。従来のPlusギャラリー用フラグとロード処理は維持する。
+`tw-security-manager` は通常拡張の確認フックを接続した後、`startupPlusExtensionHost(vm)` を同期的に呼ぶ。通常起動で既定ONとなり、作品ロード前にフックが設置される。`twPlusExtensionLoader=0` を起動URLへ指定するとOFFへ戻せる。従来の `=1` は引き続きONとなり、不正値はOFFとする。起動後のURL変更や作品のManifestは設定を変更しない。従来のPlusギャラリー用フラグとロード処理は維持する。
 
 `installPlusExtensionHost(vm, options)` はDOMとVMだけで使える。Packagerの信頼済みbootstrapは `enabled:true` を明示する。これはLoaderを接続する設定で、拡張コードの実行許可ではない。各拡張の取得・検証後には必ずホストの許可判断が必要である。
 

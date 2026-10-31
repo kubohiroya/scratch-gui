@@ -22,15 +22,20 @@ test('disabled host does not access a VM or permission document', async () => {
     await host.dispose();
 });
 
-test('startup configuration is fixed before later URL changes', async () => {
+test('startup defaults on, opt-out is explicit and later URL changes cannot toggle the host', async () => {
     const previous = globalThis.location;
-    globalThis.location = {search: '?twPlusExtensionLoader=1'};
+    globalThis.location = {search: '?twPlusExtensionLoader=0'};
+    const vm = new VM();
     try {
-        const forbidden = new Proxy({}, {get() { throw new Error('unexpected access'); }});
-        const host = startupPlusExtensionHost(forbidden, {document: forbidden});
-        assert.equal(host.enabled, false);
+        const host = startupPlusExtensionHost(vm, {document: undefined});
+        assert.equal(host.enabled, true);
         await host.dispose();
+        const forbidden = new Proxy({}, {get() { throw new Error('unexpected access'); }});
+        const disabled = startupPlusExtensionHost(forbidden, {search: '?twPlusExtensionLoader=0', document: forbidden});
+        assert.equal(disabled.enabled, false);
+        await disabled.dispose();
     } finally {
+        vm.runtime.dispose();
         if (previous === undefined) delete globalThis.location;
         else globalThis.location = previous;
     }
