@@ -107,6 +107,8 @@ import sharedMessages from '../../lib/shared-messages';
 import SeeInsideButton from './tw-see-inside.jsx';
 import {notScratchDesktop} from '../../lib/isScratchDesktop.js';
 import {APP_NAME} from '../../lib/brand.js';
+import {TURBOWARP_PLUS_EXTENSION_LOADER_ENABLED} from '../../config/feature-flags.js';
+import {openPlusExtensionAuthoring} from '../../lib/tw-plus-extension-authoring-ui.js';
 
 const ariaMessages = defineMessages({
     tutorials: {
@@ -219,6 +221,7 @@ class MenuBar extends React.Component {
             'handleClickSave',
             'handleClickSaveAsCopy',
             'handleClickPackager',
+            'handleClickAddPlusExtension',
             'handleClickDesktopSettings',
             'handleClickRestorePoints',
             'handleClickSeeCommunity',
@@ -270,6 +273,10 @@ class MenuBar extends React.Component {
     handleClickPackager () {
         this.props.onClickPackager();
         this.props.onRequestCloseFile();
+    }
+    handleClickAddPlusExtension () {
+        this.props.onRequestCloseFile();
+        openPlusExtensionAuthoring(this.props.vm, {locale: this.props.locale});
     }
     handleClickDesktopSettings () {
         this.props.onClickDesktopSettings();
@@ -691,6 +698,16 @@ class MenuBar extends React.Component {
                                             )}
                                         </SB3Downloader>
                                     </MenuSection>
+                                    {TURBOWARP_PLUS_EXTENSION_LOADER_ENABLED && this.props.isShowingProject && (
+                                        <MenuSection>
+                                            <MenuItem onClick={this.handleClickAddPlusExtension}>
+                                                <span data-testid="tw-plus-add-extension">
+                                                    {this.props.locale.startsWith('ja') ?
+                                                        'Plus拡張を追加' : 'Add Plus extension'}
+                                                </span>
+                                            </MenuItem>
+                                        </MenuSection>
+                                    )}
                                     {this.props.onClickPackager && (
                                         <MenuSection>
                                             <MenuItem

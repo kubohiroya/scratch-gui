@@ -1,14 +1,14 @@
 import bindAll from 'lodash.bindall';
 import PropTypes from 'prop-types';
 import React from 'react';
-import {loadExtensionCatalog} from '@kubohiroya/turbowarp-extension-security-dialog';
 import {ExtensionSecurityDialog, ExtensionSelectionList} from '@kubohiroya/turbowarp-extension-security-dialog/react';
 import '@kubohiroya/turbowarp-extension-security-dialog/webpack4.css';
 import loadPlusExtensions from '../lib/tw-plus-extension-loader';
+import {readPlusCatalogSettings, applyPlusCatalogSettings} from '../lib/tw-plus-catalog-authoring.js';
+import {TURBOWARP_PLUS_EXTENSION_LOADER_ENABLED} from '../config/feature-flags.js';
+import {loadPlusCatalog, CATALOG_URL} from '../lib/tw-plus-catalog-source.js';
 import log from '../lib/log';
 import styles from '../components/tw-plus-library/plus-library.css';
-
-const CATALOG_URL = 'https://kubohiroya.github.io/turbowarp-plus-packages/extensions-v1.json';
 
 const text = {
     en: {
@@ -17,6 +17,7 @@ const text = {
         loadFailed: 'An extension could not be loaded. Extensions already loaded remain available. ' +
             'Retry your selection.',
         denied: 'No extensions were loaded. Review the selected extensions and their permissions.',
+        applyFailed: 'Extension settings could not be applied.',
         retry: 'Retry'
     },
     ja: {
@@ -24,6 +25,7 @@ const text = {
         failed: '機能拡張の一覧を取得できませんでした。',
         loadFailed: '機能拡張を読み込めませんでした。読み込み済みの拡張は利用できます。選択を確認して再試行してください。',
         denied: '機能拡張は読み込まれませんでした。選択と読み込み許可を確認してください。',
+        applyFailed: '拡張の設定を適用できませんでした。検証・許可の結果を確認してください。',
         retry: '再試行'
     }
 };
@@ -32,7 +34,8 @@ class PlusLibrary extends React.PureComponent {
     constructor (props) {
         super(props);
         bindAll(this, ['handleFetchCatalog', 'handleSelection', 'handleReview']);
-        this.state = {entries: null, fetchError: false, loadError: null, reviewing: null, busy: false};
+        this.state = {entries: null, fetchError: false, loadError: null, reviewing: null, busy: false,
+            choices: new Map(), distributions: new Map()};
     }
     componentDidMount () {
         this.alive = true;
@@ -48,8 +51,9 @@ class PlusLibrary extends React.PureComponent {
         this.setState({fetchError: false});
         const timeout = setTimeout(() => this.controller.abort(), 15000);
         try {
-            const entries = await loadExtensionCatalog(CATALOG_URL, this.controller.signal);
-            if (this.alive) this.setState({entries});
+            const entries = await loadPlusCatalog(this.controller.signal);
+            const settings = await readPlusCatalogSettings(this.props.vm, entries);
+            if (this.alive) this.setState({entries, choices: settings.choices, distributions: settings.distributions});
         } catch (error) {
             if (this.alive) {
                 log.error(error);
@@ -59,7 +63,29 @@ class PlusLibrary extends React.PureComponent {
             clearTimeout(timeout);
         }
     }
-    handleSelection (entries) {
+    async handleSelection (entries, selection) {
+        if (TURBOWARP_PLUS_EXTENSION_LOADER_ENABLED) {
+            this.setState({busy: true, loadError: null});
+            this.props.onBusyChange(true);
+            try {
+                const loaded = await applyPlusCatalogSettings(this.props.vm, selection, {signal: this.controller.signal});
+                if (!this.alive) return;
+                if (loaded.length) {
+                    this.props.onCategorySelected(loaded[loaded.length - 1]);
+                    this.props.onRequestClose();
+                } else this.setState({loadError: 'denied'});
+            } catch (error) {
+                log.error(error);
+                if (this.alive) this.setState({loadError: `${text[this.props.locale.startsWith('ja') ? 'ja' : 'en'].applyFailed} ` +
+                    `${error.code || 'LOAD_FAILED'}: ${error.message}`});
+            } finally {
+                if (this.alive) {
+                    this.setState({busy: false});
+                    this.props.onBusyChange(false);
+                }
+            }
+            return;
+        }
         this.setState({reviewing: entries, loadError: null});
         this.props.onBusyChange(true);
     }
@@ -91,7 +117,7 @@ class PlusLibrary extends React.PureComponent {
     }
     render () {
         const t = text[this.props.locale.startsWith('ja') ? 'ja' : 'en'];
-        const {entries, reviewing, busy, loadError, fetchError} = this.state;
+        const {entries, reviewing, busy, loadError, fetchError, choices, distributions} = this.state;
         if (!entries) {
             return (<div
                 className={styles.message}
@@ -110,11 +136,14 @@ class PlusLibrary extends React.PureComponent {
             {loadError && <p
                 className={styles.error}
                 role="alert"
-            >{t[loadError]}</p>}
+            >{t[loadError] || loadError}</p>}
             <div hidden={Boolean(reviewing)}>
                 <ExtensionSelectionList
                     entries={entries}
                     loadedIds={loadedIds}
+                    initialChoices={choices}
+                    initialDistributions={distributions}
+                    enableDistribution={TURBOWARP_PLUS_EXTENSION_LOADER_ENABLED}
                     locale={this.props.locale}
                     filterQuery={this.props.filterQuery}
                     busy={busy}
@@ -126,6 +155,7 @@ class PlusLibrary extends React.PureComponent {
             {reviewing && !busy && <ExtensionSecurityDialog
                 context="catalog"
                 entries={reviewing}
+                initialChoices={choices}
                 locale={this.props.locale}
                 onComplete={this.handleReview}
             />}

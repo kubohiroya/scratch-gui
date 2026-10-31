@@ -14,7 +14,7 @@ import extensionTags from '../lib/libraries/tw-extension-tags';
 
 import LibraryComponent from '../components/library/library.jsx';
 import extensionIcon from '../components/action-menu/icon--sprite.svg';
-import {TURBOWARP_PLUS_LIBRARY_ENABLED} from '../config/feature-flags';
+import {TURBOWARP_PLUS_LIBRARY_ENABLED, TURBOWARP_PLUS_EXTENSION_LOADER_ENABLED} from '../config/feature-flags';
 import PlusLibrary from './tw-plus-library.jsx';
 import plusIcon from '../components/tw-plus-library/icon.svg';
 import plusStyles from '../components/tw-plus-library/plus-library.css';
@@ -26,6 +26,7 @@ const messages = defineMessages({
         id: 'gui.extensionLibrary.chooseAnExtension'
     }
 });
+const plusLibraryEnabled = TURBOWARP_PLUS_LIBRARY_ENABLED || TURBOWARP_PLUS_EXTENSION_LOADER_ENABLED;
 
 const toLibraryItem = extension => {
     if (typeof extension === 'object') {
@@ -207,13 +208,13 @@ class ExtensionLibrary extends React.PureComponent {
         return (
             <LibraryComponent
                 busy={this.state.plusBusy}
-                customTag={TURBOWARP_PLUS_LIBRARY_ENABLED ? 'twplus' : null}
-                renderCustomContent={TURBOWARP_PLUS_LIBRARY_ENABLED ? this.renderPlusContent : null}
+                customTag={plusLibraryEnabled ? 'twplus' : null}
+                renderCustomContent={plusLibraryEnabled ? this.renderPlusContent : null}
                 data={library}
                 filterable
                 persistableKey="extensionId"
                 id="extensionLibrary"
-                tags={TURBOWARP_PLUS_LIBRARY_ENABLED ? extensionTags.concat({
+                tags={plusLibraryEnabled ? extensionTags.concat({
                     tag: 'twplus',
                     intlLabel: 'TurboWarp Plus',
                     iconSrc: plusIcon,
