@@ -7,3 +7,8 @@
 :global(.twextsec-body) :global(.twextsec-list) {
     background: var(--ui-secondary, #f7f8fb);
 }
+
+/* The editor canvas can overflow the layout viewport on mobile. */
+:global(.twextsec-modal)[data-twextsec-window] {
+    left: 50vw;
+}
