@@ -6,8 +6,11 @@
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
+    right: auto;
+    bottom: auto;
+    /* The host layout may overflow on mobile; keep the overlay within the viewport. */
+    width: 100vw;
+    height: 100vh;
     z-index: $z-index-modal;
     background-color: $ui-modal-overlay;
     color: $ui-modal-foreground;
