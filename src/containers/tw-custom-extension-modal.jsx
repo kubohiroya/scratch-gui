@@ -6,6 +6,8 @@ import log from '../lib/log';
 import CustomExtensionModalComponent from '../components/tw-custom-extension-modal/custom-extension-modal.jsx';
 import {closeCustomExtensionModal} from '../reducers/modals';
 import {manuallyTrustExtension, isTrustedExtension} from './tw-security-manager.jsx';
+import {getExtensionAuthoringHost} from '../lib/tw-plus-extension-authoring.js';
+import AuthoringSettings from '../components/tw-custom-extension-modal/authoring-settings.jsx';
 import {getPersistedUnsandboxed, setPersistedUnsandboxed} from '../lib/tw-persisted-unsandboxed.js';
 
 /**
@@ -36,16 +38,107 @@ class CustomExtensionModal extends React.Component {
             'handleDragOver',
             'handleDragLeave',
             'handleDrop',
-            'handleChangeUnsandboxed'
+            'handleChangeUnsandboxed',
+            'handleBack',
+            'handleChangeId',
+            'handleChangeDistribution',
+            'handleChangeExecution',
+            'handleAddVerified'
         ]);
 
+        this.authoring = getExtensionAuthoringHost(props.vm);
         this.state = {
+            step: 'input',
+            id: '',
+            fileIds: [],
+            distribution: 'embedded',
+            execution: 'sandboxed',
+            busy: false,
+            status: '',
+            recoveryURL: null,
             type: 'url',
             url: '',
             files: null,
             text: '',
             unsandboxed: getPersistedUnsandboxed()
         };
+    }
+
+    componentDidMount () {
+        this.unsubscribe = this.authoring?.onDispose(this.handleClose);
+    }
+
+    componentWillUnmount () {
+        this.unmounted = true;
+        this.operation?.abort();
+        this.unsubscribe?.();
+        if (this.recoveryURL) URL.revokeObjectURL(this.recoveryURL);
+    }
+
+    handleBack () {
+        if (!this.operation) this.setState({step: 'input'});
+    }
+
+    handleChangeId (event) {
+        const index = Number(event.target.dataset.sourceIndex);
+        const value = event.target.value;
+        if (this.state.type === 'file') {
+            this.setState(state => ({fileIds: state.fileIds.map((id, i) => (i === index ? value : id))}));
+        } else this.setState({id: value});
+    }
+
+    handleChangeDistribution (event) {
+        this.setState({distribution: event.target.value});
+    }
+
+    handleChangeExecution (event) {
+        this.setState({execution: event.target.value});
+    }
+
+    getSources () {
+        if (this.state.type === 'file') return Array.from(this.state.files || []);
+        return [{name: this.state.type === 'url' ? this.state.url :
+            (this.props.locale.startsWith('ja') ? '入力したJS' : 'JavaScript source')}];
+    }
+
+    async handleAddVerified (event) {
+        event.preventDefault();
+        if (this.operation || !this.hasValidInput()) return;
+        const operation = new AbortController();
+        this.operation = operation;
+        const ja = this.props.locale.startsWith('ja');
+        this.setState({busy: true,
+            status: ja ? '内容を検証しています。実行許可を確認してください。' :
+                'Verifying the source. Review the execution permission.'});
+        try {
+            const requests = this.getSources().map((source, index) => ({
+                id: (this.state.type === 'file' ? this.state.fileIds[index] : this.state.id).trim(),
+                execution: this.state.execution,
+                distribution: this.state.type === 'url' ? this.state.distribution : 'embedded',
+                ...(this.state.type === 'url' ? {url: this.state.url.trim()} :
+                    {bytes: this.state.type === 'file' ? source :
+                        new Blob([this.state.text], {type: 'text/javascript'})})
+            }));
+            await this.authoring.addCustom(requests, {signal: operation.signal});
+            if (this.unmounted || operation.signal.aborted) return;
+            this.props.vm.emit('PLUS_EXTENSION_CATEGORY_SELECTED', requests[requests.length - 1].id);
+            this.handleClose();
+        } catch (error) {
+            if (this.unmounted || operation.signal.aborted) return;
+            if (error.originalProject) {
+                if (this.recoveryURL) URL.revokeObjectURL(this.recoveryURL);
+                this.recoveryURL = URL.createObjectURL(new Blob([error.originalProject],
+                    {type: 'application/x.scratch.sb3'}));
+            }
+            this.setState({step: 'input',
+                recoveryURL: this.recoveryURL,
+                status: `${ja ? '追加できませんでした。入力内容を確認して再度お試しください。' :
+                    'Could not add the extension. Check the input and try again.'}
+                    ${error.code || ''}: ${error.message}`});
+        } finally {
+            this.operation = null;
+            if (!this.unmounted) this.setState({busy: false});
+        }
     }
 
     /**
@@ -76,6 +169,10 @@ class CustomExtensionModal extends React.Component {
         if (this.state.type === 'url') {
             try {
                 const parsed = new URL(this.state.url);
+                if (this.authoring) {
+                    return parsed.protocol === 'https:' && !parsed.username &&
+                    !parsed.password && !parsed.hash;
+                }
                 return (
                     parsed.protocol === 'https:' ||
                     parsed.protocol === 'http:' ||
@@ -87,7 +184,7 @@ class CustomExtensionModal extends React.Component {
         }
 
         if (this.state.type === 'file') {
-            return !!this.state.files;
+            return !!this.state.files?.length;
         }
 
         if (this.state.type === 'text') {
@@ -99,7 +196,8 @@ class CustomExtensionModal extends React.Component {
 
     handleChangeFiles (files) {
         this.setState({
-            files
+            files,
+            fileIds: Array.from(files || [], () => '')
         });
     }
 
@@ -110,6 +208,7 @@ class CustomExtensionModal extends React.Component {
     }
 
     handleClose () {
+        this.operation?.abort();
         this.props.onClose();
     }
 
@@ -121,6 +220,10 @@ class CustomExtensionModal extends React.Component {
     }
 
     async handleLoadExtension () {
+        if (this.authoring) {
+            if (this.hasValidInput()) this.setState({step: 'settings', status: ''});
+            return;
+        }
         this.handleClose();
         try {
             const urls = await this.getExtensionURLs();
@@ -185,7 +288,8 @@ class CustomExtensionModal extends React.Component {
             e.preventDefault();
             this.setState({
                 type: 'file',
-                files
+                files,
+                fileIds: Array.from(files, () => '')
             });
         }
     }
@@ -208,8 +312,30 @@ class CustomExtensionModal extends React.Component {
     }
 
     render () {
+        if (this.authoring && this.state.step === 'settings') {
+            return (<AuthoringSettings
+                locale={this.props.locale}
+                sources={this.getSources()}
+                ids={this.state.type === 'file' ? this.state.fileIds : [this.state.id]}
+                type={this.state.type}
+                distribution={this.state.type === 'url' ? this.state.distribution : 'embedded'}
+                execution={this.state.execution}
+                busy={this.state.busy}
+                status={this.state.status}
+                recoveryURL={this.state.recoveryURL}
+                onClose={this.handleClose}
+                onBack={this.handleBack}
+                onSubmit={this.handleAddVerified}
+                onChangeId={this.handleChangeId}
+                onChangeDistribution={this.handleChangeDistribution}
+                onChangeExecution={this.handleChangeExecution}
+            />);
+        }
         return (
             <CustomExtensionModalComponent
+                authoring={Boolean(this.authoring)}
+                status={this.authoring ? this.state.status : null}
+                recoveryURL={this.state.recoveryURL}
                 canLoadExtension={this.hasValidInput()}
                 type={this.state.type}
                 onSwitchToFile={this.handleSwitchToFile}
@@ -235,8 +361,10 @@ class CustomExtensionModal extends React.Component {
 }
 
 CustomExtensionModal.propTypes = {
+    locale: PropTypes.string,
     onClose: PropTypes.func,
     vm: PropTypes.shape({
+        emit: PropTypes.func,
         extensionManager: PropTypes.shape({
             loadExtensionURL: PropTypes.func
         })
@@ -244,7 +372,8 @@ CustomExtensionModal.propTypes = {
 };
 
 const mapStateToProps = state => ({
-    vm: state.scratchGui.vm
+    vm: state.scratchGui.vm,
+    locale: state.locales.locale
 });
 
 const mapDispatchToProps = dispatch => ({

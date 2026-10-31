@@ -39,6 +39,7 @@ class FileInput extends React.Component {
         return (
             <button
                 className={styles.container}
+                data-testid="custom-extension-file"
                 onClick={this.handleClick}
             >
                 {this.props.files ? (

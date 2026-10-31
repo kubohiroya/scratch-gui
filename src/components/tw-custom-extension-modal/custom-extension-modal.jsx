@@ -18,20 +18,30 @@ const messages = defineMessages({
 
 const CustomExtensionModal = props => (
     <Modal
-        className={styles.modalContent}
+        className={props.authoring ? styles.authoringModal : styles.modalContent}
+        headerClassName={props.authoring ? styles.authoringHeader : null}
         onRequestClose={props.onClose}
-        contentLabel={props.intl.formatMessage(messages.title)}
+        contentLabel={props.authoring ? (props.intl.locale.startsWith('ja') ?
+            'カスタム拡張を追加' : 'Add Custom Extension') : props.intl.formatMessage(messages.title)}
         id="customExtensionModal"
     >
         <Box
-            className={styles.body}
+            className={props.authoring ? styles.authoringInput : styles.body}
             onDragOver={props.onDragOver}
             onDragLeave={props.onDragLeave}
             onDrop={props.onDrop}
         >
-            <div className={styles.typeSelectorContainer}>
-                <div
+            <div
+                className={styles.typeSelectorContainer}
+                role="tablist"
+                aria-label={props.intl.locale.startsWith('ja') ? '入力方法' : 'Input source'}
+            >
+                <button
+                    type="button"
+                    role="tab"
                     className={styles.typeSelectorButton}
+                    aria-selected={props.type === 'url'}
+                    data-testid="custom-extension-url-tab"
                     data-active={props.type === 'url'}
                     onClick={props.onSwitchToURL}
                     tabIndex={0}
@@ -42,9 +52,13 @@ const CustomExtensionModal = props => (
                         description="Button to choose to load an extension from a remote URL. Not much space, so keep this short."
                         id="tw.customExtensionModal.url"
                     />
-                </div>
-                <div
+                </button>
+                <button
+                    type="button"
+                    role="tab"
                     className={styles.typeSelectorButton}
+                    aria-selected={props.type === 'file'}
+                    data-testid="custom-extension-file-tab"
                     data-active={props.type === 'file'}
                     onClick={props.onSwitchToFile}
                     tabIndex={0}
@@ -55,9 +69,13 @@ const CustomExtensionModal = props => (
                         description="Button to choose to load an extension from one or more local files. Not much space, so keep this short."
                         id="tw.customExtensionModal.file"
                     />
-                </div>
-                <div
+                </button>
+                <button
+                    type="button"
+                    role="tab"
                     className={styles.typeSelectorButton}
+                    aria-selected={props.type === 'text'}
+                    data-testid="custom-extension-text-tab"
                     data-active={props.type === 'text'}
                     onClick={props.onSwitchToText}
                     tabIndex={0}
@@ -68,7 +86,7 @@ const CustomExtensionModal = props => (
                         description="Button to choose to load an extension from a text input. Not much space, so keep this short."
                         id="tw.customExtensionModal.text"
                     />
-                </div>
+                </button>
             </div>
 
             {props.type === 'url' ? (
@@ -83,6 +101,7 @@ const CustomExtensionModal = props => (
                     <input
                         type="text"
                         className={styles.urlInput}
+                        data-testid="custom-extension-url"
                         value={props.url}
                         onChange={props.onChangeURL}
                         onKeyDown={props.onKeyDown}
@@ -116,6 +135,7 @@ const CustomExtensionModal = props => (
                     </p>
                     <textarea
                         className={styles.textCodeInput}
+                        data-testid="custom-extension-text"
                         placeholder={'class Extension {\n  // ...\n}\nScratch.extensions.register(new Extension());'}
                         value={props.text}
                         onChange={props.onChangeText}
@@ -125,7 +145,7 @@ const CustomExtensionModal = props => (
                 </React.Fragment>
             )}
 
-            {props.onChangeUnsandboxed ? (
+            {!props.authoring && (props.onChangeUnsandboxed ? (
                 <React.Fragment>
                     <label className={styles.unsandboxedContainer}>
                         <FancyCheckbox
@@ -179,19 +199,32 @@ const CustomExtensionModal = props => (
                         />
                     </p>
                 )
-            )}
+            ))}
 
-            <div className={styles.buttonRow}>
+            {props.status && <p
+                role="status"
+                className={styles.status}
+                data-testid="tw-plus-authoring-status"
+            >{props.status}</p>}
+            {props.recoveryURL && <a
+                href={props.recoveryURL}
+                download="project-before-extension.sb3"
+            >{
+                    props.intl.locale.startsWith('ja') ? '追加前の作品を保存' : 'Save the project before addition'
+                }</a>}
+            <div className={props.authoring ? styles.authoringFooter : styles.buttonRow}>
                 <button
                     className={styles.loadButton}
+                    type="button"
+                    data-testid="custom-extension-next"
                     onClick={props.onLoadExtension}
                     disabled={!props.canLoadExtension}
                 >
-                    <FormattedMessage
+                    {props.authoring ? (props.intl.locale.startsWith('ja') ? '次へ' : 'Next') : <FormattedMessage
                         defaultMessage="Load"
                         description="Button that loads the given custom extension"
                         id="tw.customExtensionModal.load"
-                    />
+                    />}
                 </button>
             </div>
         </Box>
@@ -200,6 +233,9 @@ const CustomExtensionModal = props => (
 
 CustomExtensionModal.propTypes = {
     intl: intlShape,
+    authoring: PropTypes.bool,
+    status: PropTypes.string,
+    recoveryURL: PropTypes.string,
     canLoadExtension: PropTypes.bool.isRequired,
     type: PropTypes.oneOf(['url', 'file', 'text']).isRequired,
     onSwitchToFile: PropTypes.func.isRequired,
