@@ -68,7 +68,8 @@ export const createExtensionAuthoringController = (vm, {
                         archiveOptions: extensionProjectArchiveOptions});
                 assertCurrent();
                 onPrepared(prepared.spec || prepared.manifest);
-                const oldManifest = prepared.manifest ? await readProjectAuthoringState(original, {zip, archiveOptions: extensionProjectArchiveOptions}) : null;
+                const oldManifest = prepared.manifest ?
+                    await readProjectAuthoringState(original, {zip, archiveOptions: extensionProjectArchiveOptions}) : null;
                 assertCurrent();
                 const priorIds = new Set((oldManifest?.extensions || []).map(spec => spec.id));
                 const legacyIds = (prepared.manifest?.extensions || []).map(spec => spec.id)
