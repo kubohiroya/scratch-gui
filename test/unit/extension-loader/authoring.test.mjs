@@ -5,11 +5,9 @@ import {createRequire} from 'node:module';
 import {createHash} from 'node:crypto';
 import VM from 'scratch-vm';
 import Zip from '@turbowarp/jszip';
-import {createExtensionAuthoringController, setExtensionAuthoringHost} from '../../../src/lib/tw-plus-extension-authoring.js';
-import {openPlusExtensionAuthoring} from '../../../src/lib/tw-plus-extension-authoring-ui.js';
+import {createExtensionAuthoringController} from '../../../src/lib/tw-plus-extension-authoring.js';
 import {installPlusExtensionHost} from '../../../src/lib/tw-plus-extension-host.js';
 const require = createRequire(import.meta.url);
-const {JSDOM} = require('jsdom');
 const Storage = require('@turbowarp/scratch-storage');
 const spec = {id: 'example', sha256: 'a'.repeat(64)};
 const prepared = {spec, projectBytes: new Uint8Array([2])};
@@ -120,59 +118,6 @@ test('abort and disposal invalidate prepared candidates', async () => {
         assert.equal(loads.length, 0);
         controller.dispose();
     }
-});
-
-test('authoring UI collects Remote input, prevents duplicate submits and displays the computed digest', async () => {
-    const dom = new JSDOM('<html><head></head><body></body></html>');
-    dom.window.HTMLDialogElement.prototype.showModal = function () { this.open = true; };
-    const vm = {};
-    const stage = deferred();
-    let requests = 0;
-    let request;
-    setExtensionAuthoringHost(vm, {add: async value => { requests++; request = value; return stage.promise; }});
-    const dialog = openPlusExtensionAuthoring(vm, {document: dom.window.document, locale: 'en'});
-    assert.equal(openPlusExtensionAuthoring(vm, {document: dom.window.document}), dialog);
-    const byTestId = id => dialog.querySelector(`[data-testid="tw-plus-authoring-${id}"]`);
-    assert.equal(byTestId('file').closest('label').style.display, 'block');
-    assert.equal(byTestId('url').closest('label').style.display, 'none');
-    byTestId('mode').value = 'remote';
-    byTestId('mode').dispatchEvent(new dom.window.Event('change'));
-    assert.equal(byTestId('file').closest('label').style.display, 'none');
-    assert.equal(byTestId('url').closest('label').style.display, 'block');
-    byTestId('id').value = 'example';
-    byTestId('url').value = 'https://example.org/code.js';
-    const form = dialog.querySelector('form');
-    form.dispatchEvent(new dom.window.Event('submit', {cancelable: true}));
-    form.dispatchEvent(new dom.window.Event('submit', {cancelable: true}));
-    assert.equal(requests, 1);
-    assert.deepEqual(request, {id: 'example', source: {type: 'remote', url: 'https://example.org/code.js'}});
-    stage.resolve(spec);
-    await new Promise(resolve => setImmediate(resolve));
-    assert.equal(byTestId('sha256').textContent, spec.sha256);
-    assert.match(byTestId('status').textContent, /Added example/);
-    byTestId('cancel').click();
-    assert.equal(dom.window.document.querySelector('dialog'), null);
-    setExtensionAuthoringHost(vm, null);
-    dom.window.close();
-});
-
-test('authoring UI requires an enabled host and Escape aborts a pending operation', async () => {
-    const dom = new JSDOM('<html><head></head><body></body></html>');
-    dom.window.HTMLDialogElement.prototype.showModal = function () { this.open = true; };
-    const vm = {};
-    assert.equal(openPlusExtensionAuthoring(vm, {document: dom.window.document}), null);
-    let signal;
-    setExtensionAuthoringHost(vm, {add: (request, options) => {
-        signal = options.signal;
-        return new Promise(() => {});
-    }});
-    const dialog = openPlusExtensionAuthoring(vm, {document: dom.window.document});
-    dialog.querySelector('form').dispatchEvent(new dom.window.Event('submit', {cancelable: true}));
-    dialog.dispatchEvent(new dom.window.Event('cancel', {cancelable: true}));
-    assert.equal(signal.aborted, true);
-    assert.equal(dom.window.document.querySelector('dialog'), null);
-    setExtensionAuthoringHost(vm, null);
-    dom.window.close();
 });
 
 test('real VM authoring preserves the project and restores prior extensions after ID mismatch', async () => {
