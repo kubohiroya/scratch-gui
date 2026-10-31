@@ -12,6 +12,10 @@ const checkSignal = signal => {
 // These are the VM registration tables changed by _registerExtensionPrimitives.
 const TABLES = ['_primitives', '_hats', '_flowing'];
 const own = (object, name) => Object.prototype.hasOwnProperty.call(object, name);
+// Do not nest an awaited cleanup catch inside a registration catch: Babel's
+// webpack 4 lowering can rethrow the original error as a false cleanup failure.
+const cleanupResult = task => Promise.resolve().then(task)
+    .then(() => null, cause => ({cause}));
 
 function extensionServicePort(vm) {
     if (typeof vm.extensionManager.getExtensionServicePort === 'function') {
@@ -175,8 +179,12 @@ export function createVMExtensionRegistrar(vm, {registrationTimeoutMs = 30000} =
             try { services.remove(record.service, record.object); }
             catch (cause) { failures.push(cause); }
         }
+        if (record.sandboxed) {
+            try { record.sandboxed.dispose(); }
+            catch (cause) { failures.push(cause); }
+        }
         if (runtime[`ext_${record.id}`] === record.object) delete runtime[`ext_${record.id}`];
-        if (record.worker !== undefined) delete manager.workerURLs[record.worker];
+        if (record.worker !== undefined && !record.sandboxed) delete manager.workerURLs[record.worker];
         if (runtime._monitorState && typeof runtime._monitorState.valueSeq === 'function') {
             for (const monitor of runtime._monitorState.valueSeq()) {
                 if (String(monitor.opcode || '').startsWith(`${record.id}_`)) runtime.requestRemoveMonitor(monitor.id);
@@ -190,6 +198,34 @@ export function createVMExtensionRegistrar(vm, {registrationTimeoutMs = 30000} =
         if (!isAuthorizedCode(authorized)) throw error('INVALID_AUTHORIZATION', 'Only Loader-issued authorization records may execute');
         checkSignal(signal);
         assertAvailable(vm, authorized.id);
+        if (authorized.execution === 'sandboxed') {
+            if (typeof services.loadSandboxed !== 'function') {
+                throw error('UNSUPPORTED_HOST', 'This VM does not expose owned sandboxed registration');
+            }
+            const sandboxed = await services.loadSandboxed({id: authorized.id, code: authorized.code,
+                signal, timeoutMs: registrationTimeoutMs});
+            const record = {id: authorized.id, service: sandboxed.service, worker: sandboxed.workerId, sandboxed};
+            try {
+                checkSignal(signal);
+                if (sandboxed.id !== authorized.id || sandboxed.info?.id !== authorized.id) {
+                    throw error('REGISTRATION_ID_MISMATCH', 'Sandbox service ID differs from its Manifest');
+                }
+                assertAvailable(vm, authorized.id);
+                const prepared = manager._prepareExtensionInfo(record.service, sandboxed.info);
+                runtime._registerExtensionPrimitives(prepared);
+                manager._loadedExtensions.set(record.id, record.service);
+                runtime.resetAllCaches();
+                return record;
+            } catch (cause) {
+                const cleanup = await cleanupResult(() => release(record));
+                if (cleanup) {
+                    poisoned = true;
+                    throw new AggregateError([cause, cleanup.cause], 'Sandboxed registration and cleanup failed');
+                }
+                throw cause;
+            }
+        }
+        if (authorized.execution !== 'unsandboxed') throw error('INVALID_EXECUTION', 'Unsupported execution mode');
         let settled = false;
         let count = 0;
         let resolveRegistered;
@@ -238,15 +274,16 @@ export function createVMExtensionRegistrar(vm, {registrationTimeoutMs = 30000} =
             runtime.resetAllCaches();
             return record;
         } catch (cause) {
-            try {
+            const cleanup = await cleanupResult(async () => {
                 if (record.service) await release(record);
                 else {
                     try { if (typeof record.object?.dispose === 'function') await record.object.dispose(); }
                     finally { record.api.dispose(); }
                 }
-            } catch (cleanupCause) {
+            });
+            if (cleanup) {
                 poisoned = true;
-                throw new AggregateError([cause, cleanupCause], 'Extension registration and cleanup failed');
+                throw new AggregateError([cause, cleanup.cause], 'Extension registration and cleanup failed');
             }
             throw cause;
         } finally {
@@ -257,6 +294,12 @@ export function createVMExtensionRegistrar(vm, {registrationTimeoutMs = 30000} =
     }
 
     return Object.freeze({
+        prepareLegacyReplacement(ids) {
+            if (typeof services.prepareLegacyReplacement !== 'function') {
+                throw error('UNSUPPORTED_HOST', 'This VM cannot replace legacy extension registrations');
+            }
+            return services.prepareLegacyReplacement(ids);
+        },
         async begin({signal} = {}) {
             checkSignal(signal);
             if (poisoned) throw error('HOST_RECOVERY_REQUIRED', 'Recreate this VM after failed extension cleanup');

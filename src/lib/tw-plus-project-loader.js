@@ -57,6 +57,7 @@ export function installExtensionLoader(host, loader) {
     };
     const loadProject = function(input, ...args) {
         checkActive();
+        if (host.onProjectLoadStart) host.onProjectLoadStart();
         pending++;
         const run = async () => {
             checkActive();

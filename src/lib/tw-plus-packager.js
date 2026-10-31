@@ -19,16 +19,20 @@ export function configurePlusPackager(packager, prepared, {runtimeBundle, locale
         throw failure('UNREVIEWED_CUSTOM_CODE', 'Custom JavaScript must be reviewed separately from Plus extension packaging');
     }
     if (scaffoldingAssets) {
+        const inlineAssets = {};
         for (const name of ['scaffolding', 'scaffolding-min', 'addons']) {
             if (typeof scaffoldingAssets[name] !== 'string' || !scaffoldingAssets[name]) {
                 throw failure('MISSING_SCAFFOLDING', `Trusted patched scaffolding asset is missing: ${name}`);
             }
+            // The upstream Packager rewrites raw closing tags assuming single-quoted
+            // literals. Escape the slash first so double-quoted iframe bootstraps survive.
+            inlineAssets[name] = scaffoldingAssets[name].replace(/<\/script/gi, '<\\/script');
         }
         packager.fetchLargeAsset = async name => {
             if (!Object.prototype.hasOwnProperty.call(scaffoldingAssets, name)) {
                 throw failure('UNBUNDLED_DEPENDENCY', `Packager asset is not bundled: ${name}`);
             }
-            return scaffoldingAssets[name];
+            return inlineAssets[name];
         };
     }
     const analysis = packager.project?.analysis || {

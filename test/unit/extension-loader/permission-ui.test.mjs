@@ -47,6 +47,18 @@ test('denial, escape, close, abort and host disposal all refuse execution', asyn
     }
 });
 
+test('sandboxed consent displays its actual isolation mode and never claims unsandboxed execution', async () => {
+    const {dom, document, ui} = fixture('ja');
+    const review = ui.requestApproval({...code, execution: 'sandboxed', capabilities: []});
+    const dialog = document.querySelector('dialog');
+    assert.equal(dialog.querySelector('[data-field="execution"]').textContent, 'sandboxed');
+    assert.match(dialog.textContent, /分離されたiframe/);
+    assert.equal(dialog.textContent.includes('権限は制限されません'), false);
+    dialog.querySelector('[data-testid="tw-plus-allow"]').click();
+    assert.equal(await review, true);
+    ui.dispose(); dom.window.close();
+});
+
 test('unsupported dialog and already aborted requests fail closed', async () => {
     const {dom, document, ui} = fixture('en');
     assert.equal(await ui.requestApproval(code, {signal: AbortSignal.abort()}), false);

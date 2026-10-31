@@ -34,6 +34,20 @@ test('actual TurboWarp Packager embeds an opaque verified SB3, runtime bootstrap
     assert.deepEqual(packager.project.analysis.extensions, []);
 });
 
+test('actual Packager resource assembly preserves double-quoted iframe script terminators', async () => {
+    const prepared = await prepare();
+    const packager = new Packager();
+    const source = 'globalThis.iframeEnd = "</script></body>";';
+    configurePlusPackager(packager, prepared, {runtimeBundle: 'trusted();',
+        scaffoldingAssets: {scaffolding: source, 'scaffolding-min': source, addons: source}});
+    await packager.loadResources();
+    assert.equal(packager.script.includes("</scri'+'pt>"), false);
+    assert.equal(packager.script.toLowerCase().includes('</script>'), false);
+    const state = {};
+    new Function('globalThis', packager.script)(state);
+    assert.equal(state.iframeEnd, '</script></body>');
+});
+
 test('packaging refuses missing trusted bootstrap, prior custom JS and reused instances', async () => {
     const prepared = await prepare();
     assert.throws(() => configurePlusPackager(new Packager(), prepared), {code: 'MISSING_BOOTSTRAP'});

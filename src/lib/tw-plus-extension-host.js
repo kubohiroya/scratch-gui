@@ -6,6 +6,7 @@ import {createMemoryContentCache} from '@kubohiroya/turbowarp-extension-loader/m
 import {createVMExtensionRegistrar} from './tw-plus-extension-registrar.js';
 import {installExtensionLoader} from './tw-plus-project-loader.js';
 import {createPlusPermissionUI} from './tw-plus-permission-ui.js';
+import {createExtensionAuthoringController, setExtensionAuthoringHost} from './tw-plus-extension-authoring.js';
 
 // Snapshot before any project is opened; later URL changes cannot enable this host.
 const startupSearch = globalThis.location ? globalThis.location.search : '';
@@ -23,28 +24,34 @@ export function installPlusExtensionHost (vm, {
     };
     const projectIO = createProjectIO({zip: JSZip});
     const trustProvider = createSessionTrustProvider({requestApproval: requestApproval || ui.requestApproval, hostPolicy});
-    const loader = createExtensionLoader({
+    const ports = {
         embeddedReader: projectIO.embeddedReader,
         fetcher: createFetchPort(fetchImpl),
         cache: cache || createMemoryContentCache(),
         trustProvider,
         registrar: createVMExtensionRegistrar(vm),
         diagnostics
-    }, loaderOptions);
+    };
+    const loader = createExtensionLoader(ports, loaderOptions);
+    const authoring = createExtensionAuthoringController(vm, {ports, diagnostics, loaderOptions});
     let uninstall;
     try {
         uninstall = installExtensionLoader({vm, projectIO, transactionalRegistration: true,
-            onDiagnostic: diagnostics}, loader);
+            onDiagnostic: diagnostics, onProjectLoadStart: authoring.projectLoadStarted}, loader);
     } catch (error) {
+        authoring.dispose();
         ui.dispose();
         trustProvider.revokeAll();
         throw error;
     }
+    setExtensionAuthoringHost(vm, authoring);
     let disposal;
     return Object.freeze({
-        enabled: true, loader, projectIO,
+        enabled: true, loader, projectIO, authoring,
         dispose () {
             if (!disposal) {
+                setExtensionAuthoringHost(vm, null);
+                authoring.dispose();
                 ui.dispose();
                 trustProvider.revokeAll();
                 disposal = Promise.resolve(uninstall()).then(() => loader.unload());

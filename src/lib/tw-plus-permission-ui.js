@@ -17,6 +17,8 @@ export function createPlusPermissionUI (document, locale = 'ja') {
         const style = document.createElement('style');
         style.setAttribute('data-tw-plus-permission-style', '');
         style.textContent = '.tw-plus-permission{box-sizing:border-box;max-width:min(680px,94vw);max-height:90vh;overflow:auto;border:1px solid #64748b;border-radius:14px;padding:24px;color:#172033;background:white;font:15px/1.5 system-ui,sans-serif;box-shadow:0 20px 70px #0005}.tw-plus-permission::backdrop{background:#111827a6}.tw-plus-permission h2{margin:0 0 12px}.tw-plus-permission dl{display:grid;grid-template-columns:120px 1fr;gap:8px;margin:20px 0}.tw-plus-permission dt{font-weight:700}.tw-plus-permission dd{margin:0;overflow-wrap:anywhere;white-space:pre-wrap}.tw-plus-permission menu{display:flex;justify-content:flex-end;gap:12px;padding:0;margin-bottom:0}.tw-plus-permission button{font:inherit;border:1px solid #64748b;padding:10px 16px;border-radius:8px;background:white;color:#172033;cursor:pointer}.tw-plus-permission button:focus-visible{outline:3px solid #3b82f6;outline-offset:3px}.tw-plus-permission button[data-testid="tw-plus-allow"]{background:#1d4ed8;color:white;border-color:#1d4ed8}.tw-plus-diagnostics{position:fixed;right:12px;top:4px;z-index:10000;max-width:min(600px,90vw);max-height:45vh;overflow:auto;border-radius:7px;background:#fff;color:#172033;box-shadow:0 2px 12px #0004;font:12px/1.5 system-ui,sans-serif}.tw-plus-diagnostics summary{padding:6px 10px;cursor:pointer}.tw-plus-diagnostics ol{padding:0 20px 10px 30px;overflow-wrap:anywhere}.tw-plus-diagnostics li[data-error="true"]{color:#b91c1c}';
+        // Keep the full accessible name while avoiding narrow editor header overlap.
+        style.textContent += '@media(max-width:580px){.tw-plus-diagnostics:not([open]) summary{font-size:0}.tw-plus-diagnostics:not([open]) summary::after{content:"ⓘ";font-size:18px;line-height:1}}';
         if (!document.querySelector('[data-tw-plus-permission-style]')) document.head.appendChild(style);
         status = document.createElement('details');
         status.className = 'tw-plus-diagnostics';
@@ -58,7 +60,9 @@ export function createPlusPermissionUI (document, locale = 'ja') {
                 dialog.setAttribute('data-testid', 'tw-plus-permission');
                 dialog.setAttribute('aria-label', label('拡張機能の実行を許可', 'Allow extension execution'));
                 dialog.appendChild(text(document, 'h2', label('拡張機能の実行を許可しますか？', 'Allow this extension to run?')));
-                dialog.appendChild(text(document, 'p', label(
+                dialog.appendChild(text(document, 'p', code.execution === 'sandboxed' ? label(
+                    'この拡張は分離されたiframe内で実行され、Scratch.vmへ直接アクセスできません。取得元と内容を確認して許可してください。',
+                    'This extension runs in an isolated iframe without direct access to Scratch.vm. Review its source and content before approving.') : label(
                     'この拡張はサンドボックス外で実行され、作品・エディター・このサイトのデータにアクセスできます。信頼できるコードだけを許可してください。',
                     'This extension runs unsandboxed and can access the project, editor and this site’s data. Only approve code you trust.')));
                 const rows = [
@@ -67,8 +71,10 @@ export function createPlusPermissionUI (document, locale = 'ja') {
                     [label('発行者の申告', 'Claimed publisher'), `${code.publisher || label('記載なし', 'Not provided')} (${label('本人性は未検証', 'identity unverified')})`, 'publisher'],
                     [label('バージョン', 'Version'), code.version || label('記載なし', 'Not provided'), 'version'],
                     ['SHA-256', code.sha256, 'sha256'],
-                    [label('実行モード', 'Execution'), 'unsandboxed', 'execution'],
-                    [label('要求権限', 'Requested capabilities'), code.capabilities.length ? code.capabilities.join(', ') : label('個別申告なし（権限は制限されません）', 'Not declared (permissions are unrestricted)'), 'capabilities']
+                    [label('実行モード', 'Execution'), code.execution, 'execution'],
+                    [label('要求権限', 'Requested capabilities'), code.capabilities.length ? code.capabilities.join(', ') :
+                        code.execution === 'sandboxed' ? label('個別申告なし（iframe内で実行）', 'Not declared (runs inside an iframe)') :
+                            label('個別申告なし（権限は制限されません）', 'Not declared (permissions are unrestricted)'), 'capabilities']
                 ];
                 const list = document.createElement('dl');
                 for (const [name, value, key] of rows) {
