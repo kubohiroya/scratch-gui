@@ -22,15 +22,20 @@ test('disabled host does not access a VM or permission document', async () => {
     await host.dispose();
 });
 
-test('startup configuration is fixed before later URL changes', async () => {
+test('startup defaults on, opt-out is explicit and later URL changes cannot toggle the host', async () => {
     const previous = globalThis.location;
-    globalThis.location = {search: '?twPlusExtensionLoader=1'};
+    globalThis.location = {search: '?twPlusExtensionLoader=0'};
+    const vm = new VM();
     try {
-        const forbidden = new Proxy({}, {get() { throw new Error('unexpected access'); }});
-        const host = startupPlusExtensionHost(forbidden, {document: forbidden});
-        assert.equal(host.enabled, false);
+        const host = startupPlusExtensionHost(vm, {document: undefined});
+        assert.equal(host.enabled, true);
         await host.dispose();
+        const forbidden = new Proxy({}, {get() { throw new Error('unexpected access'); }});
+        const disabled = startupPlusExtensionHost(forbidden, {search: '?twPlusExtensionLoader=0', document: forbidden});
+        assert.equal(disabled.enabled, false);
+        await disabled.dispose();
     } finally {
+        vm.runtime.dispose();
         if (previous === undefined) delete globalThis.location;
         else globalThis.location = previous;
     }
@@ -90,4 +95,23 @@ test('real VM project loading waits for DOM consent, preserves metadata and reop
         vm.runtime.dispose();
         dom.window.close();
     }
+});
+
+test('default-on host loads legacy projects larger than 4 MiB while retaining the 16 MiB JSON bound', async () => {
+    const vm = new VM();
+    let prompts = 0;
+    const host = startupPlusExtensionHost(vm, {document: undefined, requestApproval: async () => { prompts++; return false; }});
+    try {
+        const legacy = structuredClone(project);
+        delete legacy.turboWarpPlus;
+        legacy.meta.agent = 'x'.repeat(5 * 1024 * 1024);
+        await vm.loadProject(JSON.stringify(legacy));
+        assert.equal(vm.runtime.targets.length, 1);
+        assert.equal(prompts, 0);
+        const saved = vm.toJSON();
+        legacy.meta.agent = 'x'.repeat(16 * 1024 * 1024);
+        await assert.rejects(vm.loadProject(JSON.stringify(legacy)), {code: 'INVALID_ARCHIVE'});
+        assert.equal(vm.toJSON(), saved);
+        assert.equal(prompts, 0);
+    } finally { await host.dispose(); vm.runtime.dispose(); }
 });

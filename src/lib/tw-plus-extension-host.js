@@ -1,4 +1,6 @@
+import {extensionProjectArchiveOptions} from '../config/extension-project-limits.js';
 import JSZip from '@turbowarp/jszip';
+import {isExtensionLoaderEnabled} from '../config/extension-loader-flag.js';
 import {createExtensionLoader, createFetchPort} from '@kubohiroya/turbowarp-extension-loader';
 import {createProjectIO} from '@kubohiroya/turbowarp-extension-loader/project-codec';
 import {createSessionTrustProvider} from '@kubohiroya/turbowarp-extension-loader/session-trust';
@@ -8,7 +10,7 @@ import {installExtensionLoader} from './tw-plus-project-loader.js';
 import {createPlusPermissionUI} from './tw-plus-permission-ui.js';
 import {createExtensionAuthoringController, setExtensionAuthoringHost} from './tw-plus-extension-authoring.js';
 
-// Snapshot before any project is opened; later URL changes cannot enable this host.
+// Snapshot before any project is opened; later URL changes cannot toggle this host.
 const startupSearch = globalThis.location ? globalThis.location.search : '';
 
 /** Host-controlled wiring shared by the Editor and bundled HTML runtime. */
@@ -22,7 +24,7 @@ export function installPlusExtensionHost (vm, {
         ui.diagnostics(event);
         if (report) report(event);
     };
-    const projectIO = createProjectIO({zip: JSZip});
+    const projectIO = createProjectIO({zip: JSZip, ...extensionProjectArchiveOptions});
     const trustProvider = createSessionTrustProvider({requestApproval: requestApproval || ui.requestApproval, hostPolicy});
     const ports = {
         embeddedReader: projectIO.embeddedReader,
@@ -64,7 +66,7 @@ export function installPlusExtensionHost (vm, {
 export function startupPlusExtensionHost (vm, options = {}) {
     const search = options.search === undefined ? startupSearch : options.search;
     return installPlusExtensionHost(vm, {...options,
-        enabled: new URLSearchParams(search || '').get('twPlusExtensionLoader') === '1'});
+        enabled: isExtensionLoaderEnabled(search || '')});
 }
 
 export const isPlusPermissionDenied = error => error && ['TRUST_DENIED', 'CANCELLED'].includes(error.code);

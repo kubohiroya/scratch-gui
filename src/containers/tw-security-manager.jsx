@@ -9,6 +9,7 @@ import {getPersistedUnsandboxed, setPersistedUnsandboxed} from '../lib/tw-persis
 import {installBatchExtensionLoader} from '@kubohiroya/turbowarp-extension-security-dialog/turbowarp';
 import {ExtensionSecurityDialog} from '@kubohiroya/turbowarp-extension-security-dialog/react';
 import '@kubohiroya/turbowarp-extension-security-dialog/webpack4.css';
+import '../css/extension-security-dialog.css';
 import Modal from './modal.jsx';
 import extensionLibrary from '../lib/libraries/extensions/index.jsx';
 import defaultExtensionURLs from 'scratch-vm/src/extension-support/tw-default-extension-urls';

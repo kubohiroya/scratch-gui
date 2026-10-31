@@ -1,4 +1,6 @@
+import {extensionProjectArchiveOptions} from '../config/extension-project-limits.js';
 import React from 'react';
+import {isExtensionLoaderEnabled} from '../config/extension-loader-flag.js';
 import {connect} from 'react-redux';
 import PropTypes from 'prop-types';
 import log from './log';
@@ -15,7 +17,7 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
             super(props);
             this.handleClickPackager = this.handleClickPackager.bind(this);
             this.handleMessage = this.handleMessage.bind(this);
-            this.plusLoaderEnabled = new URLSearchParams(location.search).get('twPlusExtensionLoader') === '1';
+            this.plusLoaderEnabled = isExtensionLoaderEnabled(location.search);
             this.plusPackagerWindow = null;
             this.plusPackagerBuffer = null;
         }
@@ -35,7 +37,7 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
             const popup = window.open('about:blank');
             if (!popup) return;
             this.props.vm.saveProjectSb3('arraybuffer').then(async buffer => {
-                const {manifest} = await createProjectIO({zip: JSZip}).prepare(buffer);
+                const {manifest} = await createProjectIO({zip: JSZip, ...extensionProjectArchiveOptions}).prepare(buffer);
                 if (popup.closed) return;
                 if (manifest === null) {
                     popup.location.href = `${PACKAGER_URL}/?import_from=${location.origin}`;
@@ -84,7 +86,7 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
                 .then(async buffer => {
                     // Recheck after an asynchronous import request: the Editor may have changed projects.
                     if (this.plusLoaderEnabled) {
-                        const {manifest} = await createProjectIO({zip: JSZip}).prepare(buffer);
+                        const {manifest} = await createProjectIO({zip: JSZip, ...extensionProjectArchiveOptions}).prepare(buffer);
                         if (manifest !== null) {
                             e.source.postMessage({p4: {type: 'cancel-import'}}, e.origin);
                             this.plusPackagerWindow = e.source;

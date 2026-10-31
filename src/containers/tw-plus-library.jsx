@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import {ExtensionSecurityDialog, ExtensionSelectionList} from '@kubohiroya/turbowarp-extension-security-dialog/react';
 import '@kubohiroya/turbowarp-extension-security-dialog/webpack4.css';
+import '../css/extension-security-dialog.css';
 import loadPlusExtensions from '../lib/tw-plus-extension-loader';
 import {readPlusCatalogSettings, applyPlusCatalogSettings} from '../lib/tw-plus-catalog-authoring.js';
 import {TURBOWARP_PLUS_EXTENSION_LOADER_ENABLED} from '../config/feature-flags.js';

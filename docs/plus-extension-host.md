@@ -2,7 +2,7 @@
 
 対象: [Editor Issue #4](https://github.com/kubohiroya/turbowarp-plus-editor/issues/4)
 
-`tw-security-manager` は通常拡張の確認フックを接続した後、`startupPlusExtensionHost(vm)` を同期的に呼ぶ。`twPlusExtensionLoader=1` を起動時に指定した場合のみ有効となり、作品ロード前にフックが設置される。起動後のURL変更や作品のManifestは設定を変更しない。従来のPlusギャラリー用フラグとロード処理は維持する。
+`tw-security-manager` は通常拡張の確認フックを接続した後、`startupPlusExtensionHost(vm)` を同期的に呼ぶ。通常起動で既定ONとなり、作品ロード前にフックが設置される。`twPlusExtensionLoader=0` を起動URLへ指定するとOFFへ戻せる。従来の `=1` は引き続きONとなり、不正値はOFFとする。起動後のURL変更や作品のManifestは設定を変更しない。従来のPlusギャラリー用フラグとロード処理は維持する。
 
 `installPlusExtensionHost(vm, options)` はDOMとVMだけで使える。Packagerの信頼済みbootstrapは `enabled:true` を明示する。これはLoaderを接続する設定で、拡張コードの実行許可ではない。各拡張の取得・検証後には必ずホストの許可判断が必要である。
 
@@ -43,3 +43,5 @@ SB3の `meta.vm = "0.2.0"` はシリアライズ形式の目印であり、Deskt
 同じ専用プロファイルの使い捨てテスト画面をLoader付きの生成HTMLへ移動した構成でも確認した。許可前の登録は0件、許可後は同梱拡張が実VMへ1回登録・実行され、reporterブロックが42を返し、HTTP(S)リクエストは0件だった。生成HTMLは信頼済みLoaderコードを自身に同梱している。標準Desktop EditorがSB3のManifestだけで権限を付与した結果ではない。
 
 測定結果と画面はEditorの `.host/issue-4-artifacts/desktop-result.json`、`desktop-stock.png`、`desktop-packaged.png` に保存する。再検証はmacOSで `node test/e2e/extension-loader/desktop.cjs` を実行する。アプリがない環境や生成HTMLがない状態で成功扱いにせず、失敗理由を記録して非0で終了する。
+
+既定ONで従来のJS同梱作品も開けるよう、GUIのproject.json上限は既存のZIP単一entry上限と同じ16MiBに揃える。ホスト・追加/設定・Packagerで同じ値を使う。ZIP全体/展開総量64MiB、単一entry16MiB、圧縮率、拡張コード自体の検証上限と実行許可は変更しない。

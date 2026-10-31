@@ -20,6 +20,8 @@ function fixture(search = '', plus = true) {
     const module = {exports: {}};
     const requireMock = name => {
         if (name === 'react-redux') return {connect: () => component => component};
+        if (name === '../config/extension-project-limits.js') return hostRequire(path.resolve(__dirname, '../../../src/config/extension-project-limits.js'));
+        if (name === '../config/extension-loader-flag.js') return hostRequire(path.resolve(__dirname, '../../../src/config/extension-loader-flag.js'));
         if (name === './log') return {error() {}};
         if (name === '../reducers/project-state') return {getIsShowingProject: () => true};
         return hostRequire(name);
@@ -30,14 +32,14 @@ function fixture(search = '', plus = true) {
     return {component, location, opened, popup, posted, saves: () => saves};
 }
 
-test('Packager flag is captured once and default off preserves the external path', async () => {
-    const f = fixture();
+test('Packager defaults on while explicit opt-out stays fixed after URL changes', async () => {
+    const f = fixture('?twPlusExtensionLoader=0');
     f.location.search = '?twPlusExtensionLoader=1';
     f.component.handleClickPackager();
     assert.equal(f.opened[0], 'https://packager.turbowarp.org/?import_from=https://editor.test');
     assert.equal(f.saves(), 0);
-    const enabled = fixture('?twPlusExtensionLoader=1');
-    enabled.location.search = '';
+    const enabled = fixture();
+    enabled.location.search = '?twPlusExtensionLoader=0';
     enabled.component.handleClickPackager();
     await tick();
     assert.equal(enabled.popup.location.href, 'https://editor.test/turbowarp-plus-editor/plus-packager.html');
