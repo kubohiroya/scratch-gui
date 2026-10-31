@@ -28,7 +28,8 @@
     "watch": "webpack --colors --watch",
     "test:block-editor": "node --test test/unit/block-editor/*.test.mjs",
     "test:extension-security": "node --test test/unit/extension-security/*.test.cjs",
-    "test:plus-extension-loader": "node --test test/unit/extension-loader/*.test.mjs"
+    "test:plus-extension-loader": "node --test test/unit/extension-loader/*.test.mjs",
+    "test:document-editor": "node --test test/unit/document-editor/*.test.cjs"
   },
   "config": {
     "commitizen": {
@@ -104,7 +105,8 @@
     "text-encoding": "0.7.0",
     "to-style": "1.3.3",
     "wav-encoder": "1.3.0",
-    "xhr": "2.5.0"
+    "xhr": "2.5.0",
+    "@kubohiroya/turbowarp-document-editor": "git+https://github.com/kubohiroya/turbowarp-document-editor.git#aa86fa32956d71cfc480d0006dbbdfe34898ca1a"
   },
   "peerDependencies": {
     "react": "^16.0.0",

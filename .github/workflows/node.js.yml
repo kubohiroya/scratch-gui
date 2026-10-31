@@ -28,6 +28,7 @@ jobs:
         PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
     - run: npm run build
     - run: npm run test:unit
+    - run: npm run test:document-editor
     - run: npm run test:block-editor
     - run: npm run test:extension-security
     - run: npm run test:plus-extension-loader

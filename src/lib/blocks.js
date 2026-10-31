@@ -1,3 +1,4 @@
+import {registerDocumentSourceRootHatShape} from '@kubohiroya/turbowarp-document-editor';
 import LazyScratchBlocks from './tw-lazy-scratch-blocks';
 
 /**
@@ -7,6 +8,7 @@ import LazyScratchBlocks from './tw-lazy-scratch-blocks';
  */
 export default function (vm) {
     const ScratchBlocks = LazyScratchBlocks.get();
+    registerDocumentSourceRootHatShape(ScratchBlocks);
     const jsonForMenuBlock = function (name, menuOptionsFn, colors, start) {
         return {
             message0: '%1',

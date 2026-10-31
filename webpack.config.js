@@ -2,6 +2,7 @@ const {withExtensionLoaderWebpack4} = require('@kubohiroya/turbowarp-extension-l
 const defaultsDeep = require('lodash.defaultsdeep');
 const path = require('path');
 const webpack = require('webpack');
+const {withDocumentEditorWebpack4} = require('@kubohiroya/turbowarp-document-editor/webpack4');
 const {withBlockEditorWebpack4} = require('@kubohiroya/turbowarp-extension-data-editor/webpack4');
 
 // Plugins
@@ -72,6 +73,7 @@ const base = {
             loader: 'babel-loader',
             include: [
                 path.resolve(__dirname, 'src'),
+                path.resolve(__dirname, 'config'),
                 /node_modules[\\/]scratch-[^\\/]+[\\/]src/,
                 /node_modules[\\/]pify/,
                 /node_modules[\\/]@vernier[\\/]godirect/
@@ -302,4 +304,4 @@ const guiConfigs = withBlockEditorWebpack4([
         })) : []
 ), {hostRoot: __dirname});
 
-module.exports = withExtensionLoaderWebpack4(guiConfigs, {hostRoot: __dirname});
+module.exports = withDocumentEditorWebpack4(withExtensionLoaderWebpack4(guiConfigs, {hostRoot: __dirname}));
