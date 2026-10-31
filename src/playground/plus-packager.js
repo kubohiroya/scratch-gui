@@ -1,3 +1,4 @@
+import {extensionProjectArchiveOptions} from '../config/extension-project-limits.js';
 import JSZip from '@turbowarp/jszip';
 import Packager from '@turbowarp/packager-web';
 import {createFetchPort} from '@kubohiroya/turbowarp-extension-loader';
@@ -65,7 +66,7 @@ generate.addEventListener('click', async () => {
         const resourceDependencies = Object.fromEntries(prepared.manifest.extensions.map(spec => [spec.id, []]));
         const compiled = await prepareOfflinePackage(input, {
             fetcher: createFetchPort(), trustProvider, diagnostics: ui.diagnostics
-        }, {zip: JSZip, resourceDependencies});
+        }, {zip: JSZip, archiveOptions: extensionProjectArchiveOptions, resourceDependencies});
         const runtimeBundle = bundledRuntime;
         const packager = new Packager();
         packager.options.app.windowTitle = title;

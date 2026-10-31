@@ -1,3 +1,4 @@
+import {extensionProjectArchiveOptions} from '../config/extension-project-limits.js';
 /* global AggregateError */
 import JSZip from '@turbowarp/jszip';
 import {prepareExtensionAddition} from '@kubohiroya/turbowarp-extension-loader/project-authoring';
@@ -63,10 +64,11 @@ export const createExtensionAuthoringController = (vm, {
                 };
                 assertCurrent();
                 const prepared = await prepare(original, request, ports,
-                    {zip, signal: operation.controller.signal, loaderOptions});
+                    {zip, signal: operation.controller.signal, loaderOptions,
+                        archiveOptions: extensionProjectArchiveOptions});
                 assertCurrent();
                 onPrepared(prepared.spec || prepared.manifest);
-                const oldManifest = prepared.manifest ? await readProjectAuthoringState(original, {zip}) : null;
+                const oldManifest = prepared.manifest ? await readProjectAuthoringState(original, {zip, archiveOptions: extensionProjectArchiveOptions}) : null;
                 assertCurrent();
                 const priorIds = new Set((oldManifest?.extensions || []).map(spec => spec.id));
                 const legacyIds = (prepared.manifest?.extensions || []).map(spec => spec.id)
@@ -140,7 +142,7 @@ export const createExtensionAuthoringController = (vm, {
             if (disposed || pending) throw failure('PROJECT_BUSY', 'Wait for the active project operation');
             const current = revision;
             const input = await vm.saveProjectSb3('arraybuffer');
-            const manifest = await readProjectAuthoringState(input, {zip});
+            const manifest = await readProjectAuthoringState(input, {zip, archiveOptions: extensionProjectArchiveOptions});
             if (current !== revision || disposed) {
                 throw failure('PROJECT_CHANGED', 'The project changed during inspection');
             }

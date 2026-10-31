@@ -43,3 +43,5 @@ SB3の `meta.vm = "0.2.0"` はシリアライズ形式の目印であり、Deskt
 同じ専用プロファイルの使い捨てテスト画面をLoader付きの生成HTMLへ移動した構成でも確認した。許可前の登録は0件、許可後は同梱拡張が実VMへ1回登録・実行され、reporterブロックが42を返し、HTTP(S)リクエストは0件だった。生成HTMLは信頼済みLoaderコードを自身に同梱している。標準Desktop EditorがSB3のManifestだけで権限を付与した結果ではない。
 
 測定結果と画面はEditorの `.host/issue-4-artifacts/desktop-result.json`、`desktop-stock.png`、`desktop-packaged.png` に保存する。再検証はmacOSで `node test/e2e/extension-loader/desktop.cjs` を実行する。アプリがない環境や生成HTMLがない状態で成功扱いにせず、失敗理由を記録して非0で終了する。
+
+既定ONで従来のJS同梱作品も開けるよう、GUIのproject.json上限は既存のZIP単一entry上限と同じ16MiBに揃える。ホスト・追加/設定・Packagerで同じ値を使う。ZIP全体/展開総量64MiB、単一entry16MiB、圧縮率、拡張コード自体の検証上限と実行許可は変更しない。

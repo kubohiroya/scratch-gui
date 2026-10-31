@@ -1,3 +1,4 @@
+import {extensionProjectArchiveOptions} from '../config/extension-project-limits.js';
 import JSZip from '@turbowarp/jszip';
 import {isExtensionLoaderEnabled} from '../config/extension-loader-flag.js';
 import {createExtensionLoader, createFetchPort} from '@kubohiroya/turbowarp-extension-loader';
@@ -23,7 +24,7 @@ export function installPlusExtensionHost (vm, {
         ui.diagnostics(event);
         if (report) report(event);
     };
-    const projectIO = createProjectIO({zip: JSZip});
+    const projectIO = createProjectIO({zip: JSZip, ...extensionProjectArchiveOptions});
     const trustProvider = createSessionTrustProvider({requestApproval: requestApproval || ui.requestApproval, hostPolicy});
     const ports = {
         embeddedReader: projectIO.embeddedReader,

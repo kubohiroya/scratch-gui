@@ -29,7 +29,7 @@ export const prepareCustomExtensionAdditions = async (input, requests, ports, op
         }
     }
     // The archive codec bounds and validates the input before JSZip reads its project metadata.
-    const io = createProjectIO({zip: Zip});
+    const io = createProjectIO({zip: Zip, ...options.archiveOptions});
     const checked = await io.prepare(input, {signal});
     const archive = await Zip.loadAsync(checked.input);
     const project = JSON.parse(io.restoreJSON(await archive.file('project.json').async('string'), checked.context));

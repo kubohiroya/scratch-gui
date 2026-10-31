@@ -20,6 +20,7 @@ function fixture(search = '', plus = true) {
     const module = {exports: {}};
     const requireMock = name => {
         if (name === 'react-redux') return {connect: () => component => component};
+        if (name === '../config/extension-project-limits.js') return hostRequire(path.resolve(__dirname, '../../../src/config/extension-project-limits.js'));
         if (name === '../config/extension-loader-flag.js') return hostRequire(path.resolve(__dirname, '../../../src/config/extension-loader-flag.js'));
         if (name === './log') return {error() {}};
         if (name === '../reducers/project-state') return {getIsShowingProject: () => true};
