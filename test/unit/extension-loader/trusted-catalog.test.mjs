@@ -1,6 +1,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createPlusTrustedCatalog} from '../../../src/lib/tw-plus-trusted-extensions.js';
+import {
+    createDigestTrustedCatalog, createPlusTrustedCatalog, listTrustedDigests
+} from '../../../src/lib/tw-plus-trusted-extensions.js';
 
 const listed = 'https://cdn.example.test/npm/@owner/listed@1.0.0/dist/listed.js';
 const digest = 'a'.repeat(64);
@@ -43,4 +45,23 @@ test('an unreadable or invalid catalog trusts nothing and is read again on the n
     assert.equal(await trusted.isTrustedURL(listed), true);
     assert.equal(await trusted.isTrustedURL(listed), true);
     assert.equal(reads, 3);
+});
+
+test('a single HTML trusts only code whose actual bytes match an embedded digest', async () => {
+    const trusted = createDigestTrustedCatalog([digest, 'not a digest']);
+    assert.equal(await trusted.isTrustedCode(code({type: 'embedded', path: 'extensions/listed.js'}, digest)), true);
+    assert.equal(await trusted.isTrustedCode(code({type: 'embedded', path: 'extensions/listed.js'}, 'b'.repeat(64))), false);
+    assert.equal(await trusted.isTrustedURL(listed), false);
+    assert.equal(await createDigestTrustedCatalog().isTrustedCode(code({type: 'embedded'}, digest)), false);
+});
+
+test('packaging embeds the digests of the project extensions that the catalog lists', async () => {
+    const trusted = createPlusTrustedCatalog({readCatalog: async () => catalog({sha256: digest})});
+    const manifest = {schemaVersion: 1, extensions: [
+        {id: 'listed', execution: 'unsandboxed', sha256: digest, source: {type: 'embedded', path: 'extensions/a.js'}},
+        {id: 'other', execution: 'sandboxed', sha256: 'b'.repeat(64), source: {type: 'embedded', path: 'extensions/b.js'}}
+    ]};
+    assert.deepEqual(await listTrustedDigests(trusted, manifest), [digest]);
+    const unreadable = createPlusTrustedCatalog({readCatalog: async () => { throw new Error('offline'); }});
+    assert.deepEqual(await listTrustedDigests(unreadable, manifest), []);
 });

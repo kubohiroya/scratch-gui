@@ -57,3 +57,17 @@ test('packaging refuses missing trusted bootstrap, prior custom JS and reused in
     packager.used = true;
     assert.throws(() => configurePlusPackager(packager, prepared, {runtimeBundle: 'trusted()'}), {code: 'PACKAGE_BUSY'});
 });
+
+test('packaging embeds only valid digests of the project extensions for the recipient runtime', async () => {
+    const prepared = await prepare();
+    const packager = new Packager();
+    configurePlusPackager(packager, prepared, {runtimeBundle: 'trusted();', trustedDigests: [sha256]});
+    assert.ok(packager.options.custom.js.includes(`installPlusExtensionHost(vm, {"enabled":true,"locale":"ja","trustedDigests":["${sha256}"]})`));
+    for (const trustedDigests of [['a'.repeat(64)], ['not a digest'], 'nope']) {
+        assert.throws(() => configurePlusPackager(new Packager(), prepared, {runtimeBundle: 'trusted();', trustedDigests}),
+            {code: 'INVALID_TRUSTED_DIGESTS'});
+    }
+    const untrusted = new Packager();
+    configurePlusPackager(untrusted, prepared, {runtimeBundle: 'trusted();'});
+    assert.ok(untrusted.options.custom.js.includes('installPlusExtensionHost(vm, {"enabled":true,"locale":"ja","trustedDigests":[]})'));
+});
