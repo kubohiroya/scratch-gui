@@ -97,20 +97,32 @@ test('real VM project loading waits for DOM consent, preserves metadata and reop
     }
 });
 
-test('default-on host loads legacy projects larger than 4 MiB while retaining the 16 MiB JSON bound', async () => {
+test('default-on host opens 24 MiB legacy JSON and SB3 and rejects entries above 32 MiB', async () => {
     const vm = new VM();
     let prompts = 0;
     const host = startupPlusExtensionHost(vm, {document: undefined, requestApproval: async () => { prompts++; return false; }});
     try {
         const legacy = structuredClone(project);
         delete legacy.turboWarpPlus;
-        legacy.meta.agent = 'x'.repeat(5 * 1024 * 1024);
-        await vm.loadProject(JSON.stringify(legacy));
+        const Zip = require('@turbowarp/jszip');
+        legacy.meta.agent = 'x'.repeat(24 * 1024 * 1024);
+        const json = JSON.stringify(legacy);
+        await vm.loadProject(json);
+        const archive = await new Zip().file('project.json', json).generateAsync({type: 'uint8array', compression: 'STORE'});
+        await vm.loadProject(archive);
         assert.equal(vm.runtime.targets.length, 1);
         assert.equal(prompts, 0);
         const saved = vm.toJSON();
-        legacy.meta.agent = 'x'.repeat(16 * 1024 * 1024);
-        await assert.rejects(vm.loadProject(JSON.stringify(legacy)), {code: 'INVALID_ARCHIVE'});
+        legacy.meta.agent = 'x'.repeat(32 * 1024 * 1024);
+        const oversizedJSON = JSON.stringify(legacy);
+        await assert.rejects(vm.loadProject(oversizedJSON), {code: 'INVALID_ARCHIVE'});
+        const oversizedZip = await new Zip().file('project.json', oversizedJSON)
+            .generateAsync({type: 'uint8array', compression: 'STORE'});
+        await assert.rejects(vm.loadProject(oversizedZip), {code: 'INVALID_ARCHIVE'});
+        const excessiveRatio = await new Zip().file('project.json', JSON.stringify(project))
+            .file('zeros.bin', new Uint8Array(1024 * 1024))
+            .generateAsync({type: 'uint8array', compression: 'DEFLATE'});
+        await assert.rejects(vm.loadProject(excessiveRatio), {code: 'INVALID_ARCHIVE'});
         assert.equal(vm.toJSON(), saved);
         assert.equal(prompts, 0);
     } finally { await host.dispose(); vm.runtime.dispose(); }
