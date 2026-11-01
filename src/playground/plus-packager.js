@@ -82,8 +82,8 @@ generate.addEventListener('click', async () => {
         download.download = `${title}.html`;
         download.hidden = false;
         status.textContent = trustedDigests.length === compiled.manifest.extensions.length ?
-            'HTMLを生成しました。拡張はすべてカタログに載っているので、受け取った人に許可は求めません。' :
-            'HTMLを生成しました。カタログにない拡張は、受け取った人が初回実行時に許可を確認します。';
+            'HTMLを生成しました。拡張はすべてカタログに載っているので、このHTMLを開いても許可の確認は出ません。' :
+            'HTMLを生成しました。カタログにない拡張があるので、このHTMLを開くたびに、その拡張を許可するか確認します。';
     } catch (error) {
         status.textContent = `生成を拒否しました: ${error.code || ''} ${error.message}`;
         ui.diagnostics({type: 'error', code: error.code, message: error.message});
