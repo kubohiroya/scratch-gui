@@ -6,8 +6,6 @@ import {
     prepareCatalogExtensionChanges, readProjectAuthoringState
 } from '@kubohiroya/turbowarp-extension-loader/project-catalog';
 
-import {prepareCustomExtensionAdditions} from './tw-plus-custom-extension.js';
-
 const hosts = new WeakMap();
 const failure = (code, message) => Object.assign(new Error(message), {code});
 
@@ -132,9 +130,6 @@ export const createExtensionAuthoringController = (vm, {
         },
         add (request, options) {
             return this.apply(request, options);
-        },
-        addCustom (requests, options) {
-            return this.apply(requests, options, prepareCustomExtensionAdditions);
         },
         configure (requests, options) {
             return this.apply(requests, options, prepareCatalogExtensionChanges);
