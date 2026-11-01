@@ -317,9 +317,13 @@ export function createVMExtensionRegistrar(vm, {registrationTimeoutMs = 30000} =
                         records.push(record);
                         return {id: record.id};
                     } catch (cause) {
-                        // The Loader reports registration failures without the ID; name it for the user.
-                        if (cause !== null && typeof cause === 'object' && !('extensionId' in cause) &&
-                            Object.isExtensible(cause)) cause.extensionId = authorized.id;
+                        // The Loader reports registration failures without the ID; name it for the user, and
+                        // keep why the registration was aborted (such as the Loader timing out).
+                        if (cause !== null && typeof cause === 'object' && Object.isExtensible(cause)) {
+                            if (!('extensionId' in cause)) cause.extensionId = authorized.id;
+                            const aborted = registrationSignal?.aborted;
+                            if (aborted && !('cause' in cause)) cause.cause = registrationSignal.reason;
+                        }
                         throw cause;
                     } finally { registering = false; }
                 },
