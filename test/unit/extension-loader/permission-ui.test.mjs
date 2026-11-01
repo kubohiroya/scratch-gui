@@ -79,3 +79,26 @@ test('diagnostics are bounded text and show an explicit failure reason', () => {
     assert.equal(status.querySelector('script'), null);
     ui.dispose(); dom.window.close();
 });
+
+test('a retry names the attempt it leads to and opens the panel so the wait is not silent', () => {
+    const {dom, document, ui} = fixture('ja');
+    const status = document.querySelector('[data-testid="tw-plus-extension-status"]');
+    assert.equal(status.open, false);
+    ui.diagnostics({type: 'retry', attempt: 2, attempts: 3, message: 'https://example.org/sample.js'});
+    const item = status.querySelector('li[data-event="retry"]');
+    assert.match(item.textContent, /接続できませんでした。再試行しています/);
+    assert.match(item.textContent, /\(2\/3\)/);
+    assert.match(item.textContent, /https:\/\/example\.org\/sample\.js/);
+    // Retrying is not a refusal, so it must not be coloured as one.
+    assert.equal(item.getAttribute('data-error'), null);
+    assert.equal(status.open, true);
+    ui.dispose(); dom.window.close();
+});
+
+test('an event without an attempt count reads as it did before', () => {
+    const {dom, document, ui} = fixture('en');
+    ui.diagnostics({type: 'verified', id: 'sample', sha256: 'a'.repeat(64)});
+    const item = document.querySelector('li[data-event="verified"]');
+    assert.equal(item.textContent, `Content verified · sample · ${'a'.repeat(64)}`);
+    ui.dispose(); dom.window.close();
+});

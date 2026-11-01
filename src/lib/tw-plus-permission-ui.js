@@ -37,16 +37,22 @@ export function createPlusPermissionUI (document, locale = 'ja') {
             authorized: label('実行を許可済み', 'Execution approved'),
             loaded: label('拡張を読み込みました', 'Extensions loaded'),
             review: label('実行許可を確認中', 'Reviewing execution permission'),
+            retry: label('接続できませんでした。再試行しています', 'Could not connect. Retrying'),
             error: label('読み込みを拒否', 'Loading rejected'),
             'project-error': label('作品を開けませんでした', 'Could not open project')
         };
+        const attempts = typeof event.attempts === 'number' ? `(${event.attempt}/${event.attempts})` : null;
         const item = text(document, 'li', [states[event.type] || event.type, event.id,
-            event.ids && event.ids.join(', '), event.code, event.sha256, event.message].filter(Boolean).join(' · '));
+            event.ids && event.ids.join(', '), attempts, event.code, event.sha256, event.message]
+            .filter(Boolean)
+            .join(' · '));
         item.setAttribute('data-event', event.type);
         if (event.type === 'error' || event.type === 'project-error') {
             item.setAttribute('data-error', 'true');
             status.open = true;
         }
+        // A bounded retry waits in silence for seconds, which reads as a frozen editor.
+        if (event.type === 'retry') status.open = true;
         log.appendChild(item);
         while (log.children.length > 50) log.removeChild(log.firstChild);
     };
