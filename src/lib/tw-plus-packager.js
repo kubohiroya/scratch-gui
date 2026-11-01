@@ -1,18 +1,27 @@
 import {restrictOfflineHTML} from '@kubohiroya/turbowarp-extension-loader/packager';
 
 const failure = (code, message) => Object.assign(new Error(message), {code});
+const SHA256 = /^[0-9a-f]{64}$/;
 
 /**
  * Configure an actual TurboWarp Packager instance with a verified offline bundle.
  * The bootstrap is supplied by the trusted build, never by project metadata.
  */
-export function configurePlusPackager(packager, prepared, {runtimeBundle, locale = 'ja', scaffoldingAssets} = {}) {
+export function configurePlusPackager(packager, prepared, {
+    runtimeBundle, locale = 'ja', scaffoldingAssets, trustedDigests = []
+} = {}) {
     if (!prepared?.offline || !(prepared.projectBytes instanceof Uint8Array) ||
         !prepared.manifest || !packager?.options || typeof packager.package !== 'function') {
         throw failure('INVALID_PACKAGE', 'A verified offline Plus bundle and Packager instance are required');
     }
     if (typeof runtimeBundle !== 'string' || !runtimeBundle.trim()) {
         throw failure('MISSING_BOOTSTRAP', 'The host must bundle the Loader, VM registrar and permission UI');
+    }
+    // Digests of catalog-listed extensions let the recipient run them without approval, as in the Editor.
+    const digests = new Set(prepared.manifest.extensions.map(spec => spec.sha256));
+    if (!Array.isArray(trustedDigests) ||
+        trustedDigests.some(digest => typeof digest !== 'string' || !SHA256.test(digest) || !digests.has(digest))) {
+        throw failure('INVALID_TRUSTED_DIGESTS', 'Trusted digests must be SHA-256 digests of the packaged extensions');
     }
     if (packager.used) throw failure('PACKAGE_BUSY', 'Packager was already used');
     if (packager.options.custom?.js?.trim()) {
@@ -45,7 +54,7 @@ export function configurePlusPackager(packager, prepared, {runtimeBundle, locale
         analysis: {...analysis, extensions: []}
     };
     const script = runtimeBundle.replace(/<\/script/gi, '<\\/script');
-    const options = JSON.stringify({enabled: true, locale}).replace(/</g, '\\u003c');
+    const options = JSON.stringify({enabled: true, locale, trustedDigests}).replace(/</g, '\\u003c');
     packager.options.target = 'html';
     packager.options.cloudVariables = {...packager.options.cloudVariables, mode: 'none'};
     packager.options.custom = {...packager.options.custom, js: `

@@ -84,6 +84,31 @@ test('catalog-listed code loads without a separate approval and unlisted code st
     } finally { await host.dispose(); vm.runtime.dispose(); }
 });
 
+test('digests embedded in a single HTML trust matching code and still ask for other code', async () => {
+    const vm = new VM();
+    let prompts = 0;
+    const fetchImpl = async url => {
+        const response = new Response(bytes);
+        Object.defineProperty(response, 'url', {value: url});
+        return response;
+    };
+    const host = installPlusExtensionHost(vm, {enabled: true, document: undefined, fetchImpl, trustedDigests: [sha256],
+        requestApproval: async () => { prompts++; return false; }});
+    try {
+        await vm.loadProject(JSON.stringify(project));
+        assert.equal(vm.plusHostExecuted, true);
+        assert.equal(prompts, 0);
+    } finally { await host.dispose(); }
+    vm.plusHostExecuted = undefined;
+    const other = installPlusExtensionHost(vm, {enabled: true, document: undefined, fetchImpl, trustedDigests: ['a'.repeat(64)],
+        requestApproval: async () => { prompts++; return false; }});
+    try {
+        await assert.rejects(vm.loadProject(JSON.stringify(project)), {code: 'TRUST_DENIED'});
+        assert.equal(vm.plusHostExecuted, undefined);
+        assert.equal(prompts, 1);
+    } finally { await other.dispose(); vm.runtime.dispose(); }
+});
+
 test('real VM project loading waits for DOM consent, preserves metadata and reopens offline from verified cache', async () => {
     const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>');
     dom.window.HTMLDialogElement.prototype.showModal = function() { this.open = true; };

@@ -9,7 +9,7 @@ import {createVMExtensionRegistrar} from './tw-plus-extension-registrar.js';
 import {installExtensionLoader} from './tw-plus-project-loader.js';
 import {createPlusPermissionUI} from './tw-plus-permission-ui.js';
 import {createExtensionAuthoringController, setExtensionAuthoringHost} from './tw-plus-extension-authoring.js';
-import {plusTrustedCatalog} from './tw-plus-trusted-extensions.js';
+import {createDigestTrustedCatalog, plusTrustedCatalog} from './tw-plus-trusted-extensions.js';
 
 // Snapshot before any project is opened; later URL changes cannot toggle this host.
 const startupSearch = globalThis.location ? globalThis.location.search : '';
@@ -17,9 +17,12 @@ const startupSearch = globalThis.location ? globalThis.location.search : '';
 /** Host-controlled wiring shared by the Editor and bundled HTML runtime. */
 export function installPlusExtensionHost (vm, {
     enabled = false, document = globalThis.document, locale = 'ja', fetchImpl = globalThis.fetch,
-    cache, requestApproval, diagnostics: report, loaderOptions, hostPolicy, trustedCatalog = null
+    cache, requestApproval, diagnostics: report, loaderOptions, hostPolicy, trustedCatalog = null, trustedDigests
 } = {}) {
     if (enabled !== true) return Object.freeze({enabled: false, dispose: async () => {}});
+    // A single HTML has no catalog to read; its build embeds the digests the catalog lists.
+    const trusted = trustedCatalog === null && Array.isArray(trustedDigests) ?
+        createDigestTrustedCatalog(trustedDigests) : trustedCatalog;
     const ui = createPlusPermissionUI(document, locale);
     const diagnostics = event => {
         ui.diagnostics(event);
@@ -30,7 +33,7 @@ export function installPlusExtensionHost (vm, {
     const trustProvider = createSessionTrustProvider({hostPolicy,
         // Catalog-listed code is trusted like TurboWarp's official gallery and needs no separate approval.
         requestApproval: async (code, options) =>
-            (trustedCatalog !== null && await trustedCatalog.isTrustedCode(code)) || approve(code, options)});
+            (trusted !== null && await trusted.isTrustedCode(code)) || approve(code, options)});
     const ports = {
         embeddedReader: projectIO.embeddedReader,
         fetcher: createFetchPort(fetchImpl),

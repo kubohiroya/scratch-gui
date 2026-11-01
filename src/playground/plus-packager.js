@@ -7,6 +7,7 @@ import {prepareOfflinePackage} from '@kubohiroya/turbowarp-extension-loader/pack
 import {createSessionTrustProvider} from '@kubohiroya/turbowarp-extension-loader/session-trust';
 import {createPlusPermissionUI} from '../lib/tw-plus-permission-ui.js';
 import {packagePlusHTML} from '../lib/tw-plus-packager.js';
+import {listTrustedDigests, plusTrustedCatalog} from '../lib/tw-plus-trusted-extensions.js';
 
 const bundledAssets = __TW_PLUS_PACKAGER_ASSETS__;
 const bundledRuntime = __TW_PLUS_EXTENSION_RUNTIME__;
@@ -57,7 +58,9 @@ generate.addEventListener('click', async () => {
     pending = true;
     generate.disabled = true;
     download.hidden = true;
-    const trustProvider = createSessionTrustProvider({requestApproval: ui.requestApproval});
+    // Catalog-listed code is trusted like TurboWarp's official gallery, here as in the Editor.
+    const trustProvider = createSessionTrustProvider({requestApproval: async (code, options) =>
+        await plusTrustedCatalog.isTrustedCode(code) || ui.requestApproval(code, options)});
     try {
         status.textContent = '作品と拡張のバイト列を検証しています…';
         const io = createProjectIO({zip: JSZip});
@@ -68,15 +71,19 @@ generate.addEventListener('click', async () => {
             fetcher: createFetchPort(), trustProvider, diagnostics: ui.diagnostics
         }, {zip: JSZip, archiveOptions: extensionProjectArchiveOptions, resourceDependencies});
         const runtimeBundle = bundledRuntime;
+        const trustedDigests = await listTrustedDigests(plusTrustedCatalog, compiled.manifest);
         const packager = new Packager();
         packager.options.app.windowTitle = title;
-        const result = await packagePlusHTML(packager, compiled, {runtimeBundle, scaffoldingAssets: bundledAssets});
+        const result = await packagePlusHTML(packager, compiled,
+            {runtimeBundle, scaffoldingAssets: bundledAssets, trustedDigests});
         if (currentURL) URL.revokeObjectURL(currentURL);
         currentURL = URL.createObjectURL(new Blob([result.data], {type: 'text/html'}));
         download.href = currentURL;
         download.download = `${title}.html`;
         download.hidden = false;
-        status.textContent = 'HTMLを生成しました。受け取った人は初回実行時に拡張の許可を確認します。';
+        status.textContent = trustedDigests.length === compiled.manifest.extensions.length ?
+            'HTMLを生成しました。拡張はすべてカタログに載っているので、受け取った人に許可は求めません。' :
+            'HTMLを生成しました。カタログにない拡張は、受け取った人が初回実行時に許可を確認します。';
     } catch (error) {
         status.textContent = `生成を拒否しました: ${error.code || ''} ${error.message}`;
         ui.diagnostics({type: 'error', code: error.code, message: error.message});

@@ -73,3 +73,30 @@ export const createPlusTrustedCatalog = ({
 };
 
 export const plusTrustedCatalog = createPlusTrustedCatalog();
+
+/**
+ * A distributed single HTML cannot read the catalog (its CSP forbids connections), so the Editor that
+ * builds it embeds the listed digests. The recipient trusts only code whose actual bytes match one.
+ * @param {string[]} digests SHA-256 digests embedded by the building Editor.
+ * @returns {object} Trust checks with the same shape as the catalog's.
+ */
+export const createDigestTrustedCatalog = (digests = []) => {
+    const listed = new Set((Array.isArray(digests) ? digests : []).filter(digest => SHA256.test(digest)));
+    return Object.freeze({
+        isTrustedURL: () => Promise.resolve(false),
+        isTrustedCode: code => Promise.resolve(listed.has(code.actualSHA256))
+    });
+};
+
+/**
+ * @param {object} catalog Trust checks from createPlusTrustedCatalog.
+ * @param {object} manifest Offline package manifest, whose sources are all embedded.
+ * @returns {Promise<string[]>} Digests of the manifest's extensions that the catalog lists.
+ */
+export const listTrustedDigests = async (catalog, manifest) => {
+    const listed = [];
+    for (const spec of manifest.extensions) {
+        if (await catalog.isTrustedCode({source: spec.source, actualSHA256: spec.sha256})) listed.push(spec.sha256);
+    }
+    return [...new Set(listed)];
+};
