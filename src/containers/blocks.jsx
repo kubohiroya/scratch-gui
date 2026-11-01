@@ -404,7 +404,6 @@ class Blocks extends React.Component {
         this.props.vm.addListener('targetsUpdate', this.onTargetsUpdate);
         this.props.vm.addListener('MONITORS_UPDATE', this.handleMonitorsUpdate);
         this.props.vm.addListener('EXTENSION_ADDED', this.handleExtensionAdded);
-        this.props.vm.addListener('PLUS_EXTENSION_CATEGORY_SELECTED', this.handleCategorySelected);
         this.props.vm.addListener('BLOCKSINFO_UPDATE', this.handleBlocksInfoUpdate);
         this.props.vm.addListener('PERIPHERAL_CONNECTED', this.handleStatusButtonUpdate);
         this.props.vm.addListener('PERIPHERAL_DISCONNECTED', this.handleStatusButtonUpdate);
@@ -419,7 +418,6 @@ class Blocks extends React.Component {
         this.props.vm.removeListener('targetsUpdate', this.onTargetsUpdate);
         this.props.vm.removeListener('MONITORS_UPDATE', this.handleMonitorsUpdate);
         this.props.vm.removeListener('EXTENSION_ADDED', this.handleExtensionAdded);
-        this.props.vm.removeListener('PLUS_EXTENSION_CATEGORY_SELECTED', this.handleCategorySelected);
         this.props.vm.removeListener('BLOCKSINFO_UPDATE', this.handleBlocksInfoUpdate);
         this.props.vm.removeListener('PERIPHERAL_CONNECTED', this.handleStatusButtonUpdate);
         this.props.vm.removeListener('PERIPHERAL_DISCONNECTED', this.handleStatusButtonUpdate);
