@@ -39,7 +39,7 @@
   "dependencies": {
     "@kubohiroya/turbowarp-document-editor": "0.1.0-rc.1",
     "@kubohiroya/turbowarp-extension-data-editor": "^0.5.0",
-    "@kubohiroya/turbowarp-extension-loader": "git+https://github.com/kubohiroya/turbowarp-extension-loader.git#3c0c9f08e1878812e43421ce9b3a94ab174c28a3",
+    "@kubohiroya/turbowarp-extension-loader": "git+https://github.com/kubohiroya/turbowarp-extension-loader.git#5336f1321edf01ffd4b619c006701bbdcf010241",
     "@kubohiroya/turbowarp-extension-security-dialog": "0.5.0",
     "@microbit/microbit-universal-hex": "0.2.2",
     "@turbowarp/jszip": "^3.11.1",
