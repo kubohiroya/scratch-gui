@@ -8,7 +8,8 @@ import sharedMessages from './shared-messages';
 import {setFileHandle, setProjectError} from '../reducers/tw';
 import {isExtensionSecurityCancelled} from '@kubohiroya/turbowarp-extension-security-dialog/turbowarp';
 import {isPlusPermissionDenied} from './tw-plus-extension-host';
-import returnToEditorStart from './tw-extension-security-cancel';
+import {isExtensionLoadFailure} from './tw-plus-extension-load-failure';
+import returnToEditorStart, {returnToEditorStartAfterExtensionFailure} from './tw-extension-security-cancel';
 
 import {
     LoadingStates,
@@ -216,6 +217,10 @@ const SBFileUploaderHOC = function (WrappedComponent) {
                         if (isExtensionSecurityCancelled(error) || isPlusPermissionDenied(error)) {
                             cancelled = true;
                             this.props.onSecurityLoadCancelled();
+                        } else if (isExtensionLoadFailure(error)) {
+                            // The previous project's Plus extensions are already unloaded; do not keep showing it.
+                            cancelled = true;
+                            this.props.onExtensionLoadFailed(error);
                         } else {
                             log.error(error);
                             this.props.onLoadingFailed(error);
@@ -248,6 +253,7 @@ const SBFileUploaderHOC = function (WrappedComponent) {
                 isLoadingUpload,
                 isShowingWithoutId,
                 loadingState,
+                onExtensionLoadFailed,
                 onLoadingFailed,
                 onSecurityLoadCancelled,
                 onLoadingFinished,
@@ -280,6 +286,7 @@ const SBFileUploaderHOC = function (WrappedComponent) {
         isShowingProject: PropTypes.bool,
         isShowingWithoutId: PropTypes.bool,
         loadingState: PropTypes.oneOf(LoadingStates),
+        onExtensionLoadFailed: PropTypes.func,
         onLoadingFailed: PropTypes.func,
         onSecurityLoadCancelled: PropTypes.func,
         onLoadingFinished: PropTypes.func,
@@ -319,6 +326,7 @@ const SBFileUploaderHOC = function (WrappedComponent) {
     };
     const mapDispatchToProps = (dispatch, ownProps) => ({
         onSecurityLoadCancelled: () => returnToEditorStart(dispatch),
+        onExtensionLoadFailed: error => returnToEditorStartAfterExtensionFailure(dispatch, error),
         cancelFileUpload: loadingState => dispatch(onLoadedProject(loadingState, false, false)),
         closeFileMenu: () => dispatch(closeFileMenu()),
         onLoadingFailed: error => {

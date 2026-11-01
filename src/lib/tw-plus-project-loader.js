@@ -1,3 +1,5 @@
+import {markExtensionLoadFailure} from './tw-plus-extension-load-failure.js';
+
 const installations = new WeakSet();
 
 const failure = (code, message) => Object.assign(new Error(message), {code});
@@ -113,14 +115,22 @@ export function installExtensionLoader(host, loader) {
         return result.finally(() => { pending--; });
     };
 
+    // The GUI reports extension failures instead of treating them as a broken Editor.
+    const extensionStep = async step => {
+        try {
+            return await step();
+        } catch (error) {
+            throw markExtensionLoadFailure(error);
+        }
+    };
     const loadExtensions = async function(ids, urls = new Map(), ...args) {
         checkActive();
         if (!loading || loading.manifest === null) {
-            return originals._loadExtensions.call(vm, ids, urls, ...args);
+            return extensionStep(() => originals._loadExtensions.call(vm, ids, urls, ...args));
         }
         const context = loading;
-        context.registration ??= loader.load(context.manifest, {signal: context.signal});
-        const result = await context.registration;
+        const registration = context.registration ??= loader.load(context.manifest, {signal: context.signal});
+        const result = await extensionStep(() => registration);
         hasLoaded = true;
         checkActive();
         if (!result || !Array.isArray(result.ids)) {
@@ -130,7 +140,7 @@ export function installExtensionLoader(host, loader) {
         const handled = new Set(result.ids);
         const remaining = [...ids].filter(id => !handled.has(id));
         const remainingURLs = new Map([...urls].filter(([id]) => !handled.has(id)));
-        return originals._loadExtensions.call(vm, remaining, remainingURLs, ...args);
+        return extensionStep(() => originals._loadExtensions.call(vm, remaining, remainingURLs, ...args));
     };
     const toJSON = function(...args) {
         canSave();

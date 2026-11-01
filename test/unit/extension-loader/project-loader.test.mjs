@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {installExtensionLoader} from '../../../src/lib/tw-plus-project-loader.js';
+import {isExtensionLoadFailure} from '../../../src/lib/tw-plus-extension-load-failure.js';
 
 function fixture({manifest = {schemaVersion: 1, extensions: []}, failLoad = false} = {}) {
     const events = [];
@@ -73,6 +74,28 @@ test('rejected trust prevents the legacy loader from seeing Plus URLs or project
     await assert.rejects(f.vm.loadProject('input'), {code: 'TRUST_DENIED'});
     assert.equal(f.events.some(event => event[0] === 'legacy'), false);
     assert.equal(f.vm.toJSON(), 'project');
+});
+
+test('extension failures are marked for the GUI without replacing the original error', async () => {
+    const loaderFailure = Object.assign(new Error('Extension load failed'), {code: 'LOAD_FAILED'});
+    const f = fixture();
+    f.loader.load = async () => { throw loaderFailure; };
+    installExtensionLoader(f.host, f.loader);
+    await assert.rejects(f.vm.loadProject('input'), error => error === loaderFailure && isExtensionLoadFailure(error));
+
+    const legacyFailure = new Error('Unknown extension: custom');
+    const legacy = fixture({manifest: null});
+    legacy.vm._loadExtensions = async () => { throw legacyFailure; };
+    installExtensionLoader(legacy.host, legacy.loader);
+    await assert.rejects(legacy.vm.loadProject('input'), error => error === legacyFailure && isExtensionLoadFailure(error));
+});
+
+test('project failures outside extension loading are not marked as extension failures', async () => {
+    const f = fixture({failLoad: true});
+    installExtensionLoader(f.host, f.loader);
+    await assert.rejects(f.vm.loadProject('input'), error => /VM failed/.test(error.message) && !isExtensionLoadFailure(error));
+    f.host.projectIO.prepare = async () => { throw Object.assign(new Error('bad ZIP'), {code: 'INVALID_ZIP'}); };
+    await assert.rejects(f.vm.loadProject('invalid'), error => error.code === 'INVALID_ZIP' && !isExtensionLoadFailure(error));
 });
 
 test('cleans registrations after VM failure and does not retain a failed manifest', async () => {

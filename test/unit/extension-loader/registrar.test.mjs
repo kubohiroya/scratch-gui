@@ -25,7 +25,7 @@ const extension = (id = 'realfixture', body = '') => `(function(Scratch) {
     ${body}
 })(Scratch);`;
 
-function setup({code = extension(), source = 'embedded', allow = true, registrarOptions} = {}) {
+function setup({code = extension(), source = 'embedded', allow = true, registrarOptions, loaderOptions} = {}) {
     const vm = new VM();
     const bytes = encode(code);
     const registrar = createVMExtensionRegistrar(vm, registrarOptions);
@@ -37,7 +37,7 @@ function setup({code = extension(), source = 'embedded', allow = true, registrar
         embeddedReader: {async read() { return bytes; }},
         fetcher: {async fetch(url) { return {bytes, finalURL: url, redirects: []}; }},
         trustProvider: {async authorize(resolved) { return {allowed: allow, scope: 'digest', sha256: resolved.sha256}; }}
-    });
+    }, loaderOptions);
     return {vm, loader, registrar, manifest: {schemaVersion: 1, extensions: [spec]}};
 }
 
@@ -157,10 +157,28 @@ test('a script that does not register times out and closes its scoped registrati
     const {vm, loader, manifest} = setup({code, registrarOptions: {registrationTimeoutMs: 10}});
     const listeners = vm.listenerCount('LOCALE_CHANGED');
     try {
-        await assert.rejects(loader.load(manifest), error => error.cause?.code === 'REGISTRATION_TIMEOUT');
+        await assert.rejects(loader.load(manifest), error => error.cause?.code === 'REGISTRATION_TIMEOUT' &&
+            error.cause.extensionId === 'realfixture');
         assert.throws(vm.lateRegister, {code: 'REGISTRATION_CLOSED'});
         assert.equal(vm.listenerCount('LOCALE_CHANGED'), listeners);
         assert.equal(vm.extensionManager._loadedExtensions.size, 0);
+    } finally { clean(vm); }
+});
+
+test('an extension that throws while registering is named in the failure', async () => {
+    const {vm, loader, manifest} = setup({code: 'throw new Error("Fixture must run unsandboxed.");'});
+    try {
+        await assert.rejects(loader.load(manifest), error => error.cause?.extensionId === 'realfixture' &&
+            error.cause.message === 'Fixture must run unsandboxed.');
+    } finally { clean(vm); }
+});
+
+test('a load that times out while an extension registers reports the timeout, not a cancellation', async () => {
+    const {vm, loader, manifest} = setup({code: 'Scratch.vm.neverRegisters = true;',
+        registrarOptions: {registrationTimeoutMs: 5000}, loaderOptions: {timeoutMs: 20}});
+    try {
+        await assert.rejects(loader.load(manifest), error => error.cause?.code === 'CANCELLED' &&
+            error.cause.extensionId === 'realfixture' && error.cause.cause?.code === 'TIMEOUT');
     } finally { clean(vm); }
 });
 

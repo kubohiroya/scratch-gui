@@ -15,8 +15,9 @@ import {
 } from '../reducers/project-state';
 import log from './log';
 import {isExtensionSecurityCancelled} from '@kubohiroya/turbowarp-extension-security-dialog/turbowarp';
-import returnToEditorStart from './tw-extension-security-cancel';
+import returnToEditorStart, {returnToEditorStartAfterExtensionFailure} from './tw-extension-security-cancel';
 import {isPlusPermissionDenied} from './tw-plus-extension-host';
+import {isExtensionLoadFailure} from './tw-plus-extension-load-failure';
 
 /**
  * List of fonts that could be used by security prompts.
@@ -94,6 +95,7 @@ const vmManagerHOC = function (WrappedComponent) {
                 })
                 .catch(e => {
                     if (isExtensionSecurityCancelled(e) || isPlusPermissionDenied(e)) this.props.onSecurityLoadCancelled();
+                    else if (isExtensionLoadFailure(e)) this.props.onExtensionLoadFailed(e);
                     else this.props.onError(e);
                 });
         }
@@ -106,6 +108,7 @@ const vmManagerHOC = function (WrappedComponent) {
                 messages,
                 isStarted,
                 onError: onErrorProp,
+                onExtensionLoadFailed,
                 onLoadedProject: onLoadedProjectProp,
                 onSetProjectUnchanged,
                 onSecurityLoadCancelled,
@@ -136,6 +139,7 @@ const vmManagerHOC = function (WrappedComponent) {
         locale: PropTypes.string,
         messages: PropTypes.objectOf(PropTypes.string),
         onError: PropTypes.func,
+        onExtensionLoadFailed: PropTypes.func,
         onLoadedProject: PropTypes.func,
         onSetProjectUnchanged: PropTypes.func,
         onSecurityLoadCancelled: PropTypes.func,
@@ -163,6 +167,7 @@ const vmManagerHOC = function (WrappedComponent) {
     const mapDispatchToProps = dispatch => ({
         onSecurityLoadCancelled: () => returnToEditorStart(dispatch),
         onError: error => dispatch(projectError(error)),
+        onExtensionLoadFailed: error => returnToEditorStartAfterExtensionFailure(dispatch, error),
         onLoadedProject: (loadingState, canSave) =>
             dispatch(onLoadedProject(loadingState, canSave, true)),
         onSetProjectUnchanged: () => dispatch(setProjectUnchanged())
