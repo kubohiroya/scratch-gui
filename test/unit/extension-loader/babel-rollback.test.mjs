@@ -9,10 +9,14 @@ import {createExtensionLoader as nativeLoader} from '@kubohiroya/turbowarp-exten
 
 const require = createRequire(import.meta.url);
 const {transformSync} = require('@babel/core');
-const source = await readFile(require.resolve('@kubohiroya/turbowarp-extension-loader'), 'utf8');
+const loaderEntry = require.resolve('@kubohiroya/turbowarp-extension-loader');
+const source = await readFile(loaderEntry, 'utf8');
 // Match the shared core's actual webpack 4 transpilation settings.
-const {code} = transformSync(source, {babelrc: false, configFile: false,
+const {code: transpiled} = transformSync(source, {babelrc: false, configFile: false,
     presets: [[require.resolve('@babel/preset-env'), {targets: {ie: '11'}, modules: false}]]});
+// A data: URL has no base to resolve the core's own relative imports against, so pin them to the package.
+const code = transpiled.replace(/from (['"])(\.\.?\/[^'"]+)\1/g,
+    (match, quote, name) => `from '${new URL(name, pathToFileURL(loaderEntry)).href}'`);
 const {createExtensionLoader: transpiledLoader} = await import(
     `data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
 const registrarSource = (await readFile(new URL('../../../src/lib/tw-plus-extension-registrar.js', import.meta.url), 'utf8'))
