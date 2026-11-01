@@ -17,7 +17,8 @@ test('marking keeps the original error and wraps values that are not objects', (
 });
 
 test('the description names the extension and every cause', () => {
-    const cause = Object.assign(new Error('Sandbox extension did not register'),
+    // LoaderError passes {cause: undefined} to Error, which leaves an own property holding undefined.
+    const cause = Object.assign(new Error('Sandbox extension did not register', {cause: undefined}),
         {code: 'REGISTRATION_TIMEOUT', extensionId: 'kubohiroyaassetcache'});
     const error = Object.assign(new Error('Extension load failed', {cause}),
         {name: 'LoaderError', code: 'LOAD_FAILED'});

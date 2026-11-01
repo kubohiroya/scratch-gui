@@ -19,7 +19,7 @@ const walk = (error, visit, depth = 0, seen = new Set()) => {
     visit(error, depth);
     if (error === null || typeof error !== 'object') return;
     if (Array.isArray(error.errors)) error.errors.forEach(inner => walk(inner, visit, depth + 1, seen));
-    if ('cause' in error) walk(error.cause, visit, depth + 1, seen);
+    if (typeof error.cause !== 'undefined') walk(error.cause, visit, depth + 1, seen);
 };
 
 /**

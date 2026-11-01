@@ -322,7 +322,7 @@ export function createVMExtensionRegistrar(vm, {registrationTimeoutMs = 30000} =
                         if (cause !== null && typeof cause === 'object' && Object.isExtensible(cause)) {
                             if (!('extensionId' in cause)) cause.extensionId = authorized.id;
                             const aborted = registrationSignal?.aborted;
-                            if (aborted && !('cause' in cause)) cause.cause = registrationSignal.reason;
+                            if (aborted && typeof cause.cause === 'undefined') cause.cause = registrationSignal.reason;
                         }
                         throw cause;
                     } finally { registering = false; }
