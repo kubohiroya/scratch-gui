@@ -1,7 +1,7 @@
 import {extensionProjectArchiveOptions} from '../config/extension-project-limits.js';
 import JSZip from '@turbowarp/jszip';
 import {isExtensionLoaderEnabled} from '../config/extension-loader-flag.js';
-import {createExtensionLoader, createFetchPort} from '@kubohiroya/turbowarp-extension-loader';
+import {createExtensionLoader, createFetchPort, DEFAULT_FETCH_RETRY} from '@kubohiroya/turbowarp-extension-loader';
 import {createProjectIO} from '@kubohiroya/turbowarp-extension-loader/project-codec';
 import {createSessionTrustProvider} from '@kubohiroya/turbowarp-extension-loader/session-trust';
 import {createMemoryContentCache} from '@kubohiroya/turbowarp-extension-loader/memory-cache';
@@ -17,7 +17,8 @@ const startupSearch = globalThis.location ? globalThis.location.search : '';
 /** Host-controlled wiring shared by the Editor and bundled HTML runtime. */
 export function installPlusExtensionHost (vm, {
     enabled = false, document = globalThis.document, locale = 'ja', fetchImpl = globalThis.fetch,
-    cache, requestApproval, diagnostics: report, loaderOptions, hostPolicy, trustedCatalog = null, trustedDigests
+    cache, requestApproval, diagnostics: report, loaderOptions, hostPolicy, trustedCatalog = null, trustedDigests,
+    fetchRetry
 } = {}) {
     if (enabled !== true) return Object.freeze({enabled: false, dispose: async () => {}});
     // A single HTML has no catalog to read; its build embeds the digests the catalog lists.
@@ -28,6 +29,16 @@ export function installPlusExtensionHost (vm, {
         ui.diagnostics(event);
         if (report) report(event);
     };
+    // The host owns the retry settings, so only the host can say which attempt of how many this
+    // is. The Loader reports the retry it is about to wait for; the attempt it leads to is next.
+    const retry = {...DEFAULT_FETCH_RETRY, ...fetchRetry};
+    const onRetry = ({url, attempt, delayMs}) => diagnostics({
+        type: 'retry',
+        attempt: attempt + 1,
+        attempts: retry.retries + 1,
+        delayMs,
+        message: url
+    });
     const projectIO = createProjectIO({zip: JSZip, ...extensionProjectArchiveOptions});
     const approve = requestApproval || ui.requestApproval;
     const trustProvider = createSessionTrustProvider({hostPolicy,
@@ -36,7 +47,7 @@ export function installPlusExtensionHost (vm, {
             (trusted !== null && await trusted.isTrustedCode(code)) || approve(code, options)});
     const ports = {
         embeddedReader: projectIO.embeddedReader,
-        fetcher: createFetchPort(fetchImpl),
+        fetcher: createFetchPort(fetchImpl, {...retry, onRetry}),
         cache: cache || createMemoryContentCache(),
         trustProvider,
         registrar: createVMExtensionRegistrar(vm),

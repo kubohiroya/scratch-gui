@@ -181,3 +181,45 @@ test('default-on host opens 24 MiB legacy JSON and SB3 and rejects entries above
         assert.equal(prompts, 0);
     } finally { await host.dispose(); vm.runtime.dispose(); }
 });
+
+test('a transient fetch failure is reported as the attempt it leads to, and a 404 answer is not', async () => {
+    const vm = new VM();
+    const reported = [];
+    let requests = 0;
+    const host = installPlusExtensionHost(vm, {enabled: true, document: undefined,
+        requestApproval: async () => true, diagnostics: event => reported.push(event),
+        fetchRetry: {baseDelayMs: 1, maxDelayMs: 1},
+        async fetchImpl(url) {
+            requests++;
+            if (requests === 1) throw new TypeError('Failed to fetch');
+            const response = new Response(bytes);
+            Object.defineProperty(response, 'url', {value: url});
+            return response;
+        }});
+    try {
+        await vm.loadProject(JSON.stringify(project));
+        assert.equal(requests, 2);
+        const retries = reported.filter(event => event.type === 'retry');
+        assert.deepEqual(retries.map(event => [event.attempt, event.attempts]), [[2, 3]]);
+        assert.equal(retries[0].message, manifest.extensions[0].source.url);
+    } finally { await host.dispose(); vm.runtime.dispose(); }
+
+    const answered = new VM();
+    const answers = [];
+    let asked = 0;
+    const second = installPlusExtensionHost(answered, {enabled: true, document: undefined,
+        requestApproval: async () => true, diagnostics: event => answers.push(event),
+        fetchRetry: {baseDelayMs: 1, maxDelayMs: 1},
+        async fetchImpl(url) {
+            asked++;
+            const response = new Response('missing', {status: 404});
+            Object.defineProperty(response, 'url', {value: url});
+            return response;
+        }});
+    try {
+        await assert.rejects(answered.loadProject(JSON.stringify(project)), {code: 'FETCH_FAILED'});
+        // 404 is the answer that it is not there; asking again would only ask for it again.
+        assert.equal(asked, 1);
+        assert.equal(answers.filter(event => event.type === 'retry').length, 0);
+    } finally { await second.dispose(); answered.runtime.dispose(); }
+});

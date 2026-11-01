@@ -1,7 +1,7 @@
 import {extensionProjectArchiveOptions} from '../config/extension-project-limits.js';
 import JSZip from '@turbowarp/jszip';
 import Packager from '@turbowarp/packager-web';
-import {createFetchPort} from '@kubohiroya/turbowarp-extension-loader';
+import {createFetchPort, DEFAULT_FETCH_RETRY} from '@kubohiroya/turbowarp-extension-loader';
 import {createProjectIO} from '@kubohiroya/turbowarp-extension-loader/project-codec';
 import {prepareOfflinePackage} from '@kubohiroya/turbowarp-extension-loader/packager';
 import {createSessionTrustProvider} from '@kubohiroya/turbowarp-extension-loader/session-trust';
@@ -67,8 +67,20 @@ generate.addEventListener('click', async () => {
         const prepared = await io.prepare(input);
         if (!prepared.manifest) throw new Error('Plus Manifestがありません。通常の作品には標準Packagerを使用してください。');
         const resourceDependencies = Object.fromEntries(prepared.manifest.extensions.map(spec => [spec.id, []]));
+        // A transient failure is retried for a few seconds; say so instead of looking stuck.
+        const attempts = DEFAULT_FETCH_RETRY.retries + 1;
+        const onRetry = ({url, attempt, delayMs}) => {
+            status.textContent = `接続できませんでした。再試行しています（${attempt + 1}/${attempts}）: ${url}`;
+            ui.diagnostics({
+                type: 'retry',
+                attempt: attempt + 1,
+                attempts,
+                delayMs,
+                message: url
+            });
+        };
         const compiled = await prepareOfflinePackage(input, {
-            fetcher: createFetchPort(), trustProvider, diagnostics: ui.diagnostics
+            fetcher: createFetchPort(fetch, {onRetry}), trustProvider, diagnostics: ui.diagnostics
         }, {zip: JSZip, archiveOptions: extensionProjectArchiveOptions, resourceDependencies});
         const runtimeBundle = bundledRuntime;
         const trustedDigests = await listTrustedDigests(plusTrustedCatalog, compiled.manifest);
