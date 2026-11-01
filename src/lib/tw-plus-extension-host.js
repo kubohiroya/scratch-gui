@@ -9,6 +9,7 @@ import {createVMExtensionRegistrar} from './tw-plus-extension-registrar.js';
 import {installExtensionLoader} from './tw-plus-project-loader.js';
 import {createPlusPermissionUI} from './tw-plus-permission-ui.js';
 import {createExtensionAuthoringController, setExtensionAuthoringHost} from './tw-plus-extension-authoring.js';
+import {plusTrustedCatalog} from './tw-plus-trusted-extensions.js';
 
 // Snapshot before any project is opened; later URL changes cannot toggle this host.
 const startupSearch = globalThis.location ? globalThis.location.search : '';
@@ -16,7 +17,7 @@ const startupSearch = globalThis.location ? globalThis.location.search : '';
 /** Host-controlled wiring shared by the Editor and bundled HTML runtime. */
 export function installPlusExtensionHost (vm, {
     enabled = false, document = globalThis.document, locale = 'ja', fetchImpl = globalThis.fetch,
-    cache, requestApproval, diagnostics: report, loaderOptions, hostPolicy
+    cache, requestApproval, diagnostics: report, loaderOptions, hostPolicy, trustedCatalog = null
 } = {}) {
     if (enabled !== true) return Object.freeze({enabled: false, dispose: async () => {}});
     const ui = createPlusPermissionUI(document, locale);
@@ -25,7 +26,11 @@ export function installPlusExtensionHost (vm, {
         if (report) report(event);
     };
     const projectIO = createProjectIO({zip: JSZip, ...extensionProjectArchiveOptions});
-    const trustProvider = createSessionTrustProvider({requestApproval: requestApproval || ui.requestApproval, hostPolicy});
+    const approve = requestApproval || ui.requestApproval;
+    const trustProvider = createSessionTrustProvider({hostPolicy,
+        // Catalog-listed code is trusted like TurboWarp's official gallery and needs no separate approval.
+        requestApproval: async (code, options) =>
+            (trustedCatalog !== null && await trustedCatalog.isTrustedCode(code)) || approve(code, options)});
     const ports = {
         embeddedReader: projectIO.embeddedReader,
         fetcher: createFetchPort(fetchImpl),
@@ -65,7 +70,7 @@ export function installPlusExtensionHost (vm, {
 
 export function startupPlusExtensionHost (vm, options = {}) {
     const search = options.search === undefined ? startupSearch : options.search;
-    return installPlusExtensionHost(vm, {...options,
+    return installPlusExtensionHost(vm, {trustedCatalog: plusTrustedCatalog, ...options,
         enabled: isExtensionLoaderEnabled(search || '')});
 }
 

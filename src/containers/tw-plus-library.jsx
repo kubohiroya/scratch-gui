@@ -54,7 +54,10 @@ class PlusLibrary extends React.PureComponent {
         try {
             const entries = await loadPlusCatalog(this.controller.signal);
             const settings = await readPlusCatalogSettings(this.props.vm, entries);
-            if (this.alive) this.setState({entries, choices: settings.choices, distributions: settings.distributions});
+            // Catalog-listed extensions are trusted like TurboWarp's official gallery, so they start unsandboxed.
+            const choices = new Map(entries.map(entry => [entry.url, 'unsandboxed']));
+            settings.choices.forEach((mode, url) => choices.set(url, mode));
+            if (this.alive) this.setState({entries, choices, distributions: settings.distributions});
         } catch (error) {
             if (this.alive) {
                 log.error(error);

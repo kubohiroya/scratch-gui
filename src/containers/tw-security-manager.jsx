@@ -15,6 +15,7 @@ import extensionLibrary from '../lib/libraries/extensions/index.jsx';
 import defaultExtensionURLs from 'scratch-vm/src/extension-support/tw-default-extension-urls';
 import {getPlusReviewedMode, setPlusHostPolicy} from '../lib/tw-plus-extension-permissions';
 import {startupPlusExtensionHost} from '../lib/tw-plus-extension-host';
+import {plusTrustedCatalog} from '../lib/tw-plus-trusted-extensions.js';
 
 /* eslint-disable require-atomic-updates */
 
@@ -183,13 +184,25 @@ class TWSecurityManagerComponent extends React.Component {
         if (!propsSecurityManager.canLoadExtensionFromProject &&
             !propsSecurityManager.getSandboxMode) {
             this.restoreBatchLoader = installBatchExtensionLoader(this.props.vm, async (entries, initialChoices) => {
+                // Like TurboWarp's official gallery, catalog-listed Plus extensions load unsandboxed unreviewed.
+                const decisions = new Map();
+                for (const entry of entries) {
+                    if (isTrustedExtension(entry.url) || await plusTrustedCatalog.isTrustedURL(entry.url)) {
+                        decisions.set(entry.url, 'unsandboxed');
+                    }
+                }
+                const reviewed = entries.filter(entry => !decisions.has(entry.url));
+                if (!reviewed.length) return decisions;
                 const {showModal} = await this.acquireModalLock();
-                return showModal(SecurityModals.LoadExtensions, {initialChoices,
-                    entries: entries.map(entry => {
+                const choices = await showModal(SecurityModals.LoadExtensions, {initialChoices,
+                    entries: reviewed.map(entry => {
                         const libraryItem = extensionLibrary.find(item => entry.ids.includes(item.extensionId) ||
                         (item.extensionURL && item.extensionURL === entry.url));
                         return {...entry, banner: libraryItem && libraryItem.iconURL};
                     })});
+                if (choices === null) return null;
+                choices.forEach((mode, url) => decisions.set(url, mode));
+                return decisions;
             }, defaultExtensionURLs);
         }
         // Install after the ordinary permission bridge and before project loading begins.
