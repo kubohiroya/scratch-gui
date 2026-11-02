@@ -223,3 +223,24 @@ test('a transient fetch failure is reported as the attempt it leads to, and a 40
         assert.equal(answers.filter(event => event.type === 'retry').length, 0);
     } finally { await second.dispose(); answered.runtime.dispose(); }
 });
+
+test('a host that supplies its own installer owns the extension host entirely', async () => {
+    const {plusIntegration} = await import('../../../src/lib/tw-plus-integration.js');
+    // Empty on purpose: this is what the GUI uses on its own, and every hook that consults it
+    // falls back to what it does today, so the GUI still runs with nothing supplied.
+    assert.equal(plusIntegration(), null);
+
+    // The socket hands over the whole installation rather than options for the copy here. That is
+    // what lets each feature leave this fork one at a time: once the host installs it, the
+    // implementation beside this test has no caller left.
+    const calls = [];
+    const supplied = {installExtensionHost(vm, settings) {
+        calls.push([vm, settings]);
+        return {enabled: true, dispose: async () => {}};
+    }};
+    const settings = {trustedCatalog: null, enabled: true};
+    const chosen = typeof supplied.installExtensionHost === 'function' ?
+        supplied.installExtensionHost('vm', settings) : null;
+    assert.equal(chosen.enabled, true);
+    assert.deepEqual(calls, [['vm', settings]]);
+});

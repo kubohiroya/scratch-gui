@@ -10,6 +10,7 @@ import {installExtensionLoader} from './tw-plus-project-loader.js';
 import {createPlusPermissionUI} from './tw-plus-permission-ui.js';
 import {createExtensionAuthoringController, setExtensionAuthoringHost} from './tw-plus-extension-authoring.js';
 import {createDigestTrustedCatalog, plusTrustedCatalog} from './tw-plus-trusted-extensions.js';
+import {plusIntegration} from './tw-plus-integration.js';
 
 // Snapshot before any project is opened; later URL changes cannot toggle this host.
 const startupSearch = globalThis.location ? globalThis.location.search : '';
@@ -84,8 +85,13 @@ export function installPlusExtensionHost (vm, {
 
 export function startupPlusExtensionHost (vm, options = {}) {
     const search = options.search === undefined ? startupSearch : options.search;
-    return installPlusExtensionHost(vm, {trustedCatalog: plusTrustedCatalog, ...options,
-        enabled: isExtensionLoaderEnabled(search || '')});
+    const settings = {trustedCatalog: plusTrustedCatalog, ...options,
+        enabled: isExtensionLoaderEnabled(search || '')};
+    // A host that supplied its own installer owns this entirely, which is how the implementation
+    // below leaves this fork: once every caller goes through the socket, the copy here can go.
+    const supplied = plusIntegration();
+    return typeof supplied?.installExtensionHost === 'function' ?
+        supplied.installExtensionHost(vm, settings) : installPlusExtensionHost(vm, settings);
 }
 
 export const isPlusPermissionDenied = error => error && ['TRUST_DENIED', 'CANCELLED'].includes(error.code);
