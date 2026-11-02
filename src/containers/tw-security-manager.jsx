@@ -139,6 +139,19 @@ let allowedReadClipboard = false;
 let allowedNotify = false;
 let allowedGeolocation = false;
 
+const resetPermissions = () => {
+    fetchHostsTrustedByUser.clear();
+    embedHostsTrustedByUser.clear();
+    allowedAudio = false;
+    allowedVideo = false;
+    allowedReadClipboard = false;
+    allowedNotify = false;
+    allowedGeolocation = false;
+};
+
+// The extension review answers with its choices or null, the other modals with a boolean.
+const rejectedResult = type => (type === SecurityModals.LoadExtensions ? null : false);
+
 const SECURITY_MANAGER_METHODS = [
     'getSandboxMode',
     'canLoadExtensionFromProject',
@@ -160,11 +173,16 @@ class TWSecurityManagerComponent extends React.Component {
         bindAll(this, [
             'handleAllowed',
             'handleDenied',
-            'handleBatchComplete'
+            'handleBatchComplete',
+            'handleRuntimeDisposed'
         ]);
         bindAll(this, SECURITY_MANAGER_METHODS);
         this.nextModalCallbacks = [];
         this.modalLocked = false;
+        /**
+         * Incremented each time previous project disposed.
+         */
+        this.generation = 0;
         this.state = {
             type: null,
             data: null,
@@ -213,10 +231,12 @@ class TWSecurityManagerComponent extends React.Component {
         }
         this.plusExtensionHost = startupPlusExtensionHost(this.props.vm, {locale: this.props.locale,
             hostPolicy: plusHostPolicy});
+        this.props.vm.runtime.on('RUNTIME_DISPOSED', this.handleRuntimeDisposed);
     }
 
     componentWillUnmount () {
         this.isUnmounting = true;
+        this.props.vm.runtime.off('RUNTIME_DISPOSED', this.handleRuntimeDisposed);
         setPlusHostPolicy(this.props.vm.extensionManager.securityManager, null);
         if (this.plusExtensionHost && this.plusExtensionHost.enabled) {
             this.plusExtensionHost.dispose().then(() => {
@@ -224,6 +244,14 @@ class TWSecurityManagerComponent extends React.Component {
             }).catch(error => log.error('Could not dispose the Plus extension host', error));
         } else if (this.restoreBatchLoader) this.restoreBatchLoader();
         if (this.state.type === SecurityModals.LoadExtensions && this.state.callback) this.state.callback(null);
+    }
+
+    handleRuntimeDisposed () {
+        resetPermissions();
+        this.generation++;
+        if (this.state.type) {
+            this.state.callback(rejectedResult(this.state.type));
+        }
     }
 
     // eslint-disable-next-line valid-jsdoc
@@ -236,6 +264,8 @@ class TWSecurityManagerComponent extends React.Component {
         // and so that multiple attempts to fetch resources from the same origin will all be allowed
         // with just one click. This means that some places have to wait until previous modals are
         // closed before it knows if it needs to display another modal.
+
+        const generation = this.generation;
 
         if (this.modalLocked) {
             await new Promise(resolve => {
@@ -261,6 +291,11 @@ class TWSecurityManagerComponent extends React.Component {
         };
 
         const showModal = async (type, data) => {
+            if (generation !== this.generation) {
+                // Request is from a previous project.
+                releaseLock();
+                return rejectedResult(type);
+            }
             const result = await new Promise(resolve => {
                 this.setState(oldState => ({
                     type,
@@ -270,7 +305,7 @@ class TWSecurityManagerComponent extends React.Component {
                 }));
             });
             releaseLock();
-            return result;
+            return generation === this.generation ? result : rejectedResult(type);
         };
 
         return {
@@ -531,6 +566,10 @@ class TWSecurityManagerComponent extends React.Component {
 TWSecurityManagerComponent.propTypes = {
     locale: PropTypes.string,
     vm: PropTypes.shape({
+        runtime: PropTypes.shape({
+            on: PropTypes.func.isRequired,
+            off: PropTypes.func.isRequired
+        }).isRequired,
         extensionManager: PropTypes.shape({
             securityManager: PropTypes.shape(
                 SECURITY_MANAGER_METHODS.reduce((obj, method) => {
