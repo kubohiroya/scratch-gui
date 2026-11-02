@@ -29,7 +29,8 @@
     "test:block-editor": "node --test test/unit/block-editor/*.test.mjs",
     "test:extension-security": "node --test test/unit/extension-security/*.test.cjs",
     "test:plus-extension-loader": "node --test test/unit/extension-loader/*.test.mjs",
-    "test:document-editor": "node --test test/unit/document-editor/*.test.cjs"
+    "test:document-editor": "node --test test/unit/document-editor/*.test.cjs",
+    "test:plus-integration": "node --test test/unit/plus/*.test.mjs"
   },
   "config": {
     "commitizen": {

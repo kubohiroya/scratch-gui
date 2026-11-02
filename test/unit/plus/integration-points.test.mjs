@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+    createCancelSecurityLoad,
     hostIgnoresKeyEvent,
     hostIntegration,
     hostModalDefaults,
@@ -66,4 +67,33 @@ test('the block shapes point receives ScratchBlocks once', () => {
 // A typo must fail where it is written, not dispatch an action no reducer knows.
 test('a modal the host did not declare cannot be opened', () => {
     assert.throws(() => openHostModal('saveFormatModal'), /declared no modal named saveFormatModal/);
+});
+
+// The host cannot import the reducer's values, so the point hands them in. With nothing supplied
+// the fork's own default runs, which is what keeps this fork working on its own.
+test('cancelling a load returns to the default project when no host decides otherwise', () => {
+    const initialState = {projectId: null, projectData: 'old', error: new Error('old'), loadingState: 'LOADING'};
+    const loadingStates = {FETCHING_NEW_DEFAULT: 'FETCHING_NEW_DEFAULT'};
+    const next = createCancelSecurityLoad(initialState, '0', loadingStates, null);
+    assert.equal(next.loadingState, 'FETCHING_NEW_DEFAULT');
+    assert.equal(next.projectId, '0');
+    assert.equal(next.projectData, 'old', 'the rest comes from the initial state');
+    assert.notEqual(next, initialState, 'the initial state is not mutated');
+});
+
+test('a host may decide what cancelling leaves behind, and receives the values it needs', () => {
+    const seen = [];
+    const integration = {
+        createCancelSecurityLoad: (initialState, defaultProjectId, loadingStates) => {
+            seen.push({initialState, defaultProjectId, loadingStates});
+            return {loadingState: 'HOST', projectId: defaultProjectId};
+        }
+    };
+    const initialState = {projectId: null};
+    const loadingStates = {FETCHING_NEW_DEFAULT: 'FETCHING_NEW_DEFAULT'};
+    const next = createCancelSecurityLoad(initialState, '0', loadingStates, integration);
+    assert.deepEqual(next, {loadingState: 'HOST', projectId: '0'});
+    assert.equal(seen[0].initialState, initialState);
+    assert.equal(seen[0].defaultProjectId, '0');
+    assert.equal(seen[0].loadingStates, loadingStates);
 });

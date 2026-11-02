@@ -89,3 +89,33 @@ export const hostIgnoresKeyEvent = (event, integration) => integration?.shouldIg
  * @returns {object|null} A disposable, or null when the host attached nothing.
  */
 export const attachHostToWorkspace = (context, integration) => integration?.attachToWorkspace?.(context) || null;
+
+/**
+ * Return to the default project, which is what this fork does when no host decides otherwise.
+ * @param {object} initialState The reducer's initial state.
+ * @param {string} defaultProjectId The id of the default project.
+ * @param {object} loadingStates The reducer's LoadingState map.
+ * @returns {object} The next project state.
+ */
+const defaultCancelSecurityLoad = (initialState, defaultProjectId, loadingStates) =>
+    Object.assign({}, initialState, {
+        loadingState: loadingStates.FETCHING_NEW_DEFAULT,
+        projectId: defaultProjectId
+    });
+
+/**
+ * What cancelling a load leaves behind.
+ *
+ * The host cannot import the reducer's `initialState`, `LoadingState` or `defaultProjectId`, so
+ * they are handed in. That is what makes a point like this possible: the reducer keeps the values
+ * and the host may keep the decision. With nothing supplied the default below runs, so the fork
+ * behaves on its own exactly as it did.
+ * @param {object} initialState The reducer's initial state.
+ * @param {string} defaultProjectId The id of the default project.
+ * @param {object} loadingStates The reducer's LoadingState map.
+ * @param {object} [integration] The host's integration.
+ * @returns {object} The next project state.
+ */
+export const createCancelSecurityLoad = (initialState, defaultProjectId, loadingStates, integration) =>
+    (integration?.createCancelSecurityLoad || defaultCancelSecurityLoad)(
+        initialState, defaultProjectId, loadingStates);
