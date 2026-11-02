@@ -6,7 +6,6 @@ import {connect} from 'react-redux';
 import log from '../lib/log';
 import sharedMessages from './shared-messages';
 import {setFileHandle, setProjectError} from '../reducers/tw';
-import {isExtensionSecurityCancelled} from '@kubohiroya/turbowarp-extension-security-dialog/turbowarp';
 import {isPlusPermissionDenied} from './tw-plus-extension-host';
 import {isExtensionLoadFailure} from './tw-plus-extension-load-failure';
 import returnToEditorStart, {returnToEditorStartAfterExtensionFailure} from './tw-extension-security-cancel';
@@ -214,7 +213,7 @@ const SBFileUploaderHOC = function (WrappedComponent) {
                         loadingSuccess = true;
                     })
                     .catch(error => {
-                        if (isExtensionSecurityCancelled(error) || isPlusPermissionDenied(error)) {
+                        if (isPlusPermissionDenied(error)) {
                             cancelled = true;
                             this.props.onSecurityLoadCancelled();
                         } else if (isExtensionLoadFailure(error)) {

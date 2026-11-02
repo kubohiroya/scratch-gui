@@ -14,7 +14,6 @@ import {
     projectError
 } from '../reducers/project-state';
 import log from './log';
-import {isExtensionSecurityCancelled} from '@kubohiroya/turbowarp-extension-security-dialog/turbowarp';
 import returnToEditorStart, {returnToEditorStartAfterExtensionFailure} from './tw-extension-security-cancel';
 import {isPlusPermissionDenied} from './tw-plus-extension-host';
 import {isExtensionLoadFailure} from './tw-plus-extension-load-failure';
@@ -94,7 +93,7 @@ const vmManagerHOC = function (WrappedComponent) {
                     }
                 })
                 .catch(e => {
-                    if (isExtensionSecurityCancelled(e) || isPlusPermissionDenied(e)) this.props.onSecurityLoadCancelled();
+                    if (isPlusPermissionDenied(e)) this.props.onSecurityLoadCancelled();
                     else if (isExtensionLoadFailure(e)) this.props.onExtensionLoadFailed(e);
                     else this.props.onError(e);
                 });

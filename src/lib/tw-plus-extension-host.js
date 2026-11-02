@@ -19,7 +19,9 @@ import staticFetch from 'scratch-vm/src/util/tw-static-fetch.js';
 import dispatch from 'scratch-vm/src/dispatch/central-dispatch.js';
 
 import {markExtensionLoadFailure} from './tw-plus-extension-load-failure.js';
-import {hostIntegration, hostTrustedCatalog, installHostExtensionHost} from './tw-plus-integration-points.js';
+import {
+    hostIntegration, hostSecurityReview, hostTrustedCatalog, installHostExtensionHost
+} from './tw-plus-integration-points.js';
 
 // Snapshot before any project is opened; later URL changes cannot toggle this host.
 const startupSearch = globalThis.location ? globalThis.location.search : '';
@@ -45,4 +47,16 @@ export function startupPlusExtensionHost (vm, options = {}, integration = hostIn
     }, integration);
 }
 
-export const isPlusPermissionDenied = error => error && ['TRUST_DENIED', 'CANCELLED'].includes(error.code);
+/**
+ * Whether a failed load was declined rather than broken: the project-error paths show nothing for
+ * a refusal and return to the editor instead.
+ *
+ * Two kinds count. The loader's own refusals, whose codes are below, and a review the host shipped
+ * being cancelled — only the host can recognise that one, because the review is its own.
+ * @param {object} error The rejection from loading a project.
+ * @param {object} [integration] The host's integration.
+ * @returns {boolean} True when nothing is broken and nobody needs telling.
+ */
+export const isPlusPermissionDenied = (error, integration = hostIntegration()) =>
+    Boolean(error) && (['TRUST_DENIED', 'CANCELLED'].includes(error.code) ||
+        hostSecurityReview(integration)?.isCancelled?.(error) === true);
