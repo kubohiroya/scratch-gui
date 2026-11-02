@@ -10,8 +10,7 @@
  * a function, because the project-error paths read it back. The VM modules the registration needs
  * go as this fork's own
  * module instances: `central-dispatch` is a singleton, and a copy resolved anywhere else would not
- * be the one the VM uses. The switch and the archive limits go as values, because this fork's own
- * Packager wiring reads the same two and they are defined once, here.
+ * be the one the VM uses. The startup query goes as a value; what it means is the host's to decide.
  */
 
 import ScratchCommon from 'scratch-vm/src/extension-support/tw-extension-api-common.js';
@@ -19,8 +18,6 @@ import createTranslate from 'scratch-vm/src/extension-support/tw-l10n.js';
 import staticFetch from 'scratch-vm/src/util/tw-static-fetch.js';
 import dispatch from 'scratch-vm/src/dispatch/central-dispatch.js';
 
-import {extensionProjectArchiveOptions} from '../config/extension-project-limits.js';
-import {isExtensionLoaderEnabled} from '../config/extension-loader-flag.js';
 import {markExtensionLoadFailure} from './tw-plus-extension-load-failure.js';
 import {hostIntegration, hostTrustedCatalog, installHostExtensionHost} from './tw-plus-integration-points.js';
 
@@ -36,10 +33,11 @@ const startupSearch = globalThis.location ? globalThis.location.search : '';
  * @returns {object} The installed host, or a disabled one when this build has no loader.
  */
 export function startupPlusExtensionHost (vm, options = {}, integration = hostIntegration()) {
-    const search = options.search === undefined ? startupSearch : options.search;
     return installHostExtensionHost(vm, {
-        enabled: isExtensionLoaderEnabled(search || ''),
-        archiveOptions: extensionProjectArchiveOptions,
+        // The query as it was before any project was opened, so a later URL change cannot turn
+        // loading on. What that query means, and what limits a project is read with, are the
+        // host's: its own Packager wiring reads the same two, and both are stated there now.
+        search: options.search === undefined ? startupSearch : options.search,
         vmModules: {ScratchCommon, createTranslate, staticFetch, dispatch},
         trustedCatalog: hostTrustedCatalog(integration),
         markLoadFailure: markExtensionLoadFailure,

@@ -1,4 +1,3 @@
-const {withExtensionLoaderWebpack4} = require('@kubohiroya/turbowarp-extension-loader/webpack4');
 const defaultsDeep = require('lodash.defaultsdeep');
 const path = require('path');
 const webpack = require('webpack');
@@ -307,4 +306,4 @@ const guiConfigs = withBlockEditorWebpack4([
         })) : []
 ), {hostRoot: __dirname});
 
-module.exports = withExtensionLoaderWebpack4(guiConfigs, {hostRoot: __dirname});
+module.exports = guiConfigs;

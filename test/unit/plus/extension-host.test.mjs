@@ -30,10 +30,11 @@ test('the host is handed what only this fork has, and nothing it could read itse
     const [[subject, settings]] = given;
     assert.equal(subject, vm);
     assert.equal(settings.locale, 'en');
-    // The switch and the archive limits: this fork's own Packager wiring reads the same two, so
-    // they are defined once here and handed over rather than being read on both sides.
-    assert.equal(settings.enabled, true);
-    assert.deepEqual(settings.archiveOptions, {maxProjectBytes: 33554432, maxEntryBytes: 33554432});
+    // The startup query goes over as it was. What it means — whether loading runs at all — and
+    // the limits a project is read with are the host's to decide, so neither is sent from here.
+    assert.equal(settings.search, '');
+    assert.equal(settings.enabled, undefined);
+    assert.equal(settings.archiveOptions, undefined);
     // The VM modules the registration needs, as this fork's own instances: central dispatch is a
     // singleton, and a copy resolved anywhere else would not be the one the VM uses.
     assert.deepEqual(Object.keys(settings.vmModules).sort(),
@@ -47,23 +48,21 @@ test('the host is handed what only this fork has, and nothing it could read itse
     assert.equal(settings.setAuthoringHost, undefined);
 });
 
-test('the explicit opt-out is handed over as off, and a later URL change cannot turn it on', () => {
+test('the startup query goes over unread, and a later URL change cannot change it', () => {
     const given = [];
     const integration = {installExtensionHost (vm, settings) {
         given.push(settings);
-        return {enabled: settings.enabled, dispose: async () => {}};
+        return {enabled: true, dispose: async () => {}};
     }};
     startupPlusExtensionHost({}, {search: '?twPlusExtensionLoader=0'}, integration);
-    assert.equal(given[0].enabled, false);
-    startupPlusExtensionHost({}, {search: '?twPlusExtensionLoader=1'}, integration);
-    assert.equal(given[1].enabled, true);
-    // With no search given the snapshot taken before any project was opened is used, so changing
-    // the URL afterwards cannot turn the loader on or off.
+    assert.equal(given[0].search, '?twPlusExtensionLoader=0');
+    // With no search given, the snapshot taken before any project was opened is used, so changing
+    // the URL afterwards changes nothing.
     const previous = globalThis.location;
     globalThis.location = {search: '?twPlusExtensionLoader=0'};
     try {
         startupPlusExtensionHost({}, {}, integration);
-        assert.equal(given[2].enabled, true);
+        assert.equal(given[1].search, previous === undefined ? '' : previous.search);
     } finally {
         if (previous === undefined) delete globalThis.location;
         else globalThis.location = previous;

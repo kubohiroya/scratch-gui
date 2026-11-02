@@ -1,15 +1,15 @@
-import {extensionProjectArchiveOptions} from '../config/extension-project-limits.js';
 import React from 'react';
-import {isExtensionLoaderEnabled} from '../config/extension-loader-flag.js';
 import {connect} from 'react-redux';
 import PropTypes from 'prop-types';
 import log from './log';
 import {getIsShowingProject} from '../reducers/project-state';
-import JSZip from '@turbowarp/jszip';
-import {createProjectIO} from '@kubohiroya/turbowarp-extension-loader/project-codec';
+import {hostIntegration, hostProjectPackager} from './tw-plus-integration-points.js';
 
 const PACKAGER_URL = 'https://packager.turbowarp.org';
 const PACKAGER_ORIGIN = PACKAGER_URL;
+// A host that packages some projects itself, resolved once: whether it does cannot change while
+// the editor is open.
+const hostPackager = hostProjectPackager(hostIntegration());
 
 const PackagerIntegrationHOC = function (WrappedComponent) {
     class PackagerIntegrationComponent extends React.Component {
@@ -17,9 +17,7 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
             super(props);
             this.handleClickPackager = this.handleClickPackager.bind(this);
             this.handleMessage = this.handleMessage.bind(this);
-            this.plusLoaderEnabled = isExtensionLoaderEnabled(location.search);
-            this.plusPackagerWindow = null;
-            this.plusPackagerBuffer = null;
+            this.projectName = () => `${this.props.reduxProjectTitle}.sb3`;
         }
         componentDidMount () {
             window.addEventListener('message', this.handleMessage);
@@ -29,39 +27,20 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
         }
         handleClickPackager () {
             if (!this.props.canOpenPackager) return;
-            if (!this.plusLoaderEnabled) {
-                window.open(`${PACKAGER_URL}/?import_from=${location.origin}`);
+            const upstream = `${PACKAGER_URL}/?import_from=${location.origin}`;
+            if (!hostPackager) {
+                window.open(upstream);
                 return;
             }
-            // Reserve the browsing context during the user gesture, before serializing.
+            // Reserve the browsing context during the user gesture, before serializing: a popup
+            // opened after an await would be blocked. The host decides where it goes.
             const popup = window.open('about:blank');
             if (!popup) return;
-            this.props.vm.saveProjectSb3('arraybuffer').then(async buffer => {
-                const {manifest} = await createProjectIO({zip: JSZip, ...extensionProjectArchiveOptions}).prepare(buffer);
-                if (popup.closed) return;
-                if (manifest === null) {
-                    popup.location.href = `${PACKAGER_URL}/?import_from=${location.origin}`;
-                    return;
-                }
-                this.plusPackagerWindow = popup;
-                this.plusPackagerBuffer = buffer;
-                popup.location.href = new URL(`${process.env.ROOT || './'}plus-packager.html`, location.href).href;
-            }).catch(error => {
-                popup.close();
-                log.error(error);
-                window.alert(`Plus HTML出力を開始できませんでした: ${error.message}`);
-            });
+            hostPackager.open({popup, vm: this.props.vm, name: this.projectName, fallbackURL: upstream});
         }
         handleMessage (e) {
-            const plusData = e.data && e.data.twPlusPackage;
-            if (e.origin === location.origin && e.source === this.plusPackagerWindow &&
-                plusData && plusData.type === 'ready' && this.plusPackagerBuffer) {
-                const buffer = this.plusPackagerBuffer;
-                this.plusPackagerBuffer = null;
-                e.source.postMessage({twPlusPackage: {type: 'project', bytes: buffer,
-                    name: `${this.props.reduxProjectTitle}.sb3`}}, location.origin, [buffer]);
-                return;
-            }
+            // A window the host took over talks to the host, not to this fork.
+            if (hostPackager && hostPackager.handleMessage(e)) return;
             if (e.origin !== PACKAGER_ORIGIN) {
                 return;
             }
@@ -84,18 +63,14 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
 
             this.props.vm.saveProjectSb3('arraybuffer')
                 .then(async buffer => {
-                    // Recheck after an asynchronous import request: the Editor may have changed projects.
-                    if (this.plusLoaderEnabled) {
-                        const {manifest} = await createProjectIO({zip: JSZip, ...extensionProjectArchiveOptions}).prepare(buffer);
-                        if (manifest !== null) {
-                            e.source.postMessage({p4: {type: 'cancel-import'}}, e.origin);
-                            this.plusPackagerWindow = e.source;
-                            this.plusPackagerBuffer = buffer;
-                            e.source.location.href = new URL(`${process.env.ROOT || './'}plus-packager.html`, location.href).href;
-                            return;
-                        }
+                    // Rechecked after an asynchronous import request: the Editor may have changed
+                    // projects, and the host may claim this one as its own to package.
+                    if (hostPackager && await hostPackager.claim({source: e.source, buffer,
+                        name: this.projectName,
+                        cancelImport: () => e.source.postMessage({p4: {type: 'cancel-import'}}, e.origin)})) {
+                        return;
                     }
-                    const name = `${this.props.reduxProjectTitle}.sb3`;
+                    const name = this.projectName();
                     e.source.postMessage({
                         p4: {
                             type: 'finish-import',
