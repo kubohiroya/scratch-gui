@@ -15,7 +15,7 @@ import extensionLibrary from '../lib/libraries/extensions/index.jsx';
 import defaultExtensionURLs from 'scratch-vm/src/extension-support/tw-default-extension-urls';
 import {getPlusReviewedMode, setPlusHostPolicy} from '../lib/tw-plus-extension-permissions';
 import {startupPlusExtensionHost} from '../lib/tw-plus-extension-host';
-import {plusTrustedCatalog} from '../lib/tw-plus-trusted-extensions.js';
+import {hostIntegration, hostTrustedCatalog} from '../lib/tw-plus-integration-points.js';
 
 /* eslint-disable require-atomic-updates */
 
@@ -184,10 +184,11 @@ class TWSecurityManagerComponent extends React.Component {
         if (!propsSecurityManager.canLoadExtensionFromProject &&
             !propsSecurityManager.getSandboxMode) {
             this.restoreBatchLoader = installBatchExtensionLoader(this.props.vm, async (entries, initialChoices) => {
-                // Like TurboWarp's official gallery, catalog-listed Plus extensions load unsandboxed unreviewed.
+                // Like TurboWarp's official gallery, what the host's catalog lists loads unsandboxed unreviewed.
+                const trusted = hostTrustedCatalog(hostIntegration());
                 const decisions = new Map();
                 for (const entry of entries) {
-                    if (isTrustedExtension(entry.url) || await plusTrustedCatalog.isTrustedURL(entry.url)) {
+                    if (isTrustedExtension(entry.url) || await trusted.isTrustedURL(entry.url)) {
                         decisions.set(entry.url, 'unsandboxed');
                     }
                 }

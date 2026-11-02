@@ -7,7 +7,7 @@ import {prepareOfflinePackage} from '@kubohiroya/turbowarp-extension-loader/pack
 import {createSessionTrustProvider} from '@kubohiroya/turbowarp-extension-loader/session-trust';
 import {createPlusPermissionUI} from '../lib/tw-plus-permission-ui.js';
 import {packagePlusHTML} from '../lib/tw-plus-packager.js';
-import {listTrustedDigests, plusTrustedCatalog} from '../lib/tw-plus-trusted-extensions.js';
+import {hostIntegration, hostTrustedCatalog, hostTrustedDigests} from '../lib/tw-plus-integration-points.js';
 
 const bundledAssets = __TW_PLUS_PACKAGER_ASSETS__;
 const bundledRuntime = __TW_PLUS_EXTENSION_RUNTIME__;
@@ -58,9 +58,10 @@ generate.addEventListener('click', async () => {
     pending = true;
     generate.disabled = true;
     download.hidden = true;
-    // Catalog-listed code is trusted like TurboWarp's official gallery, here as in the Editor.
+    // What the host's catalog lists is trusted like TurboWarp's official gallery, as in the Editor.
+    const trusted = hostTrustedCatalog(hostIntegration());
     const trustProvider = createSessionTrustProvider({requestApproval: async (code, options) =>
-        await plusTrustedCatalog.isTrustedCode(code) || ui.requestApproval(code, options)});
+        await trusted.isTrustedCode(code) || ui.requestApproval(code, options)});
     try {
         status.textContent = '作品と拡張のバイト列を検証しています…';
         const io = createProjectIO({zip: JSZip});
@@ -83,7 +84,7 @@ generate.addEventListener('click', async () => {
             fetcher: createFetchPort(fetch, {onRetry}), trustProvider, diagnostics: ui.diagnostics
         }, {zip: JSZip, archiveOptions: extensionProjectArchiveOptions, resourceDependencies});
         const runtimeBundle = bundledRuntime;
-        const trustedDigests = await listTrustedDigests(plusTrustedCatalog, compiled.manifest);
+        const trustedDigests = await hostTrustedDigests(compiled.manifest, hostIntegration());
         const packager = new Packager();
         packager.options.app.windowTitle = title;
         const result = await packagePlusHTML(packager, compiled,
