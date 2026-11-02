@@ -1,10 +1,67 @@
 scratch-gui modified for use in [TurboWarp](https://turbowarp.org/)
 
-## TurboWarp-Plus-Editor distribution
+## This fork
 
-This fork owns the GUI source and host integration. [TurboWarp-Plus-Editor](https://github.com/kubohiroya/turbowarp-plus-editor) owns the integrated Editor build, integration tests, branding, and GitHub Pages distribution.
+This is [TurboWarp's scratch-gui](https://github.com/TurboWarp/scratch-gui) with a small set of
+extension points added for [TurboWarp-Plus-Editor](https://github.com/kubohiroya/turbowarp-plus-editor),
+which is what builds, brands and distributes the editor those points make possible. Everything above
+and below this section is TurboWarp's; this section describes what was added.
 
-This repository no longer publishes GitHub Pages. Its CI continues to build and test the GUI. The data-editor and security-dialog repositories provide libraries and do not distribute the integrated Editor.
+Nothing here reaches out to the distribution. The GUI runs on its own with no integration supplied —
+every point below falls back to what upstream does — and the distribution plugs itself in at build
+time by replacing one module:
+
+- `src/lib/tw-plus-integration.js` returns `null`. A host aliases that path to its own module
+  (`webpack.NormalModuleReplacementPlugin`), so the wiring is resolved when the bundle is built
+  rather than depending on load order.
+- `src/lib/tw-plus-integration-points.js` holds the hooks that consult it. Each takes the
+  integration as an argument and merges it with what the GUI already has, so a test can hand one in
+  and every call site stays a single line.
+
+### Extension points
+
+| What the host supplies | What it does | Consulted in |
+| --- | --- | --- |
+| `modals` | Extra modal names the host owns | `src/reducers/modals.js` |
+| `securityModals` | Extra security prompts | `src/lib/tw-security-manager-constants.js` |
+| `themeTokens` | Extra colour tokens, per theme | `src/lib/themes/gui/{light,dark}.js` |
+| `translations` | Extra messages, per locale | `src/lib/tw-translations/index.js` |
+| `registerBlockShapes` | Register block shapes once ScratchBlocks exists | `src/lib/blocks.js` |
+| `shouldIgnoreKeyEvent` | Claim a key event before the stage sees it | `src/lib/vm-listener-hoc.jsx` |
+| `attachToWorkspace` | Attach to the workspace once a VM exists | `src/containers/tw-plus-workspace-attachment.jsx` |
+| `createCancelSecurityLoad` | What cancelling a load leaves behind | `src/reducers/project-state.js` |
+| `stageControls` | The stage control service for one VM | `src/containers/controls.jsx`, `src/lib/tw-extension-gui-api.js` |
+| `awaitStartupAddons` | Addon ids whose startup must settle first | `src/addons/api.js` |
+| `installExtensionHost` | Install extension loading for a VM | `src/lib/tw-plus-extension-host.js` |
+| `trustedExtensions` | Which extensions load unsandboxed unreviewed | `src/lib/tw-plus-extension-host.js` |
+| `securityReview` | The review a project's extensions go through | `src/containers/tw-security-manager.jsx` |
+| `libraryTab` | One extra tab in the extension library | `src/containers/extension-library.jsx` |
+| `projectPackager` | Where a project goes from the Packager button | `src/lib/tw-packager-integration-hoc.jsx` |
+
+The three points that carry a user interface — `securityReview`, `libraryTab` and
+`projectPackager` — are deliberately one-sided. The host decides what is offered, what it looks like
+and what it asks; this fork keeps what only it has, and hands it over: its modal and that modal's
+lock, the workspace, the VM's own modules, the startup query, and which extensions it already
+trusts. A host that supplies none of them leaves the editor exactly as upstream ships it.
+
+### What is still here
+
+- The block editor integration (`src/containers/tw-block-editor-modal.jsx` and the hooks in
+  `src/containers/blocks.jsx`), which is why `@kubohiroya/turbowarp-extension-data-editor` is still
+  a dependency. It is the last TurboWarp-Plus package this fork imports.
+- `scratch-vm` points at [kubohiroya/scratch-vm](https://github.com/kubohiroya/scratch-vm) at a
+  fixed revision instead of TurboWarp's branch.
+- CSS that keeps the Kamishibai runtime's own reload overlay clear of the editor's chrome
+  (`src/components/stage/preview-reload.css`; the runtime still owns the overlay and its input).
+- The tests for everything above, under `test/unit/plus`, `test/unit/block-editor`,
+  `test/unit/extension-security` and `test/unit/document-editor`.
+
+### Previewing the extension security flow locally
+
+`npm run preview:security` validates the files it needs, builds the editor and serves it with
+fixtures for reviewing an extension. Starting, stopping, rebuilding and recovering are described in
+[ローカル確認手順](docs/local-security-preview.ja.md).
+
 
 ## Setup
 
@@ -303,7 +360,3 @@ Here's what will happen in the project state machine:
 ## Donate
 We provide [Scratch](https://scratch.mit.edu) free of charge, and want to keep it that way! Please consider making a [donation](https://www.scratchfoundation.org/donate) to support our continued engineering, design, community, and resource development efforts. Donations of any size are appreciated. Thank you!
 -->
-
-## 機能拡張セキュリティのローカル確認
-
-`npm run preview:security` で必要なファイルを検証してから確認用エディターを配信できます。起動・停止・再ビルド・復旧は[ローカル確認手順](docs/local-security-preview.ja.md)を参照してください。
