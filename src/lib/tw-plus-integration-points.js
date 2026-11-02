@@ -225,3 +225,15 @@ const noPermissionUI = Object.freeze({
  */
 export const hostPermissionUI = (document, locale, integration) =>
     integration?.createPermissionUI?.(document, locale) || noPermissionUI;
+
+/**
+ * The one library tab the host may add beside this fork's own.
+ *
+ * The extension library makes room for a tag it does not own and renders what the tab returns when
+ * that tag is selected. What the tab offers, what it is called, what it looks like and what it asks
+ * before anything runs are all the distributor's, so this fork takes a description and renders it.
+ * With none supplied the library is exactly the one upstream ships.
+ * @param {object} [integration] The host's integration.
+ * @returns {object|null} `tag`, `label`, `iconSrc`, `className` and `render(props)`, or null.
+ */
+export const hostLibraryTab = integration => integration?.libraryTab || null;

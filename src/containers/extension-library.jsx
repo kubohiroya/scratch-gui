@@ -14,10 +14,8 @@ import extensionTags from '../lib/libraries/tw-extension-tags';
 
 import LibraryComponent from '../components/library/library.jsx';
 import extensionIcon from '../components/action-menu/icon--sprite.svg';
-import {TURBOWARP_PLUS_LIBRARY_ENABLED, TURBOWARP_PLUS_EXTENSION_LOADER_ENABLED} from '../config/feature-flags';
-import PlusLibrary from './tw-plus-library.jsx';
-import plusIcon from '../components/tw-plus-library/icon.svg';
-import plusStyles from '../components/tw-plus-library/plus-library.css';
+import {beginPlusReview, canLoadPlusExtension} from '../lib/tw-plus-extension-permissions';
+import {hostIntegration, hostLibraryTab} from '../lib/tw-plus-integration-points.js';
 
 const messages = defineMessages({
     extensionTitle: {
@@ -26,7 +24,12 @@ const messages = defineMessages({
         id: 'gui.extensionLibrary.chooseAnExtension'
     }
 });
-const plusLibraryEnabled = TURBOWARP_PLUS_LIBRARY_ENABLED || TURBOWARP_PLUS_EXTENSION_LOADER_ENABLED;
+// Resolved once, like the rest of this file's library data: a project cannot add a tab by being
+// opened. A build that distributes nothing supplies no tab, and the library stays upstream's own.
+const plusTab = hostLibraryTab(hostIntegration());
+// The review bookkeeping is a WeakMap on this VM's security manager, which this fork's own
+// `getSandboxMode` reads back, so the tab is given the two functions that write it.
+const plusPermissions = {beginReview: beginPlusReview, canLoad: canLoadPlusExtension};
 
 const toLibraryItem = extension => {
     if (typeof extension === 'object') {
@@ -175,14 +178,15 @@ class ExtensionLibrary extends React.PureComponent {
         }
     }
     renderPlusContent (filterQuery) {
-        return (<PlusLibrary
-            filterQuery={filterQuery}
-            locale={this.props.intl.locale}
-            vm={this.props.vm}
-            onBusyChange={this.handlePlusBusyChange}
-            onCategorySelected={this.props.onCategorySelected}
-            onRequestClose={this.props.onRequestClose}
-        />);
+        return plusTab.render({
+            filterQuery,
+            locale: this.props.intl.locale,
+            vm: this.props.vm,
+            permissions: plusPermissions,
+            onBusyChange: this.handlePlusBusyChange,
+            onCategorySelected: this.props.onCategorySelected,
+            onRequestClose: this.props.onRequestClose
+        });
     }
     render () {
         let library = null;
@@ -208,17 +212,17 @@ class ExtensionLibrary extends React.PureComponent {
         return (
             <LibraryComponent
                 busy={this.state.plusBusy}
-                customTag={plusLibraryEnabled ? 'twplus' : null}
-                renderCustomContent={plusLibraryEnabled ? this.renderPlusContent : null}
+                customTag={plusTab ? plusTab.tag : null}
+                renderCustomContent={plusTab ? this.renderPlusContent : null}
                 data={library}
                 filterable
                 persistableKey="extensionId"
                 id="extensionLibrary"
-                tags={plusLibraryEnabled ? extensionTags.concat({
-                    tag: 'twplus',
-                    intlLabel: 'TurboWarp Plus',
-                    iconSrc: plusIcon,
-                    className: plusStyles.plusTag,
+                tags={plusTab ? extensionTags.concat({
+                    tag: plusTab.tag,
+                    intlLabel: plusTab.label,
+                    iconSrc: plusTab.iconSrc,
+                    className: plusTab.className,
                     tabIndex: 0,
                     onKeyDown: this.handlePlusKeyDown
                 }) : extensionTags}
