@@ -143,7 +143,6 @@ export const hostStageControls = (vm, integration) => integration?.stageControls
  */
 export const hostAwaitedAddonIds = integration => [...(integration?.awaitStartupAddons || [])];
 
-
 /**
  * Trust nothing, which is what this fork stands behind on its own: no extension is the fork's, so
  * every one is reviewed. A host that distributes a catalog answers the two points below instead.
@@ -165,7 +164,6 @@ const trustsNothing = Object.freeze({
  */
 export const hostTrustedCatalog = integration => integration?.trustedExtensions?.catalog || trustsNothing;
 
-
 /** No loader at all, which is what this fork does on its own: nothing is installed. */
 const noExtensionHost = Object.freeze({enabled: false, dispose: async () => {}});
 
@@ -182,8 +180,6 @@ const noExtensionHost = Object.freeze({enabled: false, dispose: async () => {}})
  */
 export const installHostExtensionHost = (vm, settings, integration) =>
     integration?.installExtensionHost?.(vm, settings) || noExtensionHost;
-
-
 
 /**
  * The one library tab the host may add beside this fork's own.
