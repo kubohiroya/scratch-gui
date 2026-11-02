@@ -262,3 +262,15 @@ export const hostProjectPackager = integration => integration?.projectPackager |
  * @returns {object|null} `installBatchLoader`, `render` and `isCancelled`, or null.
  */
 export const hostSecurityReview = integration => integration?.securityReview || null;
+
+/**
+ * The form-based block editor the host ships, if it ships one.
+ *
+ * An extension may declare a schema for one of its blocks, and a distribution may turn that into a
+ * form: an icon on the block, a dialog, and a service that edits it without disturbing the
+ * workspace's own editing. All of that is the distributor's. What this fork hands over is its
+ * workspace, its ScratchBlocks, its modal frame, its palette and its translations.
+ * @param {object} [integration] The host's integration.
+ * @returns {object|null} `createService`, `attach` and `render`, or null when none is shipped.
+ */
+export const hostBlockEditor = integration => integration?.blockEditor || null;

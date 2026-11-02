@@ -1,10 +1,9 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 import {injectIntl, intlShape} from 'react-intl';
-import {BlockEditorDialog} from '@kubohiroya/turbowarp-extension-data-editor/react';
-import styles from '@kubohiroya/turbowarp-extension-data-editor/react/styles.css';
 import Modal from './modal.jsx';
 import log from '../lib/log.js';
+import {hostBlockEditor, hostIntegration} from '../lib/tw-plus-integration-points.js';
 import theme from '../components/block-editor/block-editor.css';
 
 const reportError = error => log.error(error);
@@ -52,17 +51,18 @@ const BlockEditorModal = props => {
             description: 'An intermediate structural block without an editor'
         })
     };
-    return (<BlockEditorDialog
-        className={`${theme.theme} ${theme.commonLayout}`}
-        messages={messages}
-        ModalComponent={Modal}
-        nodeAppearances={props.nodeAppearances}
-        nodeLabels={props.nodeLabels}
-        onClose={props.onClose}
-        onError={reportError}
-        session={props.session}
-        styles={styles}
-    />);
+    // Rendered by the host, inside this fork's modal frame and with this fork's palette: the
+    // class names below are built from this fork's own stylesheet variables.
+    return hostBlockEditor(hostIntegration()).render({
+        className: `${theme.theme} ${theme.commonLayout}`,
+        messages,
+        ModalComponent: Modal,
+        nodeAppearances: props.nodeAppearances,
+        nodeLabels: props.nodeLabels,
+        onClose: props.onClose,
+        onError: reportError,
+        session: props.session
+    });
 };
 
 BlockEditorModal.propTypes = {
