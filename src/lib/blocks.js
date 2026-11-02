@@ -1,4 +1,3 @@
-import {registerDocumentSourceRootHatShape} from '@kubohiroya/turbowarp-document-editor';
 import LazyScratchBlocks from './tw-lazy-scratch-blocks';
 import {hostIntegration, registerHostBlockShapes} from './tw-plus-integration-points.js';
 
@@ -9,7 +8,7 @@ import {hostIntegration, registerHostBlockShapes} from './tw-plus-integration-po
  */
 export default function (vm) {
     const ScratchBlocks = LazyScratchBlocks.get();
-    registerDocumentSourceRootHatShape(ScratchBlocks);
+    // Including the document editor's root hat: the host that supplies that editor registers it.
     registerHostBlockShapes(ScratchBlocks, hostIntegration());
     const jsonForMenuBlock = function (name, menuOptionsFn, colors, start) {
         return {
