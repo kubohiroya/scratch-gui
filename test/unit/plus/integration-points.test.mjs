@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
     createCancelSecurityLoad,
     hostAwaitedAddonIds,
+    hostExtensionCatalog,
     hostIgnoresKeyEvent,
     hostIntegration,
     hostModalDefaults,
@@ -140,4 +141,13 @@ test('the ids are copied, so a host cannot change what the runner already decide
     const ids = hostAwaitedAddonIds(integration);
     supplied.push('two');
     assert.deepEqual(ids, ['one']);
+});
+
+// Which catalog a build trusts is the distributor's decision, so the fork asks rather than
+// holding an address of its own.
+test('the catalog comes from the host, and a build may distribute none', () => {
+    assert.equal(hostExtensionCatalog(null), null);
+    assert.equal(hostExtensionCatalog({}), null);
+    const catalog = {url: 'https://example.test/catalog.json', read: () => ({catalog: {}, icons: {}})};
+    assert.equal(hostExtensionCatalog({extensionCatalog: catalog}), catalog);
 });

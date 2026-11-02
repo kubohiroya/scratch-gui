@@ -142,3 +142,17 @@ export const hostStageControls = (vm, integration) => integration?.stageControls
  * @returns {string[]} The ids, empty when the host named none.
  */
 export const hostAwaitedAddonIds = integration => [...(integration?.awaitStartupAddons || [])];
+
+/**
+ * The extension catalog the host distributes.
+ *
+ * Which catalog this build trusts is the distributor's decision, not this fork's: the address, and
+ * whether a local one replaces it during a preview build, both belong to whoever ships the editor.
+ *
+ * `read(signal)` answers with `{catalog, icons}`: the catalog document, and display images the
+ * trusted build supplied for it, already checked by the side that owns them. Parsing stays here,
+ * where the parser already is, so a host needs no part of the review UI to name its catalog.
+ * @param {object} [integration] The host's integration.
+ * @returns {object|null} The catalog, or null when the host distributes none.
+ */
+export const hostExtensionCatalog = integration => integration?.extensionCatalog || null;
