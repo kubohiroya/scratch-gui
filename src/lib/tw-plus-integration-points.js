@@ -237,3 +237,16 @@ export const hostPermissionUI = (document, locale, integration) =>
  * @returns {object|null} `tag`, `label`, `iconSrc`, `className` and `render(props)`, or null.
  */
 export const hostLibraryTab = integration => integration?.libraryTab || null;
+
+/**
+ * Where a project goes when the Packager button is pressed, if the host packages some itself.
+ *
+ * Upstream's integration opens packager.turbowarp.org and sends the project there. A build that
+ * distributes extensions of its own cannot let every project take that path — the result would run
+ * without them — so it may claim the ones it recognises and open its own page instead. Which
+ * projects those are, and where they go, is the distributor's; the protocol with the upstream
+ * Packager stays here, because it is upstream's.
+ * @param {object} [integration] The host's integration.
+ * @returns {object|null} `open`, `claim` and `handleMessage`, or null when the host claims none.
+ */
+export const hostProjectPackager = integration => integration?.projectPackager || null;
