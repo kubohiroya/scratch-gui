@@ -1,14 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {EventEmitter} from 'node:events';
-import {createRequire} from 'node:module';
-import {createHash} from 'node:crypto';
-import VM from 'scratch-vm';
-import Zip from '@turbowarp/jszip';
 import {createExtensionAuthoringController} from '../../../src/lib/tw-plus-extension-authoring.js';
-import {installPlusExtensionHost} from '../../../src/lib/tw-plus-extension-host.js';
-const require = createRequire(import.meta.url);
-const Storage = require('@turbowarp/scratch-storage');
 const spec = {id: 'example', sha256: 'a'.repeat(64)};
 const prepared = {spec, projectBytes: new Uint8Array([2])};
 const deferred = () => {
@@ -120,45 +113,6 @@ test('abort and disposal invalidate prepared candidates', async () => {
     }
 });
 
-test('real VM authoring preserves the project and restores prior extensions after ID mismatch', async () => {
-    const vm = new VM();
-    vm.attachStorage(new Storage());
-    let approvals = 0;
-    const host = installPlusExtensionHost(vm, {enabled: true, document: undefined,
-        requestApproval: async () => { approvals++; return true; }});
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="360"></svg>';
-    const assetId = createHash('md5').update(svg).digest('hex');
-    const project = {targets: [{isStage: true, name: 'Stage', variables: {kept: ['kept', 123]}, lists: {},
-        broadcasts: {}, blocks: {}, comments: {}, currentCostume: 0,
-        costumes: [{name: 'Blank', assetId, dataFormat: 'svg', md5ext: `${assetId}.svg`, rotationCenterX: 240, rotationCenterY: 180}],
-        sounds: [], volume: 100, layerOrder: 0, tempo: 60, videoTransparency: 50, videoState: 'off', textToSpeechLanguage: null}],
-    monitors: [], extensions: [], meta: {semver: '3.0.0', vm: '2.0.0', agent: 'Authoring fixture'}};
-    const input = await new Zip().file('project.json', JSON.stringify(project)).file(`${assetId}.svg`, svg)
-        .generateAsync({type: 'uint8array'});
-    const bytes = id => new TextEncoder().encode(`Scratch.extensions.register({getInfo(){return {id:'${id}',name:'Sample',blocks:[]}}});`);
-    try {
-        await vm.loadProject(input);
-        const before = JSON.parse(vm.toJSON()).targets;
-        await assert.rejects(host.authoring.add({id: 'firstwrong', source: {type: 'embedded'}, bytes: bytes('actual')}));
-        assert.deepEqual(host.loader.getState(), {status: 'idle', ids: []});
-        await host.authoring.add({id: 'example', source: {type: 'embedded'}, bytes: bytes('example')});
-        assert.equal(vm.extensionManager.isExtensionLoaded('example'), true);
-        assert.deepEqual(JSON.parse(vm.toJSON()).targets, before);
-        const saved = await vm.saveProjectSb3('arraybuffer');
-        const zip = await Zip.loadAsync(saved);
-        assert.ok(zip.file('extensions/example.js'));
-        const prior = JSON.parse(vm.toJSON());
-        await assert.rejects(host.authoring.add({id: 'wrong', source: {type: 'embedded'}, bytes: bytes('actual')}));
-        assert.equal(vm.extensionManager.isExtensionLoaded('example'), true);
-        assert.equal(vm.extensionManager.isExtensionLoaded('wrong'), false);
-        assert.equal(vm.extensionManager.isExtensionLoaded('actual'), false);
-        assert.deepEqual(JSON.parse(vm.toJSON()), prior);
-        assert.deepEqual(host.loader.getState(), {status: 'loaded', ids: ['example']});
-        await host.authoring.add({id: 'second', source: {type: 'embedded'}, bytes: bytes('second')});
-        assert.equal(vm.extensionManager.isExtensionLoaded('second'), true);
-        assert.equal(approvals, 4);
-    } finally {
-        await host.dispose();
-        vm.runtime.dispose();
-    }
-});
+// The pairing with an installed extension host — a real VM, a real project, a candidate that
+// registers the wrong ID — moved to the distributing host's suite along with the host itself:
+// turbowarp-plus-editor's `test/extension-host/authoring.test.mjs`.

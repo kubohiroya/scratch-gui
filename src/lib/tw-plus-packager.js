@@ -1,3 +1,4 @@
+import {extensionProjectArchiveOptions} from '../config/extension-project-limits.js';
 import {restrictOfflineHTML} from '@kubohiroya/turbowarp-extension-loader/packager';
 
 const failure = (code, message) => Object.assign(new Error(message), {code});
@@ -54,7 +55,9 @@ export function configurePlusPackager(packager, prepared, {
         analysis: {...analysis, extensions: []}
     };
     const script = runtimeBundle.replace(/<\/script/gi, '<\\/script');
-    const options = JSON.stringify({enabled: true, locale, trustedDigests}).replace(/</g, '\\u003c');
+    // The limits travel with the HTML: the runtime bundle no longer holds a copy of them.
+    const options = JSON.stringify({enabled: true, locale, trustedDigests,
+        archiveOptions: extensionProjectArchiveOptions}).replace(/</g, '\\u003c');
     packager.options.target = 'html';
     packager.options.cloudVariables = {...packager.options.cloudVariables, mode: 'none'};
     packager.options.custom = {...packager.options.custom, js: `

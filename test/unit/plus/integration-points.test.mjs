@@ -7,6 +7,7 @@ import {
     hostExtensionCatalog,
     hostIgnoresKeyEvent,
     hostIntegration,
+    hostPermissionUI,
     hostTrustedCatalog,
     hostTrustedDigests,
     hostModalDefaults,
@@ -174,4 +175,27 @@ test('the host says what its catalog trusts and which digests a built HTML carri
     assert.equal(await hostTrustedCatalog(integration).isTrustedURL('https://example.test/other.js'), false);
     assert.deepEqual(await hostTrustedDigests({extensions: [{sha256: 'c'.repeat(64)}]}, integration),
         ['c'.repeat(64)]);
+});
+
+// Every string and every style in the dialog is the distributor's. A build with none of its own
+// cannot ask, so it approves nothing: an extension that needs permission simply does not run.
+test('with no dialog supplied nothing is shown and nothing is approved', async () => {
+    for (const integration of [null, {}]) {
+        const ui = hostPermissionUI(null, 'ja', integration);
+        assert.equal(ui.diagnostics({type: 'review'}), undefined);
+        assert.equal(await ui.requestApproval({id: 'x'}), false);
+        assert.equal(ui.dispose(), undefined);
+    }
+});
+
+test('the host is asked for its dialog with the document and the locale it is shown in', () => {
+    const asked = [];
+    const supplied = {diagnostics () {}, requestApproval: () => Promise.resolve(true), dispose () {}};
+    const document = {};
+    const ui = hostPermissionUI(document, 'en', {createPermissionUI: (...args) => {
+        asked.push(args);
+        return supplied;
+    }});
+    assert.equal(ui, supplied);
+    assert.deepEqual(asked, [[document, 'en']]);
 });

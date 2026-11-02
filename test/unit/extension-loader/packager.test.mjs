@@ -62,12 +62,17 @@ test('packaging embeds only valid digests of the project extensions for the reci
     const prepared = await prepare();
     const packager = new Packager();
     configurePlusPackager(packager, prepared, {runtimeBundle: 'trusted();', trustedDigests: [sha256]});
-    assert.ok(packager.options.custom.js.includes(`installPlusExtensionHost(vm, {"enabled":true,"locale":"ja","trustedDigests":["${sha256}"]})`));
+    // The archive limits travel with the HTML: the runtime bundle it carries is built by the
+    // distributing host and holds no copy of them, so the bootstrap states what this build accepts.
+    const limits = '"archiveOptions":{"maxProjectBytes":33554432,"maxEntryBytes":33554432}';
+    assert.ok(packager.options.custom.js.includes(
+        `installPlusExtensionHost(vm, {"enabled":true,"locale":"ja","trustedDigests":["${sha256}"],${limits}})`));
     for (const trustedDigests of [['a'.repeat(64)], ['not a digest'], 'nope']) {
         assert.throws(() => configurePlusPackager(new Packager(), prepared, {runtimeBundle: 'trusted();', trustedDigests}),
             {code: 'INVALID_TRUSTED_DIGESTS'});
     }
     const untrusted = new Packager();
     configurePlusPackager(untrusted, prepared, {runtimeBundle: 'trusted();'});
-    assert.ok(untrusted.options.custom.js.includes('installPlusExtensionHost(vm, {"enabled":true,"locale":"ja","trustedDigests":[]})'));
+    assert.ok(untrusted.options.custom.js.includes(
+        `installPlusExtensionHost(vm, {"enabled":true,"locale":"ja","trustedDigests":[],${limits}})`));
 });
