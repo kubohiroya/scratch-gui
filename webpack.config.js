@@ -2,7 +2,6 @@ const {withExtensionLoaderWebpack4} = require('@kubohiroya/turbowarp-extension-l
 const defaultsDeep = require('lodash.defaultsdeep');
 const path = require('path');
 const webpack = require('webpack');
-const {withDocumentEditorWebpack4} = require('@kubohiroya/turbowarp-document-editor/webpack4');
 const {withBlockEditorWebpack4} = require('@kubohiroya/turbowarp-extension-data-editor/webpack4');
 
 // Plugins
@@ -308,4 +307,4 @@ const guiConfigs = withBlockEditorWebpack4([
         })) : []
 ), {hostRoot: __dirname});
 
-module.exports = withDocumentEditorWebpack4(withExtensionLoaderWebpack4(guiConfigs, {hostRoot: __dirname}));
+module.exports = withExtensionLoaderWebpack4(guiConfigs, {hostRoot: __dirname});
