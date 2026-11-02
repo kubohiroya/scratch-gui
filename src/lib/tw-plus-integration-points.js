@@ -119,3 +119,15 @@ const defaultCancelSecurityLoad = (initialState, defaultProjectId, loadingStates
 export const createCancelSecurityLoad = (initialState, defaultProjectId, loadingStates, integration) =>
     (integration?.createCancelSecurityLoad || defaultCancelSecurityLoad)(
         initialState, defaultProjectId, loadingStates);
+
+/**
+ * The stage controls an extension registered, as a service the host owns per VM.
+ *
+ * Both the controls bar and the `Scratch.gui` API ask for this, and both must receive the same
+ * service for a VM or a control registered through the API would never appear. Keeping that
+ * identity in the host is why this takes the VM rather than returning a singleton.
+ * @param {object} vm The VM the controls belong to.
+ * @param {object} [integration] The host's integration.
+ * @returns {object|null} The service, or null when the host supplied none.
+ */
+export const hostStageControls = (vm, integration) => integration?.stageControls?.(vm) || null;
