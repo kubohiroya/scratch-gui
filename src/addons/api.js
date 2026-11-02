@@ -29,6 +29,7 @@ import * as textColorHelpers from './libraries/common/cs/text-color.esm.js';
 import * as conditionalStyles from './conditional-style';
 import getPrecedence from './addon-precedence';
 import reduxInstance from './redux';
+import {finalizeHostTransferMenu} from '../lib/tw-plus-transfer.js';
 import {hostAwaitedAddonIds, hostIntegration} from '../lib/tw-plus-integration-points.js';
 
 // Resolved once at startup: the ids the host needs settled before anything reads what they patched.
@@ -587,6 +588,7 @@ class Tab extends EventTargetShim {
                     }
                 }
 
+                items = finalizeHostTransferMenu(items, hostIntegration());
                 oldShow.call(this, event, items, rtl);
 
                 const blocklyContextMenu = ScratchBlocks.WidgetDiv.DIV.firstChild;

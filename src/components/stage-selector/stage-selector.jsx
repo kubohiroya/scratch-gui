@@ -1,3 +1,5 @@
+import {ContextMenuTrigger} from 'react-contextmenu';
+import {ContextMenu, MenuItem} from '../context-menu/context-menu.jsx';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import React from 'react';
@@ -39,6 +41,7 @@ const messages = defineMessages({
 
 const StageSelector = props => {
     const {
+        transferMenu = {contextItems: [], backdropItems: []},
         backdropCount,
         containerRef,
         dragOver,
@@ -58,7 +61,7 @@ const StageSelector = props => {
         onEmptyBackdropClick,
         ...componentProps
     } = props;
-    return (
+    const content = (
         <Box
             className={classNames(styles.stageSelector, {
                 [styles.isSelected]: selected,
@@ -99,6 +102,11 @@ const StageSelector = props => {
                 className={styles.addButton}
                 img={backdropIcon}
                 moreButtons={[
+                    ...transferMenu.backdropItems.map(item => ({
+                        title: item.label,
+                        img: fileUploadIcon,
+                        onClick: item.onClick
+                    })),
                     {
                         title: intl.formatMessage(messages.addBackdropFromFile),
                         img: fileUploadIcon,
@@ -128,9 +136,24 @@ const StageSelector = props => {
             />
         </Box>
     );
+    if (!transferMenu.contextItems.length) return content;
+    return (
+        <ContextMenuTrigger id="tw-plus-stage-transfer">
+            {content}
+            <ContextMenu id="tw-plus-stage-transfer">
+                {transferMenu.contextItems.map(({label, onClick: handleClick}) => (
+                    <MenuItem
+                        key={label}
+                        onClick={handleClick}
+                    >{label}</MenuItem>
+                ))}
+            </ContextMenu>
+        </ContextMenuTrigger>
+    );
 };
 
 StageSelector.propTypes = {
+    transferMenu: PropTypes.shape({contextItems: PropTypes.array, backdropItems: PropTypes.array}),
     backdropCount: PropTypes.number.isRequired,
     containerRef: PropTypes.func,
     dragOver: PropTypes.bool,
