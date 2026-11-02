@@ -5,13 +5,14 @@ import {createFetchPort, DEFAULT_FETCH_RETRY} from '@kubohiroya/turbowarp-extens
 import {createProjectIO} from '@kubohiroya/turbowarp-extension-loader/project-codec';
 import {prepareOfflinePackage} from '@kubohiroya/turbowarp-extension-loader/packager';
 import {createSessionTrustProvider} from '@kubohiroya/turbowarp-extension-loader/session-trust';
-import {createPlusPermissionUI} from '../lib/tw-plus-permission-ui.js';
 import {packagePlusHTML} from '../lib/tw-plus-packager.js';
-import {hostIntegration, hostTrustedCatalog, hostTrustedDigests} from '../lib/tw-plus-integration-points.js';
+import {
+    hostIntegration, hostPermissionUI, hostTrustedCatalog, hostTrustedDigests
+} from '../lib/tw-plus-integration-points.js';
 
 const bundledAssets = __TW_PLUS_PACKAGER_ASSETS__;
 const bundledRuntime = __TW_PLUS_EXTENSION_RUNTIME__;
-const ui = createPlusPermissionUI(document, 'ja');
+const ui = hostPermissionUI(document, 'ja', hostIntegration());
 const status = document.querySelector('[data-testid="plus-package-status"]');
 const file = document.querySelector('[data-testid="plus-package-file"]');
 const generate = document.querySelector('[data-testid="plus-package-generate"]');

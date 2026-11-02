@@ -190,3 +190,38 @@ export const hostTrustedCatalog = integration => integration?.trustedExtensions?
  */
 export const hostTrustedDigests = async (manifest, integration) =>
     (await integration?.trustedExtensions?.listDigests?.(manifest)) || [];
+
+/** No loader at all, which is what this fork does on its own: nothing is installed. */
+const noExtensionHost = Object.freeze({enabled: false, dispose: async () => {}});
+
+/**
+ * Install the host that loads a project's extensions.
+ *
+ * The whole implementation is the distributor's, down to which switch turns it on, so this fork
+ * hands over what only it knows — the startup query, what it trusts, how a failure is marked and
+ * how an authoring controller is made — and keeps nothing but the disposal.
+ * @param {object} vm The VM to install on.
+ * @param {object} settings What this fork knows, passed through unchanged.
+ * @param {object} [integration] The host's integration.
+ * @returns {object} The installed host, or a disabled one when the host installs none.
+ */
+export const installHostExtensionHost = (vm, settings, integration) =>
+    integration?.installExtensionHost?.(vm, settings) || noExtensionHost;
+
+/** Nothing shown and nothing approved, which is what a build with no dialog of its own can do. */
+const noPermissionUI = Object.freeze({
+    diagnostics: () => {},
+    requestApproval: () => Promise.resolve(false),
+    dispose: () => {}
+});
+
+/**
+ * What the host shows while an extension is verified, and when one asks to run. Every string and
+ * every style in it is the distributor's, so this fork only asks for it and uses what it gets.
+ * @param {Document} document The document the dialog is shown in.
+ * @param {string} locale The current locale.
+ * @param {object} [integration] The host's integration.
+ * @returns {object} `diagnostics`, `requestApproval` and `dispose`.
+ */
+export const hostPermissionUI = (document, locale, integration) =>
+    integration?.createPermissionUI?.(document, locale) || noPermissionUI;

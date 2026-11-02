@@ -1,4 +1,3 @@
-import {extensionProjectArchiveOptions} from '../config/extension-project-limits.js';
 /* global AggregateError */
 import JSZip from '@turbowarp/jszip';
 import {prepareExtensionAddition} from '@kubohiroya/turbowarp-extension-loader/project-authoring';
@@ -15,7 +14,10 @@ const failure = (code, message) => Object.assign(new Error(message), {code});
  * @returns {object} The serialized authoring lifecycle.
  */
 export const createExtensionAuthoringController = (vm, {
-    ports, diagnostics = () => {}, prepareAddition = prepareExtensionAddition, zip = JSZip, loaderOptions
+    ports, diagnostics = () => {}, prepareAddition = prepareExtensionAddition, zip = JSZip, loaderOptions,
+    // What the host accepts when reading a project's embedded extensions. The limits belong to the
+    // distribution, so the host that installs this controller passes them in.
+    archiveOptions = {}
 } = {}) => {
     let revision = 0;
     let pending;
@@ -63,11 +65,11 @@ export const createExtensionAuthoringController = (vm, {
                 assertCurrent();
                 const prepared = await prepare(original, request, ports,
                     {zip, signal: operation.controller.signal, loaderOptions,
-                        archiveOptions: extensionProjectArchiveOptions});
+                        archiveOptions});
                 assertCurrent();
                 onPrepared(prepared.spec || prepared.manifest);
                 const oldManifest = prepared.manifest ?
-                    await readProjectAuthoringState(original, {zip, archiveOptions: extensionProjectArchiveOptions}) : null;
+                    await readProjectAuthoringState(original, {zip, archiveOptions}) : null;
                 assertCurrent();
                 const priorIds = new Set((oldManifest?.extensions || []).map(spec => spec.id));
                 const legacyIds = (prepared.manifest?.extensions || []).map(spec => spec.id)
@@ -138,7 +140,7 @@ export const createExtensionAuthoringController = (vm, {
             if (disposed || pending) throw failure('PROJECT_BUSY', 'Wait for the active project operation');
             const current = revision;
             const input = await vm.saveProjectSb3('arraybuffer');
-            const manifest = await readProjectAuthoringState(input, {zip, archiveOptions: extensionProjectArchiveOptions});
+            const manifest = await readProjectAuthoringState(input, {zip, archiveOptions});
             if (current !== revision || disposed) {
                 throw failure('PROJECT_CHANGED', 'The project changed during inspection');
             }
