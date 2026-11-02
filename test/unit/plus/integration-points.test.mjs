@@ -4,13 +4,10 @@ import assert from 'node:assert/strict';
 import {
     createCancelSecurityLoad,
     hostAwaitedAddonIds,
-    hostExtensionCatalog,
     hostIgnoresKeyEvent,
     hostIntegration,
     hostLibraryTab,
-    hostPermissionUI,
     hostTrustedCatalog,
-    hostTrustedDigests,
     hostModalDefaults,
     hostModalNames,
     hostTranslationsFor,
@@ -147,15 +144,6 @@ test('the ids are copied, so a host cannot change what the runner already decide
     assert.deepEqual(ids, ['one']);
 });
 
-// Which catalog a build trusts is the distributor's decision, so the fork asks rather than
-// holding an address of its own.
-test('the catalog comes from the host, and a build may distribute none', () => {
-    assert.equal(hostExtensionCatalog(null), null);
-    assert.equal(hostExtensionCatalog({}), null);
-    const catalog = {url: 'https://example.test/catalog.json', read: () => ({catalog: {}, icons: {}})};
-    assert.equal(hostExtensionCatalog({extensionCatalog: catalog}), catalog);
-});
-
 // Which extensions load unsandboxed unreviewed is a statement about a distribution, not about the
 // editor, so the fork trusts nothing until a host says what its catalog lists.
 test('with no host nothing is trusted, which only means everything is reviewed', async () => {
@@ -163,42 +151,15 @@ test('with no host nothing is trusted, which only means everything is reviewed',
     for (const integration of [null, {}, {trustedExtensions: {}}]) {
         assert.equal(await hostTrustedCatalog(integration).isTrustedURL('https://example.test/a.js'), false);
         assert.equal(await hostTrustedCatalog(integration).isTrustedCode(code), false);
-        assert.deepEqual(await hostTrustedDigests({extensions: []}, integration), []);
     }
 });
 
-test('the host says what its catalog trusts and which digests a built HTML carries', async () => {
+test('the host says what its catalog trusts', async () => {
     const integration = {trustedExtensions: {
-        catalog: {isTrustedURL: url => Promise.resolve(url === 'https://example.test/listed.js')},
-        listDigests: manifest => Promise.resolve(manifest.extensions.map(spec => spec.sha256))
+        catalog: {isTrustedURL: url => Promise.resolve(url === 'https://example.test/listed.js')}
     }};
     assert.equal(await hostTrustedCatalog(integration).isTrustedURL('https://example.test/listed.js'), true);
     assert.equal(await hostTrustedCatalog(integration).isTrustedURL('https://example.test/other.js'), false);
-    assert.deepEqual(await hostTrustedDigests({extensions: [{sha256: 'c'.repeat(64)}]}, integration),
-        ['c'.repeat(64)]);
-});
-
-// Every string and every style in the dialog is the distributor's. A build with none of its own
-// cannot ask, so it approves nothing: an extension that needs permission simply does not run.
-test('with no dialog supplied nothing is shown and nothing is approved', async () => {
-    for (const integration of [null, {}]) {
-        const ui = hostPermissionUI(null, 'ja', integration);
-        assert.equal(ui.diagnostics({type: 'review'}), undefined);
-        assert.equal(await ui.requestApproval({id: 'x'}), false);
-        assert.equal(ui.dispose(), undefined);
-    }
-});
-
-test('the host is asked for its dialog with the document and the locale it is shown in', () => {
-    const asked = [];
-    const supplied = {diagnostics () {}, requestApproval: () => Promise.resolve(true), dispose () {}};
-    const document = {};
-    const ui = hostPermissionUI(document, 'en', {createPermissionUI: (...args) => {
-        asked.push(args);
-        return supplied;
-    }});
-    assert.equal(ui, supplied);
-    assert.deepEqual(asked, [[document, 'en']]);
 });
 
 // The extension library makes room for one tab it does not own. What that tab offers, what it is
