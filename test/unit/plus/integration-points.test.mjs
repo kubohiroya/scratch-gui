@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
     createCancelSecurityLoad,
+    hostAwaitedAddonIds,
     hostIgnoresKeyEvent,
     hostIntegration,
     hostModalDefaults,
@@ -122,4 +123,21 @@ test('with no stage controls supplied the point says so instead of inventing a s
     assert.equal(hostStageControls({}, null), null);
     assert.equal(hostStageControls({}, {}), null);
     assert.equal(hostStageControls({}, {stageControls: () => null}), null);
+});
+
+// An addon that patches shared editor internals has to settle before anything reads them. Which
+// addon that is depends on what the host does, so the runner asks rather than naming one.
+test('the host names the addon ids whose startup must settle first', () => {
+    assert.deepEqual(hostAwaitedAddonIds(null), []);
+    assert.deepEqual(hostAwaitedAddonIds({}), []);
+    assert.deepEqual(hostAwaitedAddonIds({awaitStartupAddons: ['editor-searchable-dropdowns']}),
+        ['editor-searchable-dropdowns']);
+});
+
+test('the ids are copied, so a host cannot change what the runner already decided to await', () => {
+    const supplied = ['one'];
+    const integration = {awaitStartupAddons: supplied};
+    const ids = hostAwaitedAddonIds(integration);
+    supplied.push('two');
+    assert.deepEqual(ids, ['one']);
 });

@@ -131,3 +131,14 @@ export const createCancelSecurityLoad = (initialState, defaultProjectId, loading
  * @returns {object|null} The service, or null when the host supplied none.
  */
 export const hostStageControls = (vm, integration) => integration?.stageControls?.(vm) || null;
+
+/**
+ * The addon ids whose startup must finish before anything reads what they patched.
+ *
+ * An addon that patches shared editor internals has to settle before the next userscript runs, and
+ * before a host attaches to the workspace. Which addon that is depends on what the host does, not
+ * on the runner: the runner keeps the running and the waiting, the host names the ids.
+ * @param {object} [integration] The host's integration.
+ * @returns {string[]} The ids, empty when the host named none.
+ */
+export const hostAwaitedAddonIds = integration => [...(integration?.awaitStartupAddons || [])];

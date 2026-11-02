@@ -29,6 +29,10 @@ import * as textColorHelpers from './libraries/common/cs/text-color.esm.js';
 import * as conditionalStyles from './conditional-style';
 import getPrecedence from './addon-precedence';
 import reduxInstance from './redux';
+import {hostAwaitedAddonIds, hostIntegration} from '../lib/tw-plus-integration-points.js';
+
+// Resolved once at startup: the ids the host needs settled before anything reads what they patched.
+const awaitedAddonIds = hostAwaitedAddonIds(hostIntegration());
 
 /* eslint-disable no-console */
 
@@ -951,9 +955,10 @@ class AddonRunner {
                 }
                 const fn = this.resources[userscript.url];
                 const pending = fn(this.publicAPI);
-                // This known startup patch changes protected FieldDropdown method identities.
-                // Other addons may have long-running userscripts and must remain independent.
-                if (this.id === 'editor-searchable-dropdowns') await pending;
+                // An addon the host named patches shared editor internals, so its userscript has to
+                // settle before the next one runs. Other addons may have long-running userscripts
+                // and must remain independent.
+                if (awaitedAddonIds.includes(this.id)) await pending;
             }
         }
 
@@ -986,13 +991,13 @@ SettingsStore.addEventListener('addon-changed', e => {
     }
 });
 
-const initialFieldPatches = [];
+const initialStartupPatches = [];
 for (const id of Object.keys(addons)) {
     if (!SettingsStore.getAddonEnabled(id)) {
         continue;
     }
     const pending = runAddon(id);
-    if (id === 'editor-searchable-dropdowns') initialFieldPatches.push(pending);
+    if (awaitedAddonIds.includes(id)) initialStartupPatches.push(pending);
 }
 
-export const startupFieldPatchesReady = Promise.all(initialFieldPatches);
+export const startupAwaitedAddonsReady = Promise.all(initialStartupPatches);

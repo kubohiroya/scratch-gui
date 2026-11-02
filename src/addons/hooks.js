@@ -4,7 +4,7 @@ const AddonHooks = {
     blockly: null,
     blocklyWorkspace: null,
     blocklyCallbacks: [],
-    startupFieldPatchesReady: Promise.resolve(),
+    startupAwaitedAddonsReady: Promise.resolve(),
     recolorCallbacks: []
 };
 
