@@ -69,9 +69,18 @@ test('the startup query goes over unread, and a later URL change cannot change i
     }
 });
 
-test('a refusal is a refusal, whoever installed the loader', () => {
-    assert.equal(isPlusPermissionDenied({code: 'TRUST_DENIED'}), true);
-    assert.equal(isPlusPermissionDenied({code: 'CANCELLED'}), true);
-    assert.equal(isPlusPermissionDenied({code: 'FETCH_FAILED'}), false);
-    assert.equal(isPlusPermissionDenied(null), null);
+test('a refusal is a refusal, whoever installed the loader or shipped the review', () => {
+    assert.equal(isPlusPermissionDenied({code: 'TRUST_DENIED'}, {}), true);
+    assert.equal(isPlusPermissionDenied({code: 'CANCELLED'}, {}), true);
+    assert.equal(isPlusPermissionDenied({code: 'FETCH_FAILED'}, {}), false);
+    assert.equal(isPlusPermissionDenied(null, {}), false);
+    // A review the host shipped can only be recognised by the host, so it is asked.
+    const asked = [];
+    const integration = {securityReview: {isCancelled: error => {
+        asked.push(error);
+        return error.code === 'REVIEW_CANCELLED';
+    }}};
+    assert.equal(isPlusPermissionDenied({code: 'REVIEW_CANCELLED'}, integration), true);
+    assert.equal(isPlusPermissionDenied({code: 'FETCH_FAILED'}, integration), false);
+    assert.deepEqual(asked.map(error => error.code), ['REVIEW_CANCELLED', 'FETCH_FAILED']);
 });

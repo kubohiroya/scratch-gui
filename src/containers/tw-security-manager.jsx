@@ -6,16 +6,16 @@ import bindAll from 'lodash.bindall';
 import SecurityManagerModal from '../components/tw-security-manager-modal/security-manager-modal.jsx';
 import SecurityModals from '../lib/tw-security-manager-constants';
 import {getPersistedUnsandboxed, setPersistedUnsandboxed} from '../lib/tw-persisted-unsandboxed.js';
-import {installBatchExtensionLoader} from '@kubohiroya/turbowarp-extension-security-dialog/turbowarp';
-import {ExtensionSecurityDialog} from '@kubohiroya/turbowarp-extension-security-dialog/react';
-import '@kubohiroya/turbowarp-extension-security-dialog/webpack4.css';
 import '../css/extension-security-dialog.css';
 import Modal from './modal.jsx';
 import extensionLibrary from '../lib/libraries/extensions/index.jsx';
 import defaultExtensionURLs from 'scratch-vm/src/extension-support/tw-default-extension-urls';
 import {getPlusReviewedMode, setPlusHostPolicy} from '../lib/tw-plus-extension-permissions';
 import {startupPlusExtensionHost} from '../lib/tw-plus-extension-host';
-import {hostIntegration, hostTrustedCatalog} from '../lib/tw-plus-integration-points.js';
+import {hostIntegration, hostSecurityReview} from '../lib/tw-plus-integration-points.js';
+
+// The review this build ships, if it ships one. Resolved once: it cannot appear later.
+const securityReview = hostSecurityReview(hostIntegration());
 
 /* eslint-disable require-atomic-updates */
 
@@ -199,30 +199,24 @@ class TWSecurityManagerComponent extends React.Component {
             vmSecurityManager[method] = propsSecurityManager[method] || this[method];
         }
         // Host-provided permission policies retain ownership of their loading path.
-        if (!propsSecurityManager.canLoadExtensionFromProject &&
+        if (securityReview && !propsSecurityManager.canLoadExtensionFromProject &&
             !propsSecurityManager.getSandboxMode) {
-            this.restoreBatchLoader = installBatchExtensionLoader(this.props.vm, async (entries, initialChoices) => {
-                // Like TurboWarp's official gallery, what the host's catalog lists loads unsandboxed unreviewed.
-                const trusted = hostTrustedCatalog(hostIntegration());
-                const decisions = new Map();
-                for (const entry of entries) {
-                    if (isTrustedExtension(entry.url) || await trusted.isTrustedURL(entry.url)) {
-                        decisions.set(entry.url, 'unsandboxed');
-                    }
-                }
-                const reviewed = entries.filter(entry => !decisions.has(entry.url));
-                if (!reviewed.length) return decisions;
-                const {showModal} = await this.acquireModalLock();
-                const choices = await showModal(SecurityModals.LoadExtensions, {initialChoices,
-                    entries: reviewed.map(entry => {
-                        const libraryItem = extensionLibrary.find(item => entry.ids.includes(item.extensionId) ||
+            // What the review asks and what it already trusts are the host's; the modal, the lock,
+            // the extensions this fork trusts itself and where an icon comes from are this fork's.
+            this.restoreBatchLoader = securityReview.installBatchLoader({
+                vm: this.props.vm,
+                defaultURLs: defaultExtensionURLs,
+                isTrusted: isTrustedExtension,
+                bannerFor: entry => {
+                    const libraryItem = extensionLibrary.find(item => entry.ids.includes(item.extensionId) ||
                         (item.extensionURL && item.extensionURL === entry.url));
-                        return {...entry, banner: libraryItem && libraryItem.iconURL};
-                    })});
-                if (choices === null) return null;
-                choices.forEach((mode, url) => decisions.set(url, mode));
-                return decisions;
-            }, defaultExtensionURLs);
+                    return libraryItem && libraryItem.iconURL;
+                },
+                showReview: async (entries, initialChoices) => {
+                    const {showModal} = await this.acquireModalLock();
+                    return showModal(SecurityModals.LoadExtensions, {entries, initialChoices});
+                }
+            });
         }
         // Install after the ordinary permission bridge and before project loading begins.
         const plusHostPolicy = {};
@@ -539,14 +533,15 @@ class TWSecurityManagerComponent extends React.Component {
     }
 
     render () {
-        if (this.state.type === SecurityModals.LoadExtensions) {
-            return (<ExtensionSecurityDialog
-                entries={this.state.data.entries}
-                initialChoices={this.state.data.initialChoices}
-                locale={this.props.locale}
-                DialogFrame={Modal}
-                onComplete={this.handleBatchComplete}
-            />);
+        if (securityReview && this.state.type === SecurityModals.LoadExtensions) {
+            // Rendered by the host, inside this fork's own modal frame.
+            return securityReview.render({
+                entries: this.state.data.entries,
+                initialChoices: this.state.data.initialChoices,
+                locale: this.props.locale,
+                DialogFrame: Modal,
+                onComplete: this.handleBatchComplete
+            });
         }
         if (this.state.type) {
             return (

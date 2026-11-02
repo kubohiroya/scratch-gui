@@ -250,3 +250,15 @@ export const hostLibraryTab = integration => integration?.libraryTab || null;
  * @returns {object|null} `open`, `claim` and `handleMessage`, or null when the host claims none.
  */
 export const hostProjectPackager = integration => integration?.projectPackager || null;
+
+/**
+ * The review a project's extensions go through before any of them runs.
+ *
+ * Upstream asks about one unknown extension at a time. A distribution may ship a review of its own
+ * that asks about all of them together, and may already stand behind some of them; both are
+ * decisions about what is distributed. This fork keeps its modal, its lock and the extensions it
+ * trusts itself, and hands those over.
+ * @param {object} [integration] The host's integration.
+ * @returns {object|null} `installBatchLoader`, `render` and `isCancelled`, or null.
+ */
+export const hostSecurityReview = integration => integration?.securityReview || null;
