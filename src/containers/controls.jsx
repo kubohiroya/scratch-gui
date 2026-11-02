@@ -5,15 +5,18 @@ import VM from 'scratch-vm';
 import {connect} from 'react-redux';
 
 import ControlsComponent from '../components/controls/controls.jsx';
-import getStageControls from '../lib/tw-stage-controls.js';
 import getCameraControls from '../lib/tw-camera-controls.js';
+import {hostIntegration, hostStageControls} from '../lib/tw-plus-integration-points.js';
 
 class Controls extends React.Component {
     constructor (props) {
         super(props);
-        this.stageControls = getStageControls(props.vm);
+        // With no host there are no extension controls, which is what a bare fork should show:
+        // the controls an extension registers belong to whoever distributes this. The camera
+        // control still comes from here, because its UI lives in this fork.
+        this.stageControls = hostStageControls(props.vm, hostIntegration());
         this.cameraControls = getCameraControls(props.vm);
-        this.state = {cameraSnapshot: this.cameraControls.snapshot(), extensionControls: this.stageControls.snapshot()};
+        this.state = this.readControls();
         bindAll(this, [
             'handleControlsChange',
             'handleGreenFlagClick',
@@ -21,17 +24,22 @@ class Controls extends React.Component {
         ]);
     }
     componentDidMount () {
-        this.unsubscribeControls = this.stageControls.subscribe(this.handleControlsChange);
+        this.unsubscribeControls = this.stageControls?.subscribe(this.handleControlsChange);
         this.unsubscribeCamera = this.cameraControls.subscribe(this.handleControlsChange);
         this.handleControlsChange();
     }
     componentWillUnmount () {
-        this.unsubscribeControls();
+        this.unsubscribeControls?.();
         this.unsubscribeCamera();
     }
+    readControls () {
+        return {
+            cameraSnapshot: this.cameraControls.snapshot(),
+            extensionControls: this.stageControls ? this.stageControls.snapshot() : []
+        };
+    }
     handleControlsChange () {
-        this.setState({cameraSnapshot: this.cameraControls.snapshot(),
-            extensionControls: this.stageControls.snapshot()});
+        this.setState(this.readControls());
     }
     handleGreenFlagClick (e) {
         e.preventDefault();

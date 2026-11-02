@@ -8,6 +8,7 @@ import {
     hostModalDefaults,
     hostModalNames,
     hostTranslationsFor,
+    hostStageControls,
     registerHostBlockShapes,
     withHostSecurityModals,
     withHostThemeTokens
@@ -96,4 +97,29 @@ test('a host may decide what cancelling leaves behind, and receives the values i
     assert.equal(seen[0].initialState, initialState);
     assert.equal(seen[0].defaultProjectId, '0');
     assert.equal(seen[0].loadingStates, loadingStates);
+});
+
+// The controls bar and the Scratch.gui API both ask for the stage controls, and both must get the
+// same service for one VM: a control registered through the API has to appear in the bar.
+test('the stage controls point is asked per VM and hands back what the host owns', () => {
+    const asked = [];
+    const services = new Map();
+    const integration = {
+        stageControls: vm => {
+            asked.push(vm);
+            if (!services.has(vm)) services.set(vm, {api: {}, snapshot: () => [], subscribe: () => () => {}});
+            return services.get(vm);
+        }
+    };
+    const first = {};
+    const second = {};
+    assert.equal(hostStageControls(first, integration), hostStageControls(first, integration));
+    assert.notEqual(hostStageControls(second, integration), hostStageControls(first, integration));
+    assert.deepEqual(asked, [first, first, second, first]);
+});
+
+test('with no stage controls supplied the point says so instead of inventing a service', () => {
+    assert.equal(hostStageControls({}, null), null);
+    assert.equal(hostStageControls({}, {}), null);
+    assert.equal(hostStageControls({}, {stageControls: () => null}), null);
 });
