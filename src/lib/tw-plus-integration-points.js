@@ -79,3 +79,13 @@ export const registerHostBlockShapes = (ScratchBlocks, integration) => {
  * @returns {boolean} True only when the host claimed the event.
  */
 export const hostIgnoresKeyEvent = (event, integration) => integration?.shouldIgnoreKeyEvent?.(event) === true;
+
+/**
+ * Let the host attach to the workspace once a VM exists. The host receives the VM, the current
+ * locale, the document and a way to reach ScratchBlocks, and returns something to dispose; the
+ * fork owns when that happens and never looks inside.
+ * @param {object} context What the host needs to attach: vm, locale, document, getBlockly.
+ * @param {object} [integration] The host's integration.
+ * @returns {object|null} A disposable, or null when the host attached nothing.
+ */
+export const attachHostToWorkspace = (context, integration) => integration?.attachToWorkspace?.(context) || null;
