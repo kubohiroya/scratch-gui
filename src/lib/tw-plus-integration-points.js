@@ -144,20 +144,6 @@ export const hostStageControls = (vm, integration) => integration?.stageControls
 export const hostAwaitedAddonIds = integration => [...(integration?.awaitStartupAddons || [])];
 
 /**
- * The extension catalog the host distributes.
- *
- * Which catalog this build trusts is the distributor's decision, not this fork's: the address, and
- * whether a local one replaces it during a preview build, both belong to whoever ships the editor.
- *
- * `read(signal)` answers with `{catalog, icons}`: the catalog document, and display images the
- * trusted build supplied for it, already checked by the side that owns them. Parsing stays here,
- * where the parser already is, so a host needs no part of the review UI to name its catalog.
- * @param {object} [integration] The host's integration.
- * @returns {object|null} The catalog, or null when the host distributes none.
- */
-export const hostExtensionCatalog = integration => integration?.extensionCatalog || null;
-
-/**
  * Trust nothing, which is what this fork stands behind on its own: no extension is the fork's, so
  * every one is reviewed. A host that distributes a catalog answers the two points below instead.
  */
@@ -178,19 +164,6 @@ const trustsNothing = Object.freeze({
  */
 export const hostTrustedCatalog = integration => integration?.trustedExtensions?.catalog || trustsNothing;
 
-/**
- * The digests to embed while building a single HTML: the project's extensions that the host's
- * catalog lists. With no host none are embedded, so the recipient reviews every extension.
- *
- * Only the build asks this. What a built HTML then does with those digests stays in this fork,
- * because the runtime bundle it embeds is built without an integration to ask.
- * @param {object} manifest The offline package manifest.
- * @param {object} [integration] The host's integration.
- * @returns {Promise<string[]>} The digests, empty when the host listed none.
- */
-export const hostTrustedDigests = async (manifest, integration) =>
-    (await integration?.trustedExtensions?.listDigests?.(manifest)) || [];
-
 /** No loader at all, which is what this fork does on its own: nothing is installed. */
 const noExtensionHost = Object.freeze({enabled: false, dispose: async () => {}});
 
@@ -207,24 +180,6 @@ const noExtensionHost = Object.freeze({enabled: false, dispose: async () => {}})
  */
 export const installHostExtensionHost = (vm, settings, integration) =>
     integration?.installExtensionHost?.(vm, settings) || noExtensionHost;
-
-/** Nothing shown and nothing approved, which is what a build with no dialog of its own can do. */
-const noPermissionUI = Object.freeze({
-    diagnostics: () => {},
-    requestApproval: () => Promise.resolve(false),
-    dispose: () => {}
-});
-
-/**
- * What the host shows while an extension is verified, and when one asks to run. Every string and
- * every style in it is the distributor's, so this fork only asks for it and uses what it gets.
- * @param {Document} document The document the dialog is shown in.
- * @param {string} locale The current locale.
- * @param {object} [integration] The host's integration.
- * @returns {object} `diagnostics`, `requestApproval` and `dispose`.
- */
-export const hostPermissionUI = (document, locale, integration) =>
-    integration?.createPermissionUI?.(document, locale) || noPermissionUI;
 
 /**
  * The one library tab the host may add beside this fork's own.
