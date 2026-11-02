@@ -6,9 +6,9 @@
  * decisions about a distribution. The distributing host answers the socket; what comes back is
  * disposed of here, and with no host there is simply no Plus extension loading.
  *
- * What is handed over is what only this fork has. Marking an error as an extension failure and
- * making an authoring controller go as functions, because the project-error paths and the
- * extension library read both back. The VM modules the registration needs go as this fork's own
+ * What is handed over is what only this fork has. Marking an error as an extension failure goes as
+ * a function, because the project-error paths read it back. The VM modules the registration needs
+ * go as this fork's own
  * module instances: `central-dispatch` is a singleton, and a copy resolved anywhere else would not
  * be the one the VM uses. The switch and the archive limits go as values, because this fork's own
  * Packager wiring reads the same two and they are defined once, here.
@@ -21,7 +21,6 @@ import dispatch from 'scratch-vm/src/dispatch/central-dispatch.js';
 
 import {extensionProjectArchiveOptions} from '../config/extension-project-limits.js';
 import {isExtensionLoaderEnabled} from '../config/extension-loader-flag.js';
-import {createExtensionAuthoringController, setExtensionAuthoringHost} from './tw-plus-extension-authoring.js';
 import {markExtensionLoadFailure} from './tw-plus-extension-load-failure.js';
 import {hostIntegration, hostTrustedCatalog, installHostExtensionHost} from './tw-plus-integration-points.js';
 
@@ -44,8 +43,6 @@ export function startupPlusExtensionHost (vm, options = {}, integration = hostIn
         vmModules: {ScratchCommon, createTranslate, staticFetch, dispatch},
         trustedCatalog: hostTrustedCatalog(integration),
         markLoadFailure: markExtensionLoadFailure,
-        createAuthoring: createExtensionAuthoringController,
-        setAuthoringHost: setExtensionAuthoringHost,
         ...options
     }, integration);
 }

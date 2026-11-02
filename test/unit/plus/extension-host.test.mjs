@@ -40,10 +40,11 @@ test('the host is handed what only this fork has, and nothing it could read itse
         ['ScratchCommon', 'createTranslate', 'dispatch', 'staticFetch']);
     assert.equal(settings.vmModules.dispatch,
         (await import('scratch-vm/src/dispatch/central-dispatch.js')).default);
-    // What the project-error paths and the extension library read back.
+    // What the project-error paths read back. The authoring controller the extension library
+    // reads back is the host's own now, along with the library tab that reads it.
     assert.equal(typeof settings.markLoadFailure, 'function');
-    assert.equal(typeof settings.createAuthoring, 'function');
-    assert.equal(typeof settings.setAuthoringHost, 'function');
+    assert.equal(settings.createAuthoring, undefined);
+    assert.equal(settings.setAuthoringHost, undefined);
 });
 
 test('the explicit opt-out is handed over as off, and a later URL change cannot turn it on', () => {

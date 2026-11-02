@@ -7,6 +7,7 @@ import {
     hostExtensionCatalog,
     hostIgnoresKeyEvent,
     hostIntegration,
+    hostLibraryTab,
     hostPermissionUI,
     hostTrustedCatalog,
     hostTrustedDigests,
@@ -198,4 +199,22 @@ test('the host is asked for its dialog with the document and the locale it is sh
     }});
     assert.equal(ui, supplied);
     assert.deepEqual(asked, [[document, 'en']]);
+});
+
+// The extension library makes room for one tab it does not own. What that tab offers, what it is
+// called and what it asks before anything runs are the distributor's, so this fork takes a
+// description; with none, the library is exactly the one upstream ships.
+test('with no tab supplied the extension library stays upstream\'s own', () => {
+    assert.equal(hostLibraryTab(null), null);
+    assert.equal(hostLibraryTab({}), null);
+});
+
+test('the tab arrives as a description the library renders, name and icon included', () => {
+    const tab = {tag: 'twplus', label: 'TurboWarp Plus', iconSrc: 'icon.svg', className: 'tag_x',
+        render: props => props};
+    assert.equal(hostLibraryTab({libraryTab: tab}), tab);
+    // Rendering is the host's: this fork hands over the filter, the locale, the VM, its review
+    // bookkeeping and the callbacks, and renders whatever comes back.
+    const rendered = hostLibraryTab({libraryTab: tab}).render({filterQuery: 'x', vm: 'vm'});
+    assert.deepEqual(rendered, {filterQuery: 'x', vm: 'vm'});
 });
