@@ -9,8 +9,25 @@ import {createVMExtensionRegistrar} from './tw-plus-extension-registrar.js';
 import {installExtensionLoader} from './tw-plus-project-loader.js';
 import {createPlusPermissionUI} from './tw-plus-permission-ui.js';
 import {createExtensionAuthoringController, setExtensionAuthoringHost} from './tw-plus-extension-authoring.js';
-import {createDigestTrustedCatalog, plusTrustedCatalog} from './tw-plus-trusted-extensions.js';
-import {plusIntegration} from './tw-plus-integration.js';
+import {hostIntegration, hostTrustedCatalog} from './tw-plus-integration-points.js';
+
+const SHA256 = /^[0-9a-f]{64}$/;
+
+/**
+ * What a distributed single HTML trusts: only code whose actual bytes match a digest its build
+ * embedded. It cannot ask a host — the runtime bundle it carries is built without an integration —
+ * and it cannot read any catalog either, because its own CSP forbids the connection. So the
+ * decision the build already made travels with it as these digests, and is checked here.
+ * @param {string[]} digests The digests embedded when the HTML was built.
+ * @returns {object} Trust checks of the shape the loader expects.
+ */
+const digestTrustedCatalog = digests => {
+    const listed = new Set((Array.isArray(digests) ? digests : []).filter(digest => SHA256.test(digest)));
+    return Object.freeze({
+        isTrustedURL: () => Promise.resolve(false),
+        isTrustedCode: code => Promise.resolve(listed.has(code.actualSHA256))
+    });
+};
 
 // Snapshot before any project is opened; later URL changes cannot toggle this host.
 const startupSearch = globalThis.location ? globalThis.location.search : '';
@@ -22,9 +39,9 @@ export function installPlusExtensionHost (vm, {
     fetchRetry
 } = {}) {
     if (enabled !== true) return Object.freeze({enabled: false, dispose: async () => {}});
-    // A single HTML has no catalog to read; its build embeds the digests the catalog lists.
+    // A single HTML has no catalog to read; its build embeds the digests the catalog listed.
     const trusted = trustedCatalog === null && Array.isArray(trustedDigests) ?
-        createDigestTrustedCatalog(trustedDigests) : trustedCatalog;
+        digestTrustedCatalog(trustedDigests) : trustedCatalog;
     const ui = createPlusPermissionUI(document, locale);
     const diagnostics = event => {
         ui.diagnostics(event);
@@ -85,11 +102,11 @@ export function installPlusExtensionHost (vm, {
 
 export function startupPlusExtensionHost (vm, options = {}) {
     const search = options.search === undefined ? startupSearch : options.search;
-    const settings = {trustedCatalog: plusTrustedCatalog, ...options,
+    const supplied = hostIntegration();
+    const settings = {trustedCatalog: hostTrustedCatalog(supplied), ...options,
         enabled: isExtensionLoaderEnabled(search || '')};
     // A host that supplied its own installer owns this entirely, which is how the implementation
     // below leaves this fork: once every caller goes through the socket, the copy here can go.
-    const supplied = plusIntegration();
     return typeof supplied?.installExtensionHost === 'function' ?
         supplied.installExtensionHost(vm, settings) : installPlusExtensionHost(vm, settings);
 }

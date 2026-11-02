@@ -156,3 +156,37 @@ export const hostAwaitedAddonIds = integration => [...(integration?.awaitStartup
  * @returns {object|null} The catalog, or null when the host distributes none.
  */
 export const hostExtensionCatalog = integration => integration?.extensionCatalog || null;
+
+/**
+ * Trust nothing, which is what this fork stands behind on its own: no extension is the fork's, so
+ * every one is reviewed. A host that distributes a catalog answers the two points below instead.
+ */
+const trustsNothing = Object.freeze({
+    isTrustedURL: () => Promise.resolve(false),
+    isTrustedCode: () => Promise.resolve(false)
+});
+
+/**
+ * What the host's build stands behind.
+ *
+ * TurboWarp loads an extension from its own gallery unsandboxed without asking, because the
+ * gallery is TurboWarp's. Which extensions a distribution vouches for that way is the same kind of
+ * decision and belongs to whoever ships the editor, so this fork asks instead of deciding. It
+ * still owns the asking: an extension that is not trusted reaches the review dialog as before.
+ * @param {object} [integration] The host's integration.
+ * @returns {object} `isTrustedURL(url)` and `isTrustedCode(code)`, trusting nothing by default.
+ */
+export const hostTrustedCatalog = integration => integration?.trustedExtensions?.catalog || trustsNothing;
+
+/**
+ * The digests to embed while building a single HTML: the project's extensions that the host's
+ * catalog lists. With no host none are embedded, so the recipient reviews every extension.
+ *
+ * Only the build asks this. What a built HTML then does with those digests stays in this fork,
+ * because the runtime bundle it embeds is built without an integration to ask.
+ * @param {object} manifest The offline package manifest.
+ * @param {object} [integration] The host's integration.
+ * @returns {Promise<string[]>} The digests, empty when the host listed none.
+ */
+export const hostTrustedDigests = async (manifest, integration) =>
+    (await integration?.trustedExtensions?.listDigests?.(manifest)) || [];
