@@ -1,11 +1,20 @@
 name: CI
 
 on:
+  # A pull request branch is covered by the pull_request event alone. Without this filter a push
+  # to such a branch ran the whole job twice on the same commit, which doubled every PR's CI.
   push:
+    branches: [develop]
   pull_request:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  # develop is not cancelled: it is what the distributing host pins, so every commit on it needs a
+  # result of its own.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/develop' }}
 
 jobs:
   build:
