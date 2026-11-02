@@ -47,8 +47,8 @@ import LoadScratchBlocksHOC from '../lib/tw-load-scratch-blocks-hoc.jsx';
 import {findTopBlock} from '../lib/backpack/code-payload.js';
 import {gentlyRequestPersistentStorage} from '../lib/tw-persistent-storage.js';
 import getBlockEditorService from '../lib/tw-block-editor-service.js';
+import {hostBlockEditor, hostIntegration} from '../lib/tw-plus-integration-points.js';
 import afterNativeFieldStartup from '../lib/tw-block-editor-startup.js';
-import {attachTurboWarpBlockEditors} from '@kubohiroya/turbowarp-extension-data-editor/turbowarp';
 import BlockEditorModal from './tw-block-editor-modal.jsx';
 
 // TW: Strings we add to scratch-blocks are localized here
@@ -229,10 +229,9 @@ class Blocks extends React.Component {
         const startupWorkspace = this.workspace;
         const startupVM = this.props.vm;
         const startupBlocks = this.ScratchBlocks;
+        const blockEditor = hostBlockEditor(hostIntegration());
         const attachBlockEditors = (fixedInputs = true) => {
-            this.blockEditorBridge = attachTurboWarpBlockEditors({
-                enabled: true,
-                descendants: true,
+            this.blockEditorBridge = blockEditor.attach({
                 fixedInputs,
                 ScratchBlocks: this.ScratchBlocks,
                 workspace: this.workspace,
@@ -249,7 +248,8 @@ class Blocks extends React.Component {
                 onError: error => log.error(error)
             });
         };
-        afterNativeFieldStartup(AddonHooks.startupAwaitedAddonsReady, attachBlockEditors,
+        // With no editor shipped there is nothing to attach, and the workspace is upstream's own.
+        if (blockEditor) afterNativeFieldStartup(AddonHooks.startupAwaitedAddonsReady, attachBlockEditors,
             () => this.unmounted || this.workspace !== startupWorkspace || this.props.vm !== startupVM ||
                 this.ScratchBlocks !== startupBlocks, error => log.error(error));
         // Only update blocks/vm locale when visible to avoid sizing issues

@@ -1,6 +1,5 @@
-import {createBlockEditorService} from '@kubohiroya/turbowarp-extension-data-editor/rjsf';
-
 import exposeBlockEditorAPI from './tw-block-editor-capabilities.js';
+import {hostBlockEditor, hostIntegration} from './tw-plus-integration-points.js';
 
 const services = new WeakMap();
 const presentation = new WeakMap();
@@ -29,13 +28,14 @@ const fixedMessages = intl => ({
         description: 'A hidden fixed input has unsaved edits'})
 });
 
-// The GUI owns VM lifetime; registration and schema policy belong to the shared package.
-const getBlockEditorService = (vm, intl) => {
+// This fork owns VM lifetime and the strings below, which are its own translations. Which kinds of
+// form exist, and the editing itself, belong to the host that ships the editor.
+const getBlockEditorService = (vm, intl, integration = hostIntegration()) => {
     if (intl) presentation.set(vm, intl);
+    const editor = hostBlockEditor(integration);
+    if (!editor) return null;
     if (!services.has(vm)) {
-        const service = createBlockEditorService({
-            commonLayout: true,
-            fixedInputs: true,
+        const service = editor.createService({
             fixedInputMessages: () => (presentation.has(vm) ? fixedMessages(presentation.get(vm)) : {})
         });
         services.set(vm, {

@@ -1,7 +1,6 @@
 const defaultsDeep = require('lodash.defaultsdeep');
 const path = require('path');
 const webpack = require('webpack');
-const {withBlockEditorWebpack4} = require('@kubohiroya/turbowarp-extension-data-editor/webpack4');
 
 // Plugins
 const CopyWebpackPlugin = require('copy-webpack-plugin');
@@ -143,7 +142,7 @@ if (!process.env.CI) {
     base.plugins.push(new webpack.ProgressPlugin());
 }
 
-const guiConfigs = withBlockEditorWebpack4([
+const guiConfigs = [
     // to run editor examples
     defaultsDeep({}, base, {
         entry: {
@@ -304,6 +303,6 @@ const guiConfigs = withBlockEditorWebpack4([
                 })
             ])
         })) : []
-), {hostRoot: __dirname});
+);
 
 module.exports = guiConfigs;

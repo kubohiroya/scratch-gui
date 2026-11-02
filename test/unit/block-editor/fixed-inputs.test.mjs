@@ -4,6 +4,17 @@ import exposeBlockEditorAPI from '../../../src/lib/tw-block-editor-capabilities.
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 import getBlockEditorService, {fixedMessages} from '../../../src/lib/tw-block-editor-service.js';
+// The editor itself is the host's. What this file is about is this fork's side: one service per VM,
+// and the strings it supplies, so the host's part is a stub that answers with the real shape.
+const integration = {blockEditor: {createService: ({fixedInputMessages}) => {
+    const editors = new Map();
+    return {api: Object.freeze({
+        register: definition => editors.set(definition.editorId, definition),
+        registerSourceEditor: definition => editors.set(definition.editorId, definition),
+        registerFixedInputEditor: definition => editors.set(definition.editorId, definition),
+        messages: () => fixedInputMessages()
+    })};
+}}};
 
 const require = createRequire(import.meta.url);
 
@@ -26,13 +37,13 @@ test('fixed labels use the actual GUI Intl locale and preserve one service per V
         for (const key of ['reset', 'readOnly', 'unverified', 'currentValue', 'colorPicker', 'invalidValue', 'inactiveDraft']) {
             assert.equal(labels[key], translations[locale][`tw.blockEditor.fixed.${key}`]);
         }
-        const service = getBlockEditorService(vm, intl);
+        const service = getBlockEditorService(vm, intl, integration);
         if (previous) assert.equal(service, previous);
         previous = service;
     }
 });
 test('the standard service exposes actual fixed input support without a startup switch', () => {
-    assert.equal(typeof getBlockEditorService({}).api.registerFixedInputEditor, 'function');
+    assert.equal(typeof getBlockEditorService({}, undefined, integration).api.registerFixedInputEditor, 'function');
     const legacy = {apiVersion: 1, register() {}};
     assert.equal(exposeBlockEditorAPI(legacy), legacy);
     assert.equal(exposeBlockEditorAPI(legacy).registerFixedInputEditor, undefined);
