@@ -10,8 +10,19 @@
     --block-editor-radius: $space;
 }
 
-.commonLayout {
+/*
+ * The dialog's frame, stated on two classes so that nothing depends on which stylesheet the
+ * bundler happened to inject last.
+ *
+ * Both this file and the editor package's own stylesheet set the frame on the same element with
+ * one class each, so a tie used to be broken by injection order — and that order follows the module
+ * graph. It changed when the package moved to the distributing host: the frame's top margin went
+ * from the package's 60px to this GUI's modal default of 100px, which pushed the dialog's buttons
+ * out of a 900px viewport. Two classes here settle it wherever the rules land.
+ */
+.theme.commonLayout {
     width: min(820px, calc(100vw - 32px));
+    margin: 60px auto;
 }
 
 /* Common form wrappers must not offset labels inside a key/value row. */
