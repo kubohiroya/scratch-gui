@@ -1,15 +1,17 @@
-/* global __TW_PLUS_LOCAL_CATALOG__ */
 import {parseExtensionCatalog} from '@kubohiroya/turbowarp-extension-security-dialog';
-import {CATALOG_URL} from './tw-plus-catalog-source.js';
+import {hostExtensionCatalog, hostIntegration} from './tw-plus-integration-points.js';
 
-const preview = typeof __TW_PLUS_LOCAL_CATALOG__ === 'undefined' ? null : __TW_PLUS_LOCAL_CATALOG__;
 const SHA256 = /^[0-9a-f]{64}$/;
 const empty = Object.freeze({urls: new Set(), digests: new Map(), listedDigests: new Set()});
 
-const fetchCatalog = async signal => {
-    const response = await fetch(CATALOG_URL, {signal, credentials: 'omit'});
-    if (!response.ok) throw new Error(`The TurboWarp-Plus catalog returned HTTP ${response.status}`);
-    return response.json();
+// Reading through the host keeps the catalog's address out of this fork. A build that supplies
+// none reaches the same place as a catalog that cannot be read: nothing is trusted.
+const readHostCatalog = async signal => {
+    const source = hostExtensionCatalog(hostIntegration());
+    if (!source) throw new Error('This build distributes no extension catalog');
+    const {catalog} = await source.read(signal);
+    if (!catalog) throw new Error('The distributed extension catalog is empty');
+    return catalog;
 };
 
 /**
@@ -21,7 +23,7 @@ const fetchCatalog = async signal => {
  * @returns {object} Trust checks for extension URLs and verified Loader code.
  */
 export const createPlusTrustedCatalog = ({
-    readCatalog = signal => (preview ? Promise.resolve(preview.catalog) : fetchCatalog(signal)),
+    readCatalog = readHostCatalog,
     timeoutMs = 15000
 } = {}) => {
     let pending = null;

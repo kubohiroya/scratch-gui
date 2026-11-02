@@ -7,7 +7,8 @@ import '../css/extension-security-dialog.css';
 import loadPlusExtensions from '../lib/tw-plus-extension-loader';
 import {readPlusCatalogSettings, applyPlusCatalogSettings} from '../lib/tw-plus-catalog-authoring.js';
 import {TURBOWARP_PLUS_EXTENSION_LOADER_ENABLED} from '../config/feature-flags.js';
-import {loadPlusCatalog, CATALOG_URL} from '../lib/tw-plus-catalog-source.js';
+import {parseExtensionCatalog} from '@kubohiroya/turbowarp-extension-security-dialog';
+import {hostExtensionCatalog, hostIntegration} from '../lib/tw-plus-integration-points.js';
 import log from '../lib/log';
 import styles from '../components/tw-plus-library/plus-library.css';
 
@@ -35,8 +36,13 @@ class PlusLibrary extends React.PureComponent {
     constructor (props) {
         super(props);
         bindAll(this, ['handleFetchCatalog', 'handleSelection', 'handleReview']);
-        this.state = {entries: null, fetchError: false, loadError: null, reviewing: null, busy: false,
-            choices: new Map(), distributions: new Map()};
+        this.state = {entries: null,
+            fetchError: false,
+            loadError: null,
+            reviewing: null,
+            busy: false,
+            choices: new Map(),
+            distributions: new Map()};
     }
     componentDidMount () {
         this.alive = true;
@@ -52,7 +58,19 @@ class PlusLibrary extends React.PureComponent {
         this.setState({fetchError: false});
         const timeout = setTimeout(() => this.controller.abort(), 15000);
         try {
-            const entries = await loadPlusCatalog(this.controller.signal);
+            // With no catalog distributed there is nothing to list, which is what a bare fork
+            // should show: the catalog belongs to whoever ships the editor.
+            const source = hostExtensionCatalog(hostIntegration());
+            const read = source ? await source.read(this.controller.signal) : {catalog: null, icons: {}};
+            const entries = read.catalog ? parseExtensionCatalog(read.catalog) : [];
+            // Display images come from the trusted build, not from a project or remote metadata,
+            // and the side that owns them has already checked them.
+            const icons = read.icons || {};
+            for (const entry of entries) {
+                if (Object.hasOwn(icons, entry.id)) {
+                    entry.metadata = {...entry.metadata, banner: icons[entry.id]};
+                }
+            }
             const settings = await readPlusCatalogSettings(this.props.vm, entries);
             // Catalog-listed extensions are trusted like TurboWarp's official gallery, so they start unsandboxed.
             const choices = new Map(entries.map(entry => [entry.url, 'unsandboxed']));
@@ -72,7 +90,8 @@ class PlusLibrary extends React.PureComponent {
             this.setState({busy: true, loadError: null});
             this.props.onBusyChange(true);
             try {
-                const loaded = await applyPlusCatalogSettings(this.props.vm, selection, {signal: this.controller.signal});
+                const loaded = await applyPlusCatalogSettings(this.props.vm, selection,
+                    {signal: this.controller.signal});
                 if (!this.alive) return;
                 if (loaded.length) {
                     this.props.onCategorySelected(loaded[loaded.length - 1]);
@@ -80,8 +99,10 @@ class PlusLibrary extends React.PureComponent {
                 } else this.setState({loadError: 'denied'});
             } catch (error) {
                 log.error(error);
-                if (this.alive) this.setState({loadError: `${text[this.props.locale.startsWith('ja') ? 'ja' : 'en'].applyFailed} ` +
+                if (this.alive) {
+                    this.setState({loadError: `${text[this.props.locale.startsWith('ja') ? 'ja' : 'en'].applyFailed} ` +
                     `${error.code || 'LOAD_FAILED'}: ${error.message}`});
+                }
             } finally {
                 if (this.alive) {
                     this.setState({busy: false});
@@ -176,5 +197,4 @@ PlusLibrary.propTypes = {
     vm: PropTypes.shape({extensionManager: PropTypes.object.isRequired}).isRequired
 };
 
-export {CATALOG_URL};
 export default PlusLibrary;
