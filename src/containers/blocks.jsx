@@ -249,7 +249,7 @@ class Blocks extends React.Component {
                 onError: error => log.error(error)
             });
         };
-        afterNativeFieldStartup(AddonHooks.startupFieldPatchesReady, attachBlockEditors,
+        afterNativeFieldStartup(AddonHooks.startupAwaitedAddonsReady, attachBlockEditors,
             () => this.unmounted || this.workspace !== startupWorkspace || this.props.vm !== startupVM ||
                 this.ScratchBlocks !== startupBlocks, error => log.error(error));
         // Only update blocks/vm locale when visible to avoid sizing issues
