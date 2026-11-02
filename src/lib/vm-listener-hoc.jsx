@@ -26,6 +26,7 @@ import {setCustomStageSize} from '../reducers/custom-stage-size';
 import {openUnknownPlatformModal} from '../reducers/modals';
 import implementGuiAPI from './tw-extension-gui-api';
 import {BLOCKS_TAB_INDEX} from '../reducers/editor-tab';
+import {hostIgnoresKeyEvent, hostIntegration} from './tw-plus-integration-points.js';
 
 let compileErrorCounter = 0;
 
@@ -202,6 +203,7 @@ const vmListenerHOC = function (WrappedComponent) {
         handleKeyUp (e) {
             // Preserve native keyboard activation of the extension approval controls.
             if (e.target.closest && e.target.closest('.twextsec-modal')) return;
+            if (hostIgnoresKeyEvent(e, hostIntegration())) return;
             // Always capture up events,
             // even those that have switched to other targets.
             const key = (!e.key || e.key === 'Dead') ? e.keyCode : e.key;

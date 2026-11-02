@@ -1,3 +1,5 @@
+import {hostIntegration, hostModalDefaults, hostModalNames} from '../lib/tw-plus-integration-points.js';
+
 const OPEN_MODAL = 'scratch-gui/modals/OPEN_MODAL';
 const CLOSE_MODAL = 'scratch-gui/modals/CLOSE_MODAL';
 
@@ -19,6 +21,7 @@ const MODAL_FONTS = 'fontsModal';
 const MODAL_UNKNOWN_PLATFORM = 'unknownPlatformModal';
 const MODAL_INVALID_PROJECT = 'invalidProjectModal';
 const MODAL_BLOCK_EDITOR = 'blockEditorModal';
+const hostModals = hostModalNames(hostIntegration());
 
 const initialState = {
     [MODAL_BACKDROP_LIBRARY]: false,
@@ -38,7 +41,8 @@ const initialState = {
     [MODAL_FONTS]: false,
     [MODAL_UNKNOWN_PLATFORM]: false,
     [MODAL_INVALID_PROJECT]: false,
-    [MODAL_BLOCK_EDITOR]: false
+    [MODAL_BLOCK_EDITOR]: false,
+    ...hostModalDefaults(hostIntegration())
 };
 
 const reducer = function (state, action) {
@@ -170,10 +174,21 @@ const closeUnknownPlatformModal = function () {
 const closeInvalidProjectModal = function () {
     return closeModal(MODAL_INVALID_PROJECT);
 };
+// A host may only open a modal it declared, so a typo fails here instead of dispatching an
+// action no reducer knows.
+const assertHostModal = name => {
+    if (!hostModals.includes(name)) throw new Error(`The host declared no modal named ${name}`);
+    return name;
+};
+const openHostModal = name => openModal(assertHostModal(name));
+const closeHostModal = name => closeModal(assertHostModal(name));
+
 const openBlockEditorModal = () => openModal(MODAL_BLOCK_EDITOR);
 const closeBlockEditorModal = () => closeModal(MODAL_BLOCK_EDITOR);
 
 export {
+    openHostModal,
+    closeHostModal,
     openBlockEditorModal,
     closeBlockEditorModal,
     reducer as default,
