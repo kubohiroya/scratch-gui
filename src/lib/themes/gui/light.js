@@ -1,4 +1,6 @@
-const guiColors = {
+import {hostIntegration, withHostThemeTokens} from '../../tw-plus-integration-points.js';
+
+const ownColors = {
     'color-scheme': 'light',
 
     'ui-primary': 'hsla(215, 100%, 95%, 1)', /* #E5F0FF */
@@ -100,6 +102,8 @@ const guiColors = {
 };
 
 const blockColors = {};
+
+const guiColors = withHostThemeTokens(ownColors, 'light', hostIntegration());
 
 export {
     guiColors,

@@ -1,4 +1,6 @@
-const guiColors = {
+import {hostIntegration, withHostThemeTokens} from '../../tw-plus-integration-points.js';
+
+const ownColors = {
     'color-scheme': 'dark',
 
     'ui-primary': '#111111',
@@ -75,6 +77,8 @@ const blockColors = {
     zoomIconFilter: 'invert(100%)',
     gridColor: '#484848'
 };
+
+const guiColors = withHostThemeTokens(ownColors, 'dark', hostIntegration());
 
 export {
     guiColors,
