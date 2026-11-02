@@ -1,6 +1,5 @@
 import LazyScratchBlocks from './tw-lazy-scratch-blocks';
 import AddonHooks from '../addons/hooks';
-import getCameraControls from './tw-camera-controls.js';
 import {hostIntegration, hostStageControls} from './tw-plus-integration-points.js';
 import getBlockEditorService from './tw-block-editor-service.js';
 import createPreviewVm from './tw-preview-vm.js';
@@ -41,7 +40,6 @@ const implementGuiAPI = Scratch => {
         getBlocklyEagerly: () => LazyScratchBlocks.load()
     };
     Scratch.gui.createPreviewVm = () => createPreviewVm(Scratch.vm.constructor);
-    Scratch.gui.cameraControls = getCameraControls(Scratch.vm).api;
     // Left undefined when the host supplied no service, so an extension can tell that this build
     // offers no stage controls rather than calling into a stub that silently does nothing.
     const stage = hostStageControls(Scratch.vm, hostIntegration());
