@@ -32,3 +32,12 @@
     font: 0.75rem/1 sans-serif;
     white-space: nowrap;
 }
+
+/*
+ * Where a stage control puts its own content when expanded. The content is supplied by whoever
+ * registered the control, so only the box is styled here.
+ */
+.extension-panel {
+    /* The supplied element decides its own layout, so this box steps out of the way. */
+    display: contents;
+}
