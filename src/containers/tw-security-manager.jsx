@@ -1,4 +1,6 @@
-import {getHostIntegration} from '../addons/hooks.js';
+import AddonHooks, {getHostIntegration} from '../addons/hooks.js';
+import {setProjectTitle} from '../reducers/project-title';
+import {getIsAnyCreatingNewState} from '../reducers/project-state';
 import React from 'react';
 import PropTypes from 'prop-types';
 import {connect} from 'react-redux';
@@ -224,6 +226,12 @@ class TWSecurityManagerComponent extends React.Component {
         }
         this.plusExtensionHost = getHostIntegration()?.startupPlusExtensionHost?.(
             this.props.vm, {locale: this.props.locale,
+                projectState: {
+                    getTitle: () => AddonHooks.appStateStore.getState().scratchGui.projectTitle,
+                    setTitle: title => AddonHooks.appStateStore.dispatch(setProjectTitle(title)),
+                    isNew: () => getIsAnyCreatingNewState(
+                        AddonHooks.appStateStore.getState().scratchGui.projectState.loadingState)
+                },
                 hostPolicy: plusHostPolicy});
         this.props.vm.runtime.on('RUNTIME_DISPOSED', this.handleRuntimeDisposed);
     }
