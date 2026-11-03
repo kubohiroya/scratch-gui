@@ -54,8 +54,8 @@ trusts. A host that supplies none of them leaves the editor exactly as upstream 
   belong to the distributing host.
 - `scratch-vm` points at [kubohiroya/scratch-vm](https://github.com/kubohiroya/scratch-vm) at a
   fixed revision instead of TurboWarp's branch.
-- CSS that keeps the Kamishibai runtime's own reload overlay clear of the editor's chrome
-  (`src/components/stage/preview-reload.css`; the runtime still owns the overlay and its input).
+- Stage layout values exposed through `--stage-toolbar-inset`, `--stage-overlay-z-index` and
+  `--stage-overlay-gap` on `[data-gui-stage]`. Runtime-specific appearance belongs to the host.
 - The tests for everything above, under `test/unit/plus`, `test/unit/block-editor`,
   `test/unit/extension-security` and `test/unit/document-editor`.
 
