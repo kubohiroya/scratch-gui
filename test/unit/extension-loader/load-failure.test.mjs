@@ -16,30 +16,12 @@ test('marking keeps the original error and wraps values that are not objects', (
     assert.equal(isExtensionLoadFailure(wrapped), true);
 });
 
-test('the description names the extension and every cause', () => {
-    // LoaderError passes {cause: undefined} to Error, which leaves an own property holding undefined.
-    const cause = Object.assign(new Error('Sandbox extension did not register', {cause: undefined}),
-        {code: 'REGISTRATION_TIMEOUT', extensionId: 'kubohiroyaassetcache'});
-    const error = Object.assign(new Error('Extension load failed', {cause}),
-        {name: 'LoaderError', code: 'LOAD_FAILED'});
-    const described = describeExtensionLoadFailure(error);
-    assert.equal(described.message, [
-        'Extension kubohiroyaassetcache could not be loaded, so the project was not opened.',
-        'LoaderError: Extension load failed [LOAD_FAILED]',
-        '  Error: Sandbox extension did not register [REGISTRATION_TIMEOUT]'
-    ].join('\n'));
-    assert.equal(described.cause, error);
-    assert.equal(described.stack, error.stack);
-});
-
-test('the description covers aggregate failures, unnamed extensions and cyclic causes', () => {
-    const first = new Error('rollback failed');
-    const error = new AggregateError([new Error('load failed'), first], 'Host could not restore registration state');
-    first.cause = error;
-    assert.equal(describeExtensionLoadFailure(error).message, [
-        'An extension could not be loaded, so the project was not opened.',
-        'AggregateError: Host could not restore registration state',
-        '  Error: load failed',
-        '  Error: rollback failed'
-    ].join('\n'));
+test('host formatting preserves error identity when absent or broken', () => {
+    const error = markExtensionLoadFailure(new Error('load failed'));
+    assert.equal(describeExtensionLoadFailure(error, null), error);
+    const integration = {extensionLoadErrors: {describe: () => {throw new Error('formatting failed');}}};
+    assert.equal(describeExtensionLoadFailure(error, integration), error);
+    assert.equal(isExtensionLoadFailure(error), true);
+    const message = new Error('Host explanation');
+    assert.equal(describeExtensionLoadFailure(error, {extensionLoadErrors: {describe: () => message}}), message);
 });

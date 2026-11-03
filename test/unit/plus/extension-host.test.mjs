@@ -70,8 +70,8 @@ test('the startup query goes over unread, and a later URL change cannot change i
 });
 
 test('a refusal is a refusal, whoever installed the loader or shipped the review', () => {
-    assert.equal(isPlusPermissionDenied({code: 'TRUST_DENIED'}, {}), true);
-    assert.equal(isPlusPermissionDenied({code: 'CANCELLED'}, {}), true);
+    assert.equal(isPlusPermissionDenied({code: 'TRUST_DENIED'}, {}), false);
+    assert.equal(isPlusPermissionDenied({code: 'CANCELLED'}, {}), false);
     assert.equal(isPlusPermissionDenied({code: 'FETCH_FAILED'}, {}), false);
     assert.equal(isPlusPermissionDenied(null, {}), false);
     // A review the host shipped can only be recognised by the host, so it is asked.
@@ -83,4 +83,11 @@ test('a refusal is a refusal, whoever installed the loader or shipped the review
     assert.equal(isPlusPermissionDenied({code: 'REVIEW_CANCELLED'}, integration), true);
     assert.equal(isPlusPermissionDenied({code: 'FETCH_FAILED'}, integration), false);
     assert.deepEqual(asked.map(error => error.code), ['REVIEW_CANCELLED', 'FETCH_FAILED']);
+});
+
+test('loader refusal classification is supplied by the host rather than inferred from codes', () => {
+    const declined = new Error('host refused');
+    const integration = {extensionLoadErrors: {isCancelled: error => error === declined}};
+    assert.equal(isPlusPermissionDenied(declined, integration), true);
+    assert.equal(isPlusPermissionDenied(new Error('different'), integration), false);
 });
