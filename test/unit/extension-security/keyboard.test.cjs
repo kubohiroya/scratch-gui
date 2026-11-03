@@ -3,20 +3,24 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const {JSDOM}=require('jsdom');
 
-test('security dialog keyup preserves native activation without forwarding keys to the VM',()=>{
-    const dom=new JSDOM('<div class="twextsec-modal"><input type="radio"><button>OK</button></div><button id="outside">Outside</button>',{url:'http://localhost/'});
+test('host-owned dialog keyup preserves native activation without forwarding keys to the VM',()=>{
+    const dom=new JSDOM('<div class="host-dialog"><input type="radio"><button>OK</button></div><button id="outside">Outside</button>',{url:'http://localhost/'});
     globalThis.document=dom.window.document;
     globalThis.location=dom.window.location;
     // GUI API registration is unrelated to the keyboard event boundary under test.
     const apiPath=require.resolve('../../../src/lib/tw-extension-gui-api');
     const previousAPI=require.cache[apiPath];
     require.cache[apiPath]={id:apiPath,filename:apiPath,loaded:true,exports:{__esModule:true,default:()=>{}}};
+    const integrationPath=require.resolve('../../../src/lib/tw-plus-integration.js');
+    const previousIntegration=require.cache[integrationPath];
+    require.cache[integrationPath]={id:integrationPath,filename:integrationPath,loaded:true,
+        exports:{plusIntegration:()=>({shouldIgnoreKeyEvent:event=>Boolean(event.target.closest?.('.host-dialog'))})}};
     const VMListener=require('../../../src/lib/vm-listener-hoc.jsx').default(()=>null).WrappedComponent;
     const posted=[];
     const listener=new VMListener({vm:{on(){},runtime:{on(){}},postIOData:(...args)=>posted.push(args)}});
     document.addEventListener('keyup',listener.handleKeyUp);
     try {
-        for(const target of document.querySelectorAll('.twextsec-modal input, .twextsec-modal button')) {
+        for(const target of document.querySelectorAll('.host-dialog input, .host-dialog button')) {
             const event=new dom.window.KeyboardEvent('keyup',{key:' ',keyCode:32,bubbles:true,cancelable:true});
             target.dispatchEvent(event);
             assert.equal(event.defaultPrevented,false);
@@ -30,6 +34,8 @@ test('security dialog keyup preserves native activation without forwarding keys 
         document.removeEventListener('keyup',listener.handleKeyUp);
         if(previousAPI) require.cache[apiPath]=previousAPI;
         else delete require.cache[apiPath];
+        if(previousIntegration) require.cache[integrationPath]=previousIntegration;
+        else delete require.cache[integrationPath];
         dom.window.close();delete globalThis.document;delete globalThis.location;
     }
 });

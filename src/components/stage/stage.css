@@ -2,9 +2,11 @@
 @import "../../css/units.css";
 @import "../../css/default-colors.css";
 @import "../../css/z-index.css";
-@import "./preview-reload.css";
 
 .stage {
+    --stage-toolbar-inset: calc($menu-bar-height + $stage-menu-height);
+    --stage-overlay-z-index: $z-index-stage-wrapper-overlay;
+    --stage-overlay-gap: $space;
     /*
         Fixes a few extra pixels of margin/padding, that adds on to the bottom
         of the element, which messes up the chrome padding consistency
@@ -33,6 +35,7 @@
 }
 
 .stage.full-screen {
+    --stage-toolbar-inset: $stage-menu-height;
     border: $stage-full-screen-border-width solid $ui-black-transparent;
 }
 
