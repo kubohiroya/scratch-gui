@@ -44,7 +44,8 @@ const implementGuiAPI = Scratch => {
     // offers no stage controls rather than calling into a stub that silently does nothing.
     const stage = hostStageControls(Scratch.vm, hostIntegration());
     if (stage) Scratch.gui.stageControls = stage.api;
-    Scratch.gui.blockEditors = getBlockEditorService(Scratch.vm).api;
+    const blockEditor = getBlockEditorService(Scratch.vm);
+    if (blockEditor) Scratch.gui.blockEditors = blockEditor.api;
 };
 
 export default implementGuiAPI;
