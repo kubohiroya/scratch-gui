@@ -6,7 +6,6 @@ import bindAll from 'lodash.bindall';
 import SecurityManagerModal from '../components/tw-security-manager-modal/security-manager-modal.jsx';
 import SecurityModals from '../lib/tw-security-manager-constants';
 import {getPersistedUnsandboxed, setPersistedUnsandboxed} from '../lib/tw-persisted-unsandboxed.js';
-import '../css/extension-security-dialog.css';
 import Modal from './modal.jsx';
 import extensionLibrary from '../lib/libraries/extensions/index.jsx';
 import defaultExtensionURLs from 'scratch-vm/src/extension-support/tw-default-extension-urls';
