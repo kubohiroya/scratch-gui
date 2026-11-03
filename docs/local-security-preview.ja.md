@@ -1,6 +1,6 @@
 # 機能拡張セキュリティのローカル確認
 
-現行GUIではURLスイッチを撤去し、対象機能を標準で有効にしました。[標準の編集機能](standard-capabilities.ja.md)を参照してください。以下のフラグ説明は段階導入時の記録です。
+このツールはGUI標準の拡張セキュリティ確認をローカルで検証します。配信ホストが提供するPlusの一覧・レビュー・フォームは、[配信側の確認手順](https://github.com/kubohiroya/turbowarp-plus-editor/blob/main/docs/local-catalog-preview.md)を参照してください。
 
 Node.js 22以降と、このリポジトリの依存パッケージが必要です。初回またはlockfile更新後はリポジトリ直下で `npm ci` を実行してください。
 

@@ -36,6 +36,8 @@ time by replacing one module:
 | `trustedExtensions` | Which extensions load unsandboxed unreviewed | `src/lib/tw-plus-extension-host.js` |
 | `securityReview` | The review a project's extensions go through | `src/containers/tw-security-manager.jsx` |
 | `libraryTab` | One extra tab in the extension library | `src/containers/extension-library.jsx` |
+| `blockEditor` | The form editor attached to a workspace | `src/containers/blocks.jsx`, `src/containers/tw-block-editor-modal.jsx` |
+| `scriptTransfer` | Optional script and stage transfer operations | `src/lib/tw-plus-transfer.js` |
 | `projectPackager` | Where a project goes from the Packager button | `src/lib/tw-packager-integration-hoc.jsx` |
 
 The three points that carry a user interface — `securityReview`, `libraryTab` and
@@ -46,9 +48,10 @@ trusts. A host that supplies none of them leaves the editor exactly as upstream 
 
 ### What is still here
 
-- The block editor integration (`src/containers/tw-block-editor-modal.jsx` and the hooks in
-  `src/containers/blocks.jsx`), which is why `@kubohiroya/turbowarp-extension-data-editor` is still
-  a dependency. It is the last TurboWarp-Plus package this fork imports.
+- GUI-side block editor hooks, including workspace lifetime and the modal frame. The distributing
+  host supplies the implementation; this fork has no TurboWarp-Plus package dependencies.
+  [Block editor usage and examples](https://github.com/kubohiroya/turbowarp-plus-editor/blob/main/docs/block-editor.md)
+  belong to the distributing host.
 - `scratch-vm` points at [kubohiroya/scratch-vm](https://github.com/kubohiroya/scratch-vm) at a
   fixed revision instead of TurboWarp's branch.
 - CSS that keeps the Kamishibai runtime's own reload overlay clear of the editor's chrome
