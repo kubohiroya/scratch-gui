@@ -214,6 +214,7 @@ class ExtensionLibrary extends React.PureComponent {
         return (
             <LibraryComponent
                 busy={this.state.plusBusy}
+                customClasses={plusTab ? plusTab.classes : null}
                 customTag={plusTab ? plusTab.tag : null}
                 renderCustomContent={plusTab ? this.renderPlusContent : null}
                 data={library}

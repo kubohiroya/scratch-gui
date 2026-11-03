@@ -260,7 +260,7 @@ class LibraryComponent extends React.Component {
         const filteredData = this.state.canDisplay && this.props.data && this.getFilteredData();
         return (
             <Modal
-                className={this.props.customTag ? styles.customLibrary : null}
+                className={this.props.customTag ? this.props.customClasses?.library : null}
                 fullScreen
                 contentLabel={this.props.title}
                 id={this.props.id}
@@ -286,9 +286,8 @@ class LibraryComponent extends React.Component {
                         )}
                         {this.props.tags &&
                             <div
-                                className={classNames(styles.tagWrapper, {
-                                    [styles.extendedTags]: this.props.customTag
-                                })}
+                                className={classNames(styles.tagWrapper,
+                                    this.props.customTag && this.props.customClasses?.tags)}
                             >
                                 {tagListPrefix.concat(this.props.tags).map((tagProps, id) => (
                                     <TagButton
@@ -311,9 +310,8 @@ class LibraryComponent extends React.Component {
                 )}
                 <div
                     className={classNames(styles.libraryScrollGrid, {
-                        [styles.withFilterBar]: this.props.filterable || this.props.tags,
-                        [styles.customContent]: customContent
-                    })}
+                        [styles.withFilterBar]: this.props.filterable || this.props.tags
+                    }, customContent && this.props.customClasses?.content)}
                     ref={this.setFilteredDataRef}
                 >
                     {customContent && this.props.renderCustomContent(this.state.filterQuery)}
@@ -380,6 +378,7 @@ class LibraryComponent extends React.Component {
 
 LibraryComponent.propTypes = {
     busy: PropTypes.bool,
+    customClasses: PropTypes.objectOf(PropTypes.string),
     customTag: PropTypes.string,
     data: PropTypes.oneOfType([
         PropTypes.arrayOf(PropTypes.oneOfType([
