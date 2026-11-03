@@ -1,3 +1,9 @@
+import {setPlayer, setFullScreen} from '../reducers/mode';
+import {closeFileMenu} from '../reducers/menus';
+import {closeLoadingProject, openInvalidProjectModal} from '../reducers/modals';
+import {setFileHandle, setProjectError} from '../reducers/tw';
+import {setProjectTitle} from '../reducers/project-title';
+import {getHostIntegration} from '../addons/hooks.js';
 import bindAll from 'lodash.bindall';
 import PropTypes from 'prop-types';
 import React from 'react';
@@ -8,15 +14,25 @@ import AudioEngine from 'scratch-audio';
 
 import {setProjectUnchanged} from '../reducers/project-changed';
 import {
+    cancelSecurityLoad,
     LoadingStates,
     getIsLoadingWithId,
     onLoadedProject,
     projectError
 } from '../reducers/project-state';
 import log from './log';
-import returnToEditorStart, {returnToEditorStartAfterExtensionFailure} from './tw-extension-security-cancel';
-import {isPlusPermissionDenied} from './tw-plus-extension-host';
-import {isExtensionLoadFailure} from './tw-plus-extension-load-failure';
+
+const securityLoadActions = {
+    cancelSecurityLoad,
+    setProjectTitle,
+    setFileHandle,
+    setProjectError,
+    closeLoadingProject,
+    openInvalidProjectModal,
+    closeFileMenu,
+    setPlayer,
+    setFullScreen
+};
 
 /**
  * List of fonts that could be used by security prompts.
@@ -93,8 +109,8 @@ const vmManagerHOC = function (WrappedComponent) {
                     }
                 })
                 .catch(e => {
-                    if (isPlusPermissionDenied(e)) this.props.onSecurityLoadCancelled();
-                    else if (isExtensionLoadFailure(e)) this.props.onExtensionLoadFailed(e);
+                    if (getHostIntegration()?.isPlusPermissionDenied?.(e)) this.props.onSecurityLoadCancelled();
+                    else if (getHostIntegration()?.isExtensionLoadFailure?.(e)) this.props.onExtensionLoadFailed(e);
                     else this.props.onError(e);
                 });
         }
@@ -164,9 +180,10 @@ const vmManagerHOC = function (WrappedComponent) {
     };
 
     const mapDispatchToProps = dispatch => ({
-        onSecurityLoadCancelled: () => returnToEditorStart(dispatch),
+        onSecurityLoadCancelled: () => getHostIntegration()?.returnToEditorStart?.(dispatch, securityLoadActions),
         onError: error => dispatch(projectError(error)),
-        onExtensionLoadFailed: error => returnToEditorStartAfterExtensionFailure(dispatch, error),
+        onExtensionLoadFailed: error => getHostIntegration()?.returnToEditorStartAfterExtensionFailure?.(
+            dispatch, error, securityLoadActions),
         onLoadedProject: (loadingState, canSave) =>
             dispatch(onLoadedProject(loadingState, canSave, true)),
         onSetProjectUnchanged: () => dispatch(setProjectUnchanged())

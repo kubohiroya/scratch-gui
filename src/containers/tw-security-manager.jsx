@@ -1,3 +1,4 @@
+import {getHostIntegration} from '../addons/hooks.js';
 import React from 'react';
 import PropTypes from 'prop-types';
 import {connect} from 'react-redux';
@@ -9,12 +10,9 @@ import {getPersistedUnsandboxed, setPersistedUnsandboxed} from '../lib/tw-persis
 import Modal from './modal.jsx';
 import extensionLibrary from '../lib/libraries/extensions/index.jsx';
 import defaultExtensionURLs from 'scratch-vm/src/extension-support/tw-default-extension-urls';
-import {getPlusReviewedMode, setPlusHostPolicy} from '../lib/tw-plus-extension-permissions';
-import {startupPlusExtensionHost} from '../lib/tw-plus-extension-host';
-import {hostIntegration, hostSecurityReview} from '../lib/tw-plus-integration-points.js';
 
 // The review this build ships, if it ships one. Resolved once: it cannot appear later.
-const securityReview = hostSecurityReview(hostIntegration());
+const securityReview = getHostIntegration()?.hostSecurityReview?.(getHostIntegration()?.hostIntegration?.());
 
 /* eslint-disable require-atomic-updates */
 
@@ -193,7 +191,7 @@ class TWSecurityManagerComponent extends React.Component {
     componentDidMount () {
         const vmSecurityManager = this.props.vm.extensionManager.securityManager;
         const propsSecurityManager = this.props.securityManager;
-        setPlusHostPolicy(vmSecurityManager, propsSecurityManager.canLoadExtensionFromProject);
+        getHostIntegration()?.setPlusHostPolicy?.(vmSecurityManager, propsSecurityManager.canLoadExtensionFromProject);
         for (const method of SECURITY_MANAGER_METHODS) {
             vmSecurityManager[method] = propsSecurityManager[method] || this[method];
         }
@@ -220,21 +218,25 @@ class TWSecurityManagerComponent extends React.Component {
         // Install after the ordinary permission bridge and before project loading begins.
         const plusHostPolicy = {};
         for (const method of ['canLoadExtensionFromProject', 'getSandboxMode']) {
-            if (propsSecurityManager[method]) plusHostPolicy[method] = propsSecurityManager[method].bind(vmSecurityManager);
+            if (propsSecurityManager[method]) {
+                plusHostPolicy[method] = propsSecurityManager[method].bind(vmSecurityManager);
+            }
         }
-        this.plusExtensionHost = startupPlusExtensionHost(this.props.vm, {locale: this.props.locale,
-            hostPolicy: plusHostPolicy});
+        this.plusExtensionHost = getHostIntegration()?.startupPlusExtensionHost?.(
+            this.props.vm, {locale: this.props.locale,
+                hostPolicy: plusHostPolicy});
         this.props.vm.runtime.on('RUNTIME_DISPOSED', this.handleRuntimeDisposed);
     }
 
     componentWillUnmount () {
         this.isUnmounting = true;
         this.props.vm.runtime.off('RUNTIME_DISPOSED', this.handleRuntimeDisposed);
-        setPlusHostPolicy(this.props.vm.extensionManager.securityManager, null);
+        getHostIntegration()?.setPlusHostPolicy?.(this.props.vm.extensionManager.securityManager, null);
         if (this.plusExtensionHost && this.plusExtensionHost.enabled) {
             this.plusExtensionHost.dispose().then(() => {
                 if (this.restoreBatchLoader) this.restoreBatchLoader();
-            }).catch(error => log.error('Could not dispose the Plus extension host', error));
+            })
+                .catch(error => log.error('Could not dispose the Plus extension host', error));
         } else if (this.restoreBatchLoader) this.restoreBatchLoader();
         if (this.state.type === SecurityModals.LoadExtensions && this.state.callback) this.state.callback(null);
     }
@@ -324,7 +326,8 @@ class TWSecurityManagerComponent extends React.Component {
      * @returns {string} The VM worker mode to use
      */
     getSandboxMode (url) {
-        const reviewedMode = getPlusReviewedMode(this.props.vm.extensionManager.securityManager, url);
+        const reviewedMode = getHostIntegration()?.getPlusReviewedMode?.(
+            this.props.vm.extensionManager.securityManager, url);
         if (reviewedMode) return reviewedMode;
         if (isTrustedExtension(url)) {
             log.info(`Loading extension ${url} unsandboxed`);

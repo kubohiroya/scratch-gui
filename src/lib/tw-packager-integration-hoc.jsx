@@ -1,15 +1,15 @@
+import {getHostIntegration} from '../addons/hooks.js';
 import React from 'react';
 import {connect} from 'react-redux';
 import PropTypes from 'prop-types';
 import log from './log';
 import {getIsShowingProject} from '../reducers/project-state';
-import {hostIntegration, hostProjectPackager} from './tw-plus-integration-points.js';
 
 const PACKAGER_URL = 'https://packager.turbowarp.org';
 const PACKAGER_ORIGIN = PACKAGER_URL;
 // A host that packages some projects itself, resolved once: whether it does cannot change while
 // the editor is open.
-const hostPackager = hostProjectPackager(hostIntegration());
+const hostPackager = getHostIntegration()?.hostProjectPackager?.(getHostIntegration()?.hostIntegration?.());
 
 const PackagerIntegrationHOC = function (WrappedComponent) {
     class PackagerIntegrationComponent extends React.Component {
@@ -65,7 +65,8 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
                 .then(async buffer => {
                     // Rechecked after an asynchronous import request: the Editor may have changed
                     // projects, and the host may claim this one as its own to package.
-                    if (hostPackager && await hostPackager.claim({source: e.source, buffer,
+                    if (hostPackager && await hostPackager.claim({source: e.source,
+                        buffer,
                         name: this.projectName,
                         cancelImport: () => e.source.postMessage({p4: {type: 'cancel-import'}}, e.origin)})) {
                         return;

@@ -18,7 +18,7 @@ import IntlMessageFormat from 'intl-messageformat';
 import SettingsStore from './settings-store-singleton';
 import dataURLToBlob from '../lib/data-uri-to-blob';
 import EventTargetShim from './event-target';
-import AddonHooks from './hooks';
+import AddonHooks, {getHostIntegration} from './hooks';
 import addons from './generated/addon-manifests';
 import addonMessages from './addons-l10n/en.json';
 import l10nEntries from './generated/l10n-entries';
@@ -29,11 +29,9 @@ import * as textColorHelpers from './libraries/common/cs/text-color.esm.js';
 import * as conditionalStyles from './conditional-style';
 import getPrecedence from './addon-precedence';
 import reduxInstance from './redux';
-import {finalizeHostTransferMenu} from '../lib/tw-plus-transfer.js';
-import {hostAwaitedAddonIds, hostIntegration} from '../lib/tw-plus-integration-points.js';
 
 // Resolved once at startup: the ids the host needs settled before anything reads what they patched.
-const awaitedAddonIds = hostAwaitedAddonIds(hostIntegration());
+const awaitedAddonIds = (getHostIntegration()?.hostAwaitedAddonIds?.(getHostIntegration()?.hostIntegration?.()) || []);
 
 /* eslint-disable no-console */
 
@@ -588,7 +586,8 @@ class Tab extends EventTargetShim {
                     }
                 }
 
-                items = finalizeHostTransferMenu(items, hostIntegration());
+                items = getHostIntegration()?.finalizeHostTransferMenu?.(
+                    items, getHostIntegration()?.hostIntegration?.()) || items;
                 oldShow.call(this, event, items, rtl);
 
                 const blocklyContextMenu = ScratchBlocks.WidgetDiv.DIV.firstChild;

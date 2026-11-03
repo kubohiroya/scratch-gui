@@ -1,4 +1,4 @@
-import {hostIntegration, hostModalDefaults, hostModalNames} from '../lib/tw-plus-integration-points.js';
+import {getHostIntegration} from '../addons/hooks.js';
 
 const OPEN_MODAL = 'scratch-gui/modals/OPEN_MODAL';
 const CLOSE_MODAL = 'scratch-gui/modals/CLOSE_MODAL';
@@ -21,7 +21,7 @@ const MODAL_FONTS = 'fontsModal';
 const MODAL_UNKNOWN_PLATFORM = 'unknownPlatformModal';
 const MODAL_INVALID_PROJECT = 'invalidProjectModal';
 const MODAL_BLOCK_EDITOR = 'blockEditorModal';
-const hostModals = hostModalNames(hostIntegration());
+const hostModals = getHostIntegration()?.hostModalNames?.(getHostIntegration()?.hostIntegration?.()) || [];
 
 const initialState = {
     [MODAL_BACKDROP_LIBRARY]: false,
@@ -42,7 +42,7 @@ const initialState = {
     [MODAL_UNKNOWN_PLATFORM]: false,
     [MODAL_INVALID_PROJECT]: false,
     [MODAL_BLOCK_EDITOR]: false,
-    ...hostModalDefaults(hostIntegration())
+    ...getHostIntegration()?.hostModalDefaults?.(getHostIntegration()?.hostIntegration?.())
 };
 
 const reducer = function (state, action) {

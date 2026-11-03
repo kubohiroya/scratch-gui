@@ -1,3 +1,4 @@
+import {getHostIntegration} from '../addons/hooks.js';
 import bindAll from 'lodash.bindall';
 import PropTypes from 'prop-types';
 import React from 'react';
@@ -14,8 +15,6 @@ import extensionTags from '../lib/libraries/tw-extension-tags';
 
 import LibraryComponent from '../components/library/library.jsx';
 import extensionIcon from '../components/action-menu/icon--sprite.svg';
-import {beginPlusReview, canLoadPlusExtension} from '../lib/tw-plus-extension-permissions';
-import {hostIntegration, hostLibraryTab} from '../lib/tw-plus-integration-points.js';
 
 const messages = defineMessages({
     extensionTitle: {
@@ -26,10 +25,13 @@ const messages = defineMessages({
 });
 // Resolved once, like the rest of this file's library data: a project cannot add a tab by being
 // opened. A build that distributes nothing supplies no tab, and the library stays upstream's own.
-const plusTab = hostLibraryTab(hostIntegration());
+const plusTab = getHostIntegration()?.hostLibraryTab?.(getHostIntegration()?.hostIntegration?.());
 // The review bookkeeping is a WeakMap on this VM's security manager, which this fork's own
 // `getSandboxMode` reads back, so the tab is given the two functions that write it.
-const plusPermissions = {beginReview: beginPlusReview, canLoad: canLoadPlusExtension};
+const plusPermissions = {
+    beginReview: getHostIntegration()?.beginPlusReview,
+    canLoad: getHostIntegration()?.canLoadPlusExtension
+};
 
 const toLibraryItem = extension => {
     if (typeof extension === 'object') {

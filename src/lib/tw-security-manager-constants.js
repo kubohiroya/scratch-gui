@@ -1,6 +1,6 @@
-import {hostIntegration, withHostSecurityModals} from './tw-plus-integration-points.js';
+import {getHostIntegration} from '../addons/hooks.js';
 
-const SecurityModals = withHostSecurityModals({
+const defaults = {
     LoadExtension: 'LoadExtension',
     LoadExtensions: 'LoadExtensions',
     Fetch: 'Fetch',
@@ -13,6 +13,8 @@ const SecurityModals = withHostSecurityModals({
     Geolocate: 'Geolocate',
     Embed: 'Embed',
     Download: 'Download'
-}, hostIntegration());
+};
+const SecurityModals = getHostIntegration()?.withHostSecurityModals?.(
+    defaults, getHostIntegration()?.hostIntegration?.()) || defaults;
 
 export default SecurityModals;

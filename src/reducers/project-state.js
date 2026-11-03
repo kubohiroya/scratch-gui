@@ -1,5 +1,5 @@
+import {getHostIntegration} from '../addons/hooks.js';
 import keyMirror from 'keymirror';
-import {createCancelSecurityLoad, hostIntegration} from '../lib/tw-plus-integration-points.js';
 
 const DONE_CREATING_COPY = 'scratch-gui/project-state/DONE_CREATING_COPY';
 const DONE_CREATING_NEW = 'scratch-gui/project-state/DONE_CREATING_NEW';
@@ -118,7 +118,10 @@ const reducer = function (state, action) {
 
     switch (action.type) {
     case CANCEL_SECURITY_LOAD:
-        return createCancelSecurityLoad(initialState, defaultProjectId, LoadingState, hostIntegration());
+        return getHostIntegration()?.createCancelSecurityLoad?.(initialState, defaultProjectId, LoadingState,
+            getHostIntegration()?.hostIntegration?.()) || Object.assign({}, initialState, {
+            loadingState: LoadingState.FETCHING_NEW_DEFAULT, projectId: defaultProjectId
+        });
     case DONE_CREATING_NEW:
         // We need to set project id since we just created new project on the server.
         // No need to load, we should have data already in vm.

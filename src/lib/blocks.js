@@ -1,5 +1,5 @@
+import {getHostIntegration} from '../addons/hooks.js';
 import LazyScratchBlocks from './tw-lazy-scratch-blocks';
-import {hostIntegration, registerHostBlockShapes} from './tw-plus-integration-points.js';
 
 /**
  * Connect scratch blocks with the vm
@@ -9,7 +9,7 @@ import {hostIntegration, registerHostBlockShapes} from './tw-plus-integration-po
 export default function (vm) {
     const ScratchBlocks = LazyScratchBlocks.get();
     // Including the document editor's root hat: the host that supplies that editor registers it.
-    registerHostBlockShapes(ScratchBlocks, hostIntegration());
+    getHostIntegration()?.registerHostBlockShapes?.(ScratchBlocks, getHostIntegration()?.hostIntegration?.());
     const jsonForMenuBlock = function (name, menuOptionsFn, colors, start) {
         return {
             message0: '%1',
@@ -51,7 +51,6 @@ export default function (vm) {
             extensions: ['shape_hat']
         };
     };
-
 
     const jsonForSensingMenus = function (menuOptionsFn) {
         return {

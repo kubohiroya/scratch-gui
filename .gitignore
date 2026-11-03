@@ -13,7 +13,6 @@ npm-*
 /build
 /dist
 /.opt-in
-/.local-preview
 
 # Generated translation files
 /translations
