@@ -1,4 +1,4 @@
-import {hostIntegration, withHostThemeTokens} from '../../tw-plus-integration-points.js';
+import {getHostIntegration} from '../../../addons/hooks.js';
 
 const ownColors = {
     'color-scheme': 'light',
@@ -99,7 +99,8 @@ const ownColors = {
 
 const blockColors = {};
 
-const guiColors = withHostThemeTokens(ownColors, 'light', hostIntegration());
+const guiColors = getHostIntegration()?.withHostThemeTokens?.(
+    ownColors, 'light', getHostIntegration()?.hostIntegration?.()) || ownColors;
 
 export {
     guiColors,

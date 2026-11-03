@@ -1,3 +1,5 @@
+import {setPlayer, setFullScreen} from '../reducers/mode';
+import {getHostIntegration} from '../addons/hooks.js';
 import bindAll from 'lodash.bindall';
 import React from 'react';
 import PropTypes from 'prop-types';
@@ -6,11 +8,9 @@ import {connect} from 'react-redux';
 import log from '../lib/log';
 import sharedMessages from './shared-messages';
 import {setFileHandle, setProjectError} from '../reducers/tw';
-import {isPlusPermissionDenied} from './tw-plus-extension-host';
-import {isExtensionLoadFailure} from './tw-plus-extension-load-failure';
-import returnToEditorStart, {returnToEditorStartAfterExtensionFailure} from './tw-extension-security-cancel';
 
 import {
+    cancelSecurityLoad,
     LoadingStates,
     getIsLoadingUpload,
     getIsShowingWithoutId,
@@ -27,6 +27,18 @@ import {
 import {
     closeFileMenu
 } from '../reducers/menus';
+
+const securityLoadActions = {
+    cancelSecurityLoad,
+    setProjectTitle,
+    setFileHandle,
+    setProjectError,
+    closeLoadingProject,
+    openInvalidProjectModal,
+    closeFileMenu,
+    setPlayer,
+    setFullScreen
+};
 
 /**
  * Higher Order Component to provide behavior for loading local project files into editor.
@@ -213,10 +225,10 @@ const SBFileUploaderHOC = function (WrappedComponent) {
                         loadingSuccess = true;
                     })
                     .catch(error => {
-                        if (isPlusPermissionDenied(error)) {
+                        if (getHostIntegration()?.isPlusPermissionDenied?.(error)) {
                             cancelled = true;
                             this.props.onSecurityLoadCancelled();
-                        } else if (isExtensionLoadFailure(error)) {
+                        } else if (getHostIntegration()?.isExtensionLoadFailure?.(error)) {
                             // The previous project's Plus extensions are already unloaded; do not keep showing it.
                             cancelled = true;
                             this.props.onExtensionLoadFailed(error);
@@ -324,8 +336,9 @@ const SBFileUploaderHOC = function (WrappedComponent) {
         };
     };
     const mapDispatchToProps = (dispatch, ownProps) => ({
-        onSecurityLoadCancelled: () => returnToEditorStart(dispatch),
-        onExtensionLoadFailed: error => returnToEditorStartAfterExtensionFailure(dispatch, error),
+        onSecurityLoadCancelled: () => getHostIntegration()?.returnToEditorStart?.(dispatch, securityLoadActions),
+        onExtensionLoadFailed: error => getHostIntegration()?.returnToEditorStartAfterExtensionFailure?.(
+            dispatch, error, securityLoadActions),
         cancelFileUpload: loadingState => dispatch(onLoadedProject(loadingState, false, false)),
         closeFileMenu: () => dispatch(closeFileMenu()),
         onLoadingFailed: error => {

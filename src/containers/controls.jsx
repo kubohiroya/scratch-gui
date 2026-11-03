@@ -1,3 +1,4 @@
+import {getHostIntegration} from '../addons/hooks.js';
 import bindAll from 'lodash.bindall';
 import PropTypes from 'prop-types';
 import React from 'react';
@@ -5,14 +6,14 @@ import VM from 'scratch-vm';
 import {connect} from 'react-redux';
 
 import ControlsComponent from '../components/controls/controls.jsx';
-import {hostIntegration, hostStageControls} from '../lib/tw-plus-integration-points.js';
 
 class Controls extends React.Component {
     constructor (props) {
         super(props);
         // With no host there are no extension controls, which is what a bare fork should show:
         // the controls an extension registers belong to whoever distributes this.
-        this.stageControls = hostStageControls(props.vm, hostIntegration());
+        this.stageControls = getHostIntegration()?.hostStageControls?.(
+            props.vm, getHostIntegration()?.hostIntegration?.());
         this.state = this.readControls();
         bindAll(this, [
             'handleControlsChange',

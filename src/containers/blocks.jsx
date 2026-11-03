@@ -1,4 +1,3 @@
-import {attachHostScriptTransfer} from '../lib/tw-plus-transfer.js';
 import bindAll from 'lodash.bindall';
 import debounce from 'lodash.debounce';
 import defaultsDeep from 'lodash.defaultsdeep';
@@ -43,14 +42,24 @@ import {
     activateTab,
     SOUNDS_TAB_INDEX
 } from '../reducers/editor-tab';
-import AddonHooks from '../addons/hooks.js';
+import AddonHooks, {getHostIntegration} from '../addons/hooks.js';
 import LoadScratchBlocksHOC from '../lib/tw-load-scratch-blocks-hoc.jsx';
 import {findTopBlock} from '../lib/backpack/code-payload.js';
 import {gentlyRequestPersistentStorage} from '../lib/tw-persistent-storage.js';
-import getBlockEditorService from '../lib/tw-block-editor-service.js';
-import {hostBlockEditor, hostIntegration} from '../lib/tw-plus-integration-points.js';
-import afterNativeFieldStartup from '../lib/tw-block-editor-startup.js';
-import BlockEditorModal from './tw-block-editor-modal.jsx';
+
+import Modal from './modal.jsx';
+
+const reportHostError = error => log.error(error);
+const BlockEditorModal = props => {
+    const Component = getHostIntegration()?.BlockEditorModal;
+    return Component ? (
+        <Component
+            {...props}
+            ModalComponent={Modal}
+            onError={reportHostError}
+        />
+    ) : null;
+};
 
 // TW: Strings we add to scratch-blocks are localized here
 const messages = defineMessages({
@@ -227,7 +236,7 @@ class Blocks extends React.Component {
         });
 
         this.attachVM();
-        this.scriptTransferBridge = attachHostScriptTransfer({
+        this.scriptTransferBridge = getHostIntegration()?.attachHostScriptTransfer?.({
             vm: this.props.vm,
             ScratchBlocks: this.ScratchBlocks,
             workspace: this.workspace,
@@ -235,18 +244,18 @@ class Blocks extends React.Component {
             locale: this.props.locale,
             canUse: () => this.props.isVisible && !this.props.anyModalVisible,
             onError: error => log.error(error)
-        }, hostIntegration());
+        }, getHostIntegration()?.hostIntegration?.());
         const startupWorkspace = this.workspace;
         const startupVM = this.props.vm;
         const startupBlocks = this.ScratchBlocks;
-        const blockEditor = hostBlockEditor(hostIntegration());
+        const blockEditor = getHostIntegration()?.hostBlockEditor?.(getHostIntegration()?.hostIntegration?.());
         const attachBlockEditors = (fixedInputs = true) => {
             this.blockEditorBridge = blockEditor.attach({
                 fixedInputs,
                 ScratchBlocks: this.ScratchBlocks,
                 workspace: this.workspace,
                 vm: this.props.vm,
-                service: getBlockEditorService(this.props.vm, this.props.intl),
+                service: getHostIntegration()?.getBlockEditorService?.(this.props.vm, this.props.intl),
                 label: this.props.intl.formatMessage({
                     id: 'tw.blockEditor.open',
                     defaultMessage: 'Edit block',
@@ -259,9 +268,11 @@ class Blocks extends React.Component {
             });
         };
         // With no editor shipped there is nothing to attach, and the workspace is upstream's own.
-        if (blockEditor) afterNativeFieldStartup(AddonHooks.startupAwaitedAddonsReady, attachBlockEditors,
-            () => this.unmounted || this.workspace !== startupWorkspace || this.props.vm !== startupVM ||
+        if (blockEditor) {
+            getHostIntegration()?.afterNativeFieldStartup?.(AddonHooks.startupAwaitedAddonsReady, attachBlockEditors,
+                () => this.unmounted || this.workspace !== startupWorkspace || this.props.vm !== startupVM ||
                 this.ScratchBlocks !== startupBlocks, error => log.error(error));
+        }
         // Only update blocks/vm locale when visible to avoid sizing issues
         // If locale changes while not visible it will get handled in didUpdate
         if (this.props.isVisible) {
@@ -708,7 +719,7 @@ class Blocks extends React.Component {
             });
     }
     handleOpenBlockEditor (session, nodeLabels, nodeAppearances) {
-        getBlockEditorService(this.props.vm, this.props.intl);
+        getHostIntegration()?.getBlockEditorService?.(this.props.vm, this.props.intl);
         this.setState({blockEditorSession: session,
             blockEditorLabels: nodeLabels,
             blockEditorAppearances: nodeAppearances});

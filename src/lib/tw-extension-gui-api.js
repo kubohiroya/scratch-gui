@@ -1,8 +1,5 @@
 import LazyScratchBlocks from './tw-lazy-scratch-blocks';
-import AddonHooks from '../addons/hooks';
-import {hostIntegration, hostStageControls} from './tw-plus-integration-points.js';
-import getBlockEditorService from './tw-block-editor-service.js';
-import createPreviewVm from './tw-preview-vm.js';
+import AddonHooks, {getHostIntegration} from '../addons/hooks';
 
 /**
  * Implements Scratch.gui API for unsandboxed extensions.
@@ -39,12 +36,14 @@ const implementGuiAPI = Scratch => {
          */
         getBlocklyEagerly: () => LazyScratchBlocks.load()
     };
-    Scratch.gui.createPreviewVm = () => createPreviewVm(Scratch.vm.constructor);
+    if (getHostIntegration()?.createPreviewVm) {
+        Scratch.gui.createPreviewVm = () => getHostIntegration().createPreviewVm(Scratch.vm.constructor);
+    }
     // Left undefined when the host supplied no service, so an extension can tell that this build
     // offers no stage controls rather than calling into a stub that silently does nothing.
-    const stage = hostStageControls(Scratch.vm, hostIntegration());
+    const stage = getHostIntegration()?.hostStageControls?.(Scratch.vm, getHostIntegration()?.hostIntegration?.());
     if (stage) Scratch.gui.stageControls = stage.api;
-    const blockEditor = getBlockEditorService(Scratch.vm);
+    const blockEditor = getHostIntegration()?.getBlockEditorService?.(Scratch.vm);
     if (blockEditor) Scratch.gui.blockEditors = blockEditor.api;
 };
 

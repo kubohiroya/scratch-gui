@@ -1,3 +1,4 @@
+import {getHostIntegration} from '../../addons/hooks.js';
 import classNames from 'classnames';
 import omit from 'lodash.omit';
 import PropTypes from 'prop-types';
@@ -32,7 +33,9 @@ import TelemetryModal from '../telemetry-modal/telemetry-modal.jsx';
 import TWUsernameModal from '../../containers/tw-username-modal.jsx';
 import TWSettingsModal from '../../containers/tw-settings-modal.jsx';
 import TWSecurityManager from '../../containers/tw-security-manager.jsx';
-import TWPlusWorkspaceAttachment from '../../containers/tw-plus-workspace-attachment.jsx';
+
+import LazyScratchBlocks from '../../lib/tw-lazy-scratch-blocks';
+import log from '../../lib/log';
 import TWCustomExtensionModal from '../../containers/tw-custom-extension-modal.jsx';
 import TWRestorePointManager from '../../containers/tw-restore-point-manager.jsx';
 import TWFontsModal from '../../containers/tw-fonts-modal.jsx';
@@ -50,6 +53,9 @@ import addExtensionIcon from './icon--extensions.svg';
 import codeIcon from '!../../lib/tw-recolor/build!./icon--code.svg';
 import costumesIcon from '!../../lib/tw-recolor/build!./icon--costumes.svg';
 import soundsIcon from '!../../lib/tw-recolor/build!./icon--sounds.svg';
+
+const TWPlusWorkspaceAttachment = getHostIntegration()?.createWorkspaceAttachment?.({LazyScratchBlocks, log}) ||
+    (() => null);
 
 const messages = defineMessages({
     addExtension: {

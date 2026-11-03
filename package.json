@@ -19,17 +19,10 @@
     "i18n:push": "tx-push-src scratch-editor interface translations/en.json",
     "i18n:src": "rimraf ./translations/messages/src && babel src > tmp.js && rimraf tmp.js && build-i18n-src ./translations/messages/src ./translations/",
     "start": "webpack-dev-server",
-    "preview:security": "node scripts/local-security-preview.cjs",
     "test": "npm run test:lint && npm run test:unit",
     "test:lint": "eslint . --ext .js,.jsx",
     "test:unit": "node --import ./test/register-hooks.mjs --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"test/**/*.test.mjs\"",
-    "watch": "webpack --colors --watch",
-    "test:block-editor": "node --test test/unit/block-editor/*.test.mjs",
-    "test:extension-security": "node --test test/unit/extension-security/*.test.cjs",
-    "test:plus-extension-loader": "node --test test/unit/extension-loader/*.test.mjs",
-    "test:document-editor": "node --test test/unit/document-editor/*.test.cjs",
-    "test:plus-integration": "node --test test/unit/plus/*.test.mjs",
-    "test:components": "node --test test/unit/components/*.test.cjs"
+    "watch": "webpack --colors --watch"
   },
   "config": {
     "commitizen": {
@@ -126,7 +119,6 @@
     "file-loader": "6.2.0",
     "gh-pages": "3.2.3",
     "html-webpack-plugin": "^4.2.0",
-    "jsdom": "^26.1.0",
     "mkdirp": "1.0.3",
     "rimraf": "2.7.1",
     "uglifyjs-webpack-plugin": "1.3.0",
