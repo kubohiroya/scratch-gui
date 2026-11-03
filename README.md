@@ -34,6 +34,7 @@ time by replacing one module:
 | `awaitStartupAddons` | Addon ids whose startup must settle first | `src/addons/api.js` |
 | `installExtensionHost` | Install extension loading for a VM | `src/lib/tw-plus-extension-host.js` |
 | `trustedExtensions` | Which extensions load unsandboxed unreviewed | `src/lib/tw-plus-extension-host.js` |
+| `extensionLoadErrors` | Classify loader cancellation and format failures | `src/lib/tw-plus-extension-host.js`, `src/lib/tw-plus-extension-load-failure.js` |
 | `securityReview` | The review a project's extensions go through | `src/containers/tw-security-manager.jsx` |
 | `libraryTab` | One extra tab in the extension library | `src/containers/extension-library.jsx` |
 | `blockEditor` | The form editor attached to a workspace | `src/containers/blocks.jsx`, `src/containers/tw-block-editor-modal.jsx` |

@@ -26,3 +26,21 @@ test('confirmed cancellation resets loading state, title/handle/mode and removes
     assert.equal(state.loadingState,LoadingState.SHOWING_WITHOUT_ID);
     dom.window.close();delete globalThis.window;
 });
+
+
+test('an extension failure resets the load before reporting the original error',()=>{
+    const dom=new JSDOM('',{url:'http://localhost/editor.html?project_url=https://example.test/failing.sb3'});
+    globalThis.window=dom.window;
+    const {returnToEditorStartAfterExtensionFailure}=require('../../../src/lib/tw-extension-security-cancel');
+    const error=new Error('Host load failed');
+    const actions=[];
+    try {
+        returnToEditorStartAfterExtensionFailure(action=>actions.push(action),error);
+        const reset=actions.findIndex(action=>action.type.endsWith('/CANCEL_SECURITY_LOAD'));
+        const reported=actions.findIndex(action=>action.type.endsWith('/SET_PROJECT_ERROR'));
+        assert.ok(reset>=0 && reported>reset);
+        assert.equal(actions[reported].projectError,error);
+        assert.equal(new URL(window.location.href).searchParams.has('project_url'),false);
+        assert.ok(actions.some(action=>action.type.endsWith('/OPEN_MODAL') && action.modal==='invalidProjectModal'));
+    } finally {dom.window.close();delete globalThis.window;}
+});

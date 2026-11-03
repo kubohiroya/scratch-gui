@@ -229,3 +229,10 @@ export const hostSecurityReview = integration => integration?.securityReview || 
  * @returns {object|null} `createService`, `attach` and `render`, or null when none is shipped.
  */
 export const hostBlockEditor = integration => integration?.blockEditor || null;
+
+/**
+ * The host classifies its own loader failures and formats their explanations.
+ * @param {object} [integration] The host integration.
+ * @returns {object|null} Failure classifiers and formatter, or null.
+ */
+export const hostExtensionLoadErrors = integration => integration?.extensionLoadErrors || null;
