@@ -10,34 +10,10 @@ import ControlsComponent from '../components/controls/controls.jsx';
 class Controls extends React.Component {
     constructor (props) {
         super(props);
-        // With no host there are no extension controls, which is what a bare fork should show:
-        // the controls an extension registers belong to whoever distributes this.
-        this.stageControls = getHostIntegration()?.hostStageControls?.(
-            props.vm, getHostIntegration()?.hostIntegration?.());
-        this.state = this.readControls();
         bindAll(this, [
-            'handleControlsChange',
             'handleGreenFlagClick',
             'handleStopAllClick'
         ]);
-    }
-    componentDidMount () {
-        this.unsubscribeControls = this.stageControls?.subscribe(this.handleControlsChange);
-        this.handleControlsChange();
-    }
-    componentWillUnmount () {
-        this.unsubscribeControls?.();
-    }
-    readControls () {
-        return {
-            extensionControls: this.stageControls ? this.stageControls.snapshot() : [],
-            // A control may have placed content to show while it is expanded. Older hosts have no
-            // panel channel, so this stays null and nothing is mounted.
-            extensionPanel: this.stageControls?.panel ? this.stageControls.panel() : null
-        };
-    }
-    handleControlsChange () {
-        this.setState(this.readControls());
     }
     handleGreenFlagClick (e) {
         e.preventDefault();
@@ -76,8 +52,7 @@ class Controls extends React.Component {
             <ControlsComponent
                 {...props}
                 active={projectRunning && isStarted}
-                extensionControls={this.state.extensionControls}
-                extensionPanel={this.state.extensionPanel}
+                afterStop={getHostIntegration()?.renderStageControls?.({vm: this.props.vm, isSmall: props.isSmall})}
                 turbo={turbo}
                 onGreenFlagClick={this.handleGreenFlagClick}
                 onStopAllClick={this.handleStopAllClick}
