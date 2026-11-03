@@ -1,3 +1,4 @@
+import {attachHostScriptTransfer} from '../lib/tw-plus-transfer.js';
 import bindAll from 'lodash.bindall';
 import debounce from 'lodash.debounce';
 import defaultsDeep from 'lodash.defaultsdeep';
@@ -226,6 +227,15 @@ class Blocks extends React.Component {
         });
 
         this.attachVM();
+        this.scriptTransferBridge = attachHostScriptTransfer({
+            vm: this.props.vm,
+            ScratchBlocks: this.ScratchBlocks,
+            workspace: this.workspace,
+            document,
+            locale: this.props.locale,
+            canUse: () => this.props.isVisible && !this.props.anyModalVisible,
+            onError: error => log.error(error)
+        }, hostIntegration());
         const startupWorkspace = this.workspace;
         const startupVM = this.props.vm;
         const startupBlocks = this.ScratchBlocks;
@@ -322,6 +332,7 @@ class Blocks extends React.Component {
     }
     componentWillUnmount () {
         this.detachVM();
+        if (this.scriptTransferBridge) this.scriptTransferBridge.dispose();
         this.unmounted = true;
         if (this.blockEditorBridge) this.blockEditorBridge.dispose();
         if (this.state.blockEditorSession) this.props.onCloseBlockEditor();

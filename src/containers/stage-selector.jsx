@@ -1,3 +1,7 @@
+import Zip from '@turbowarp/jszip';
+import {deserializeBlocks} from 'scratch-vm/src/serialization/sb3';
+import {hostIntegration} from '../lib/tw-plus-integration-points.js';
+import {hostStageTransferMenu} from '../lib/tw-plus-transfer.js';
 import bindAll from 'lodash.bindall';
 import omit from 'lodash.omit';
 import PropTypes from 'prop-types';
@@ -171,6 +175,13 @@ class StageSelector extends React.Component {
         ]);
         return (
             <DroppableThrottledStage
+                transferMenu={hostStageTransferMenu({
+                    vm: this.props.vm,
+                    locale: this.props.intl.locale,
+                    document,
+                    Zip,
+                    deserializeBlocks
+                }, hostIntegration())}
                 componentRef={this.setRef}
                 fileInputRef={this.setFileInput}
                 onBackdropFileUpload={this.handleBackdropUpload}
