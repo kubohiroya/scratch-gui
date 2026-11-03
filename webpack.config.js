@@ -63,6 +63,7 @@ const base = {
         publicPath: root
     },
     resolve: {
+        symlinks: false,
         alias: {
             'text-encoding$': path.resolve(__dirname, 'src/lib/tw-text-encoder'),
             'scratch-render-fonts$': path.resolve(__dirname, 'src/lib/tw-scratch-render-fonts')
@@ -74,7 +75,6 @@ const base = {
             loader: 'babel-loader',
             include: [
                 path.resolve(__dirname, 'src'),
-                path.resolve(__dirname, 'config'),
                 /node_modules[\\/]scratch-[^\\/]+[\\/]src/,
                 /node_modules[\\/]pify/,
                 /node_modules[\\/]@vernier[\\/]godirect/
@@ -142,7 +142,7 @@ if (!process.env.CI) {
     base.plugins.push(new webpack.ProgressPlugin());
 }
 
-const guiConfigs = [
+module.exports = [
     // to run editor examples
     defaultsDeep({}, base, {
         entry: {
@@ -304,5 +304,3 @@ const guiConfigs = [
             ])
         })) : []
 );
-
-module.exports = guiConfigs;

@@ -29,12 +29,7 @@ jobs:
       with:
         node-version: 26
         cache: npm
-    - uses: pnpm/action-setup@v6
-      with:
-        version: 11.28.8
     - run: npm ci
-      env:
-        PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
     - run: npm run build
     - run: npm run test:unit
     - run: npm run test:document-editor
