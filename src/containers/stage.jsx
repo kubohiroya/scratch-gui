@@ -96,6 +96,7 @@ class Stage extends React.Component {
     shouldComponentUpdate (nextProps, nextState) {
         return this.props.stageSize !== nextProps.stageSize ||
             this.props.stageDisplayWidth !== nextProps.stageDisplayWidth ||
+            this.props.refreshInputBounds !== nextProps.refreshInputBounds ||
             this.props.isColorPicking !== nextProps.isColorPicking ||
             this.state.colorInfo !== nextState.colorInfo ||
             this.props.isFullScreen !== nextProps.isFullScreen ||
@@ -172,6 +173,11 @@ class Stage extends React.Component {
     updateRect () {
         this.rect = this.canvas.getBoundingClientRect();
     }
+    refreshInputRect () {
+        if (!this.props.refreshInputBounds) return true;
+        this.updateRect();
+        return this.rect.width > 0 && this.rect.height > 0;
+    }
     getScratchCoords (x, y) {
         const nativeSize = this.renderer.getNativeSize();
         return [
@@ -201,6 +207,7 @@ class Stage extends React.Component {
         this.props.vm.setEditingTarget(targetId);
     }
     onMouseMove (e) {
+        if (!this.refreshInputRect()) return;
         const {x, y} = getEventXY(e);
         const mousePosition = [x - this.rect.left, y - this.rect.top];
 
@@ -243,6 +250,7 @@ class Stage extends React.Component {
         this.props.vm.postIOData('mouse', coordinates);
     }
     onMouseUp (e) {
+        if (!this.refreshInputRect()) return;
         const {x, y} = getEventXY(e);
         const mousePosition = [x - this.rect.left, y - this.rect.top];
         this.cancelMouseDownTimeout();
@@ -447,6 +455,7 @@ class Stage extends React.Component {
             vm, // eslint-disable-line no-unused-vars
             onActivateColorPicker, // eslint-disable-line no-unused-vars
             disableEditingTargetChange, // eslint-disable-line no-unused-vars
+            refreshInputBounds, // eslint-disable-line no-unused-vars
             ...props
         } = this.props;
         return (
@@ -483,6 +492,7 @@ Stage.propTypes = {
     onActivateColorPicker: PropTypes.func,
     onDeactivateColorPicker: PropTypes.func,
     stageDisplayWidth: PropTypes.number,
+    refreshInputBounds: PropTypes.bool,
     stageSize: PropTypes.oneOf(Object.keys(STAGE_DISPLAY_SIZES)).isRequired,
     useEditorDragStyle: PropTypes.bool,
     vm: PropTypes.instanceOf(VM).isRequired

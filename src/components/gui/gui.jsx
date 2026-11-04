@@ -58,6 +58,7 @@ const TWPlusWorkspaceAttachment = getHostIntegration()?.createWorkspaceAttachmen
     (() => null);
 
 const EditorLayout = getHostIntegration()?.EditorLayout || (({render}) => render({}));
+const StagePanel = getHostIntegration()?.StagePanel;
 
 const renderInline = content => content;
 const renderInlinePanel = (index, content) => content;
@@ -482,7 +483,10 @@ const GUIComponent = props => {
                                         isFullScreen={isFullScreen}
                                         isRendererSupported={isRendererSupported()}
                                         isRtl={isRtl}
+                                        stageAspect={customStageSize.width / customStageSize.height}
+                                        stageDefaultWidth={stageDimensions.width}
                                         stageDisplayWidth={layout.stageDisplayWidth}
+                                        stagePanel={StagePanel}
                                         stageSize={stageSize}
                                         stageTools={layout.stageTools}
                                         onStagePreset={layout.handleStagePreset}
