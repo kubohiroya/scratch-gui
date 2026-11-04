@@ -6,6 +6,7 @@ import PropTypes from 'prop-types';
 import bindAll from 'lodash.bindall';
 import bowser from 'bowser';
 import React from 'react';
+import {getHostIntegration} from '../../addons/hooks.js';
 
 import VM from 'scratch-vm';
 
@@ -714,6 +715,13 @@ class MenuBar extends React.Component {
                                             />
                                         </MenuItem>
                                     </MenuSection>
+                                    {getHostIntegration()?.renderFileMenu?.({
+                                        vm: this.props.vm,
+                                        locale: this.props.locale,
+                                        MenuItem,
+                                        MenuSection,
+                                        onRequestClose: this.props.onRequestCloseFile
+                                    })}
                                 </MenuBarMenu>
                             </MenuLabel>
                         )}

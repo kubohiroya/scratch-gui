@@ -219,7 +219,8 @@ const SBFileUploaderHOC = function (WrappedComponent) {
                     .then(() => {
                         if (filename) {
                             const uploadedProjectTitle = this.getProjectTitleFromFilename(filename);
-                            this.props.onSetProjectTitle(uploadedProjectTitle);
+                            this.props.onSetProjectTitle(getHostIntegration()?.loadedProjectTitle?.(
+                                this.props.vm) ?? uploadedProjectTitle);
                         }
                         this.props.vm.renderer.draw();
                         loadingSuccess = true;
