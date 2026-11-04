@@ -1,3 +1,26 @@
+import {getHostIntegration} from '../addons/hooks.js';
+import {closeFileMenu} from '../reducers/menus';
+import {setPlayer, setFullScreen} from '../reducers/mode';
+import {closeLoadingProject, openInvalidProjectModal} from '../reducers/modals';
+import {cancelSecurityLoad} from '../reducers/project-state';
+import {setProjectTitle} from '../reducers/project-title';
+import {setFileHandle, setProjectError} from '../reducers/tw';
+
+const securityLoadActions = {
+    cancelSecurityLoad,
+    setProjectTitle,
+    setFileHandle,
+    setProjectError,
+    closeLoadingProject,
+    openInvalidProjectModal,
+    closeFileMenu,
+    setPlayer,
+    setFullScreen
+};
+
+export const recoverProjectLoad = (dispatch, error) =>
+    getHostIntegration()?.recoverProjectLoad?.(dispatch, error, securityLoadActions) === true;
+
 /**
  * General error while loading project.
  */
