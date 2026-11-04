@@ -1,8 +1,5 @@
-import {getHostIntegration} from '../addons/hooks.js';
-
-const defaults = {
+const SecurityModals = {
     LoadExtension: 'LoadExtension',
-    LoadExtensions: 'LoadExtensions',
     Fetch: 'Fetch',
     OpenWindow: 'OpenWindow',
     Redirect: 'Redirect',
@@ -14,7 +11,5 @@ const defaults = {
     Embed: 'Embed',
     Download: 'Download'
 };
-const SecurityModals = getHostIntegration()?.withHostSecurityModals?.(
-    defaults, getHostIntegration()?.hostIntegration?.()) || defaults;
 
 export default SecurityModals;

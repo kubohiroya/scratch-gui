@@ -11,10 +11,6 @@ import SecurityModals from '../lib/tw-security-manager-constants';
 import {getPersistedUnsandboxed, setPersistedUnsandboxed} from '../lib/tw-persisted-unsandboxed.js';
 import Modal from './modal.jsx';
 import extensionLibrary from '../lib/libraries/extensions/index.jsx';
-import defaultExtensionURLs from 'scratch-vm/src/extension-support/tw-default-extension-urls';
-
-// The review this build ships, if it ships one. Resolved once: it cannot appear later.
-const securityReview = getHostIntegration()?.hostSecurityReview?.(getHostIntegration()?.hostIntegration?.());
 
 /* eslint-disable require-atomic-updates */
 
@@ -148,9 +144,6 @@ const resetPermissions = () => {
     allowedGeolocation = false;
 };
 
-// The extension review answers with its choices or null, the other modals with a boolean.
-const rejectedResult = type => (type === SecurityModals.LoadExtensions ? null : false);
-
 const SECURITY_MANAGER_METHODS = [
     'getSandboxMode',
     'canLoadExtensionFromProject',
@@ -172,7 +165,6 @@ class TWSecurityManagerComponent extends React.Component {
         bindAll(this, [
             'handleAllowed',
             'handleDenied',
-            'handleBatchComplete',
             'handleRuntimeDisposed'
         ]);
         bindAll(this, SECURITY_MANAGER_METHODS);
@@ -186,74 +178,51 @@ class TWSecurityManagerComponent extends React.Component {
             type: null,
             data: null,
             callback: null,
+            cancelValue: false,
             modalCount: 0
         };
     }
 
     componentDidMount () {
-        const vmSecurityManager = this.props.vm.extensionManager.securityManager;
-        const propsSecurityManager = this.props.securityManager;
-        getHostIntegration()?.setPlusHostPolicy?.(vmSecurityManager, propsSecurityManager.canLoadExtensionFromProject);
+        const {vm, securityManager, locale} = this.props;
+        this.mountedVM = vm;
+        const vmSecurityManager = vm.extensionManager.securityManager;
         for (const method of SECURITY_MANAGER_METHODS) {
-            vmSecurityManager[method] = propsSecurityManager[method] || this[method];
+            vmSecurityManager[method] = securityManager[method] || this[method];
         }
-        // Host-provided permission policies retain ownership of their loading path.
-        if (securityReview && !propsSecurityManager.canLoadExtensionFromProject &&
-            !propsSecurityManager.getSandboxMode) {
-            // What the review asks and what it already trusts are the host's; the modal, the lock,
-            // the extensions this fork trusts itself and where an icon comes from are this fork's.
-            this.restoreBatchLoader = securityReview.installBatchLoader({
-                vm: this.props.vm,
-                defaultURLs: defaultExtensionURLs,
-                isTrusted: isTrustedExtension,
-                bannerFor: entry => {
-                    const libraryItem = extensionLibrary.find(item => entry.ids.includes(item.extensionId) ||
-                        (item.extensionURL && item.extensionURL === entry.url));
-                    return libraryItem && libraryItem.iconURL;
-                },
-                showReview: async (entries, initialChoices) => {
-                    const {showModal} = await this.acquireModalLock();
-                    return showModal(SecurityModals.LoadExtensions, {entries, initialChoices});
-                }
-            });
-        }
-        // Install after the ordinary permission bridge and before project loading begins.
-        const plusHostPolicy = {};
-        for (const method of ['canLoadExtensionFromProject', 'getSandboxMode']) {
-            if (propsSecurityManager[method]) {
-                plusHostPolicy[method] = propsSecurityManager[method].bind(vmSecurityManager);
+        this.disposeHost = getHostIntegration()?.installSecurityHost?.(vm, {
+            securityManager,
+            locale,
+            extensionLibrary,
+            isTrusted: isTrustedExtension,
+            DialogFrame: Modal,
+            requestModal: async (render, cancelValue) => {
+                if (this.isUnmounting || this.props.vm !== vm) return cancelValue;
+                const {showModal} = await this.acquireModalLock();
+                return showModal(render, null, cancelValue);
+            },
+            projectState: {
+                getTitle: () => AddonHooks.appStateStore.getState().scratchGui.projectTitle,
+                setTitle: title => AddonHooks.appStateStore.dispatch(setProjectTitle(title)),
+                isNew: () => getIsAnyCreatingNewState(
+                    AddonHooks.appStateStore.getState().scratchGui.projectState.loadingState)
             }
-        }
-        this.plusExtensionHost = getHostIntegration()?.startupPlusExtensionHost?.(
-            this.props.vm, {locale: this.props.locale,
-                projectState: {
-                    getTitle: () => AddonHooks.appStateStore.getState().scratchGui.projectTitle,
-                    setTitle: title => AddonHooks.appStateStore.dispatch(setProjectTitle(title)),
-                    isNew: () => getIsAnyCreatingNewState(
-                        AddonHooks.appStateStore.getState().scratchGui.projectState.loadingState)
-                },
-                hostPolicy: plusHostPolicy});
-        this.props.vm.runtime.on('RUNTIME_DISPOSED', this.handleRuntimeDisposed);
+        });
+        vm.runtime.on('RUNTIME_DISPOSED', this.handleRuntimeDisposed);
     }
 
     componentWillUnmount () {
         this.isUnmounting = true;
-        this.props.vm.runtime.off('RUNTIME_DISPOSED', this.handleRuntimeDisposed);
-        getHostIntegration()?.setPlusHostPolicy?.(this.props.vm.extensionManager.securityManager, null);
-        if (this.plusExtensionHost && this.plusExtensionHost.enabled) {
-            this.plusExtensionHost.dispose().then(() => {
-                if (this.restoreBatchLoader) this.restoreBatchLoader();
-            })
-                .catch(error => log.error('Could not dispose the Plus extension host', error));
-        } else if (this.restoreBatchLoader) this.restoreBatchLoader();
-        if (this.state.type === SecurityModals.LoadExtensions && this.state.callback) this.state.callback(null);
+        this.mountedVM.runtime.off('RUNTIME_DISPOSED', this.handleRuntimeDisposed);
+        this.handleRuntimeDisposed();
+        this.disposeHost?.().catch(error => log.error('Could not dispose the extension host', error));
     }
 
     handleRuntimeDisposed () {
         resetPermissions();
         this.generation++;
         if (this.state.type) {
-            this.state.callback(rejectedResult(this.state.type));
+            this.state.callback(this.state.cancelValue);
         }
     }
 
@@ -269,6 +238,7 @@ class TWSecurityManagerComponent extends React.Component {
         // closed before it knows if it needs to display another modal.
 
         const generation = this.generation;
+        const vm = this.props.vm;
 
         if (this.modalLocked) {
             await new Promise(resolve => {
@@ -293,22 +263,23 @@ class TWSecurityManagerComponent extends React.Component {
             }
         };
 
-        const showModal = async (type, data) => {
-            if (generation !== this.generation) {
+        const showModal = async (type, data, cancelValue = false) => {
+            if (generation !== this.generation || this.props.vm !== vm || this.isUnmounting) {
                 // Request is from a previous project.
                 releaseLock();
-                return rejectedResult(type);
+                return cancelValue;
             }
             const result = await new Promise(resolve => {
                 this.setState(oldState => ({
                     type,
                     data,
                     callback: resolve,
+                    cancelValue,
                     modalCount: oldState.modalCount + 1
                 }));
             });
             releaseLock();
-            return generation === this.generation ? result : rejectedResult(type);
+            return generation === this.generation && this.props.vm === vm ? result : cancelValue;
         };
 
         return {
@@ -323,10 +294,6 @@ class TWSecurityManagerComponent extends React.Component {
 
     handleDenied () {
         this.state.callback(false);
-    }
-
-    handleBatchComplete (result) {
-        this.state.callback(result);
     }
 
     /**
@@ -543,15 +510,8 @@ class TWSecurityManagerComponent extends React.Component {
     }
 
     render () {
-        if (securityReview && this.state.type === SecurityModals.LoadExtensions) {
-            // Rendered by the host, inside this fork's own modal frame.
-            return securityReview.render({
-                entries: this.state.data.entries,
-                initialChoices: this.state.data.initialChoices,
-                locale: this.props.locale,
-                DialogFrame: Modal,
-                onComplete: this.handleBatchComplete
-            });
+        if (typeof this.state.type === 'function') {
+            return this.state.type(this.state.callback, this.props.locale);
         }
         if (this.state.type) {
             return (
