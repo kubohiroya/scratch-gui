@@ -18,7 +18,10 @@ const StageWrapperComponent = function (props) {
         isRtl,
         isRendererSupported,
         loading,
+        stageDisplayWidth,
         stageSize,
+        stageTools,
+        onStagePreset,
         vm
     } = props;
 
@@ -37,14 +40,18 @@ const StageWrapperComponent = function (props) {
         >
             <Box className={styles.stageMenuWrapper}>
                 <StageHeader
+                    stageDisplayWidth={stageDisplayWidth}
                     stageSize={stageSize}
+                    stageTools={stageTools}
                     vm={vm}
+                    onStagePreset={onStagePreset}
                 />
             </Box>
             <Box className={styles.stageCanvasWrapper}>
                 {
                     isRendererSupported ?
                         <Stage
+                            stageDisplayWidth={stageDisplayWidth}
                             stageSize={stageSize}
                             vm={vm}
                         /> :
@@ -64,6 +71,9 @@ StageWrapperComponent.propTypes = {
     isRendererSupported: PropTypes.bool.isRequired,
     isRtl: PropTypes.bool.isRequired,
     loading: PropTypes.bool,
+    stageDisplayWidth: PropTypes.number,
+    stageTools: PropTypes.node,
+    onStagePreset: PropTypes.func,
     stageSize: PropTypes.oneOf(Object.keys(STAGE_DISPLAY_SIZES)).isRequired,
     vm: PropTypes.instanceOf(VM).isRequired
 };

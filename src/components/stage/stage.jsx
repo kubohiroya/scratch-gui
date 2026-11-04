@@ -27,6 +27,7 @@ const StageComponent = props => {
         colorInfo,
         micIndicator,
         question,
+        stageDisplayWidth,
         stageSize,
         useEditorDragStyle,
         onDeactivateColorPicker,
@@ -35,8 +36,9 @@ const StageComponent = props => {
         ...boxProps
     } = props;
 
-    const stageDimensions = getStageDimensions(stageSize, customStageSize, isFullScreen);
-    const minWidth = getMinWidth(stageSize);
+    const stageDimensions = getStageDimensions(stageSize, customStageSize, isFullScreen, stageDisplayWidth);
+    const resized = typeof stageDisplayWidth === 'number' && !isFullScreen;
+    const minWidth = resized ? stageDimensions.width : getMinWidth(stageSize);
     const transformStyle = stageDimensions.width < minWidth && !isFullScreen ? {
         transform: `translateX(${(minWidth - stageDimensions.width) / (isRtl ? -2 : 2)}px)`
     } : {};
@@ -50,7 +52,8 @@ const StageComponent = props => {
                 onDoubleClick={onDoubleClick}
                 style={isPlayerOnly ? null : {
                     // add 2 because a 1px border is shown around each side of the stage
-                    minWidth: `${minWidth + 2}px`
+                    minWidth: `${minWidth + 2}px`,
+                    ...(resized ? {width: stageDimensions.width + 2} : {})
                 }}
             >
                 <Box
@@ -169,6 +172,7 @@ StageComponent.propTypes = {
     onDoubleClick: PropTypes.func,
     onQuestionAnswered: PropTypes.func,
     question: PropTypes.string,
+    stageDisplayWidth: PropTypes.number,
     stageSize: PropTypes.oneOf(Object.keys(STAGE_DISPLAY_SIZES)).isRequired,
     useEditorDragStyle: PropTypes.bool
 };
