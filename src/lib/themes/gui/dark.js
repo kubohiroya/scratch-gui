@@ -1,6 +1,4 @@
-import {getHostIntegration} from '../../../addons/hooks.js';
-
-const ownColors = {
+const guiColors = {
     'color-scheme': 'dark',
 
     'ui-primary': '#111111',
@@ -73,9 +71,6 @@ const blockColors = {
     zoomIconFilter: 'invert(100%)',
     gridColor: '#484848'
 };
-
-const guiColors = getHostIntegration()?.withHostThemeTokens?.(
-    ownColors, 'dark', getHostIntegration()?.hostIntegration?.()) || ownColors;
 
 export {
     guiColors,

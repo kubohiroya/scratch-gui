@@ -1,6 +1,4 @@
-import {getHostIntegration} from '../../../addons/hooks.js';
-
-const ownColors = {
+const guiColors = {
     'color-scheme': 'light',
 
     'ui-primary': 'hsla(215, 100%, 95%, 1)', /* #E5F0FF */
@@ -98,9 +96,6 @@ const ownColors = {
 };
 
 const blockColors = {};
-
-const guiColors = getHostIntegration()?.withHostThemeTokens?.(
-    ownColors, 'light', getHostIntegration()?.hostIntegration?.()) || ownColors;
 
 export {
     guiColors,
