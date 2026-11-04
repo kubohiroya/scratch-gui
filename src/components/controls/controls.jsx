@@ -26,8 +26,7 @@ const messages = defineMessages({
 const Controls = function (props) {
     const {
         active,
-        extensionControls,
-        extensionPanel,
+        afterStop,
         className,
         intl,
         onGreenFlagClick,
@@ -53,37 +52,7 @@ const Controls = function (props) {
                 title={intl.formatMessage(messages.stopTitle)}
                 onClick={onStopAllClick}
             />
-            {extensionControls.filter(control => control.visible).map(control => {
-                const handleClick = control.onClick;
-                return (
-                    <button
-                        aria-expanded={control.expanded}
-                        aria-haspopup="dialog"
-                        aria-label={control.label}
-                        className={styles.extensionControl}
-                        data-extension-stage-control={control.id}
-                        key={control.id}
-                        ref={control.ref}
-                        title={control.label}
-                        type="button"
-                        onClick={handleClick}
-                    >
-                        <span aria-hidden="true">{control.icon}</span>
-                        {!isSmall && <span className={styles.extensionLabel}>{control.text}</span>}
-                    </button>
-                );
-            })}
-            {/*
-              * Where a control puts its own content when expanded. The element belongs to whoever
-              * registered the control, so this only mounts it: nothing here knows what it shows.
-              * Appending only when the parent differs keeps a re-render from moving it needlessly.
-              */}
-            {extensionPanel && <div
-                className={styles.extensionPanel}
-                ref={node => {
-                    if (node && extensionPanel.parentNode !== node) node.appendChild(extensionPanel);
-                }}
-            />}
+            {afterStop}
             {turbo ? (
                 <TurboMode isSmall={isSmall} />
             ) : null}
@@ -99,8 +68,7 @@ const Controls = function (props) {
 
 Controls.propTypes = {
     active: PropTypes.bool,
-    extensionControls: PropTypes.arrayOf(PropTypes.object),
-    extensionPanel: PropTypes.object,
+    afterStop: PropTypes.node,
     className: PropTypes.string,
     intl: intlShape.isRequired,
     onGreenFlagClick: PropTypes.func.isRequired,
@@ -113,7 +81,6 @@ Controls.propTypes = {
 
 Controls.defaultProps = {
     active: false,
-    extensionControls: [],
     turbo: false,
     isSmall: false
 };
