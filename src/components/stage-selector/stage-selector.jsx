@@ -41,7 +41,7 @@ const messages = defineMessages({
 
 const StageSelector = props => {
     const {
-        transferMenu = {contextItems: [], backdropItems: []},
+        stageMenu,
         backdropCount,
         containerRef,
         dragOver,
@@ -102,11 +102,7 @@ const StageSelector = props => {
                 className={styles.addButton}
                 img={backdropIcon}
                 moreButtons={[
-                    ...transferMenu.backdropItems.map(item => ({
-                        title: item.label,
-                        img: fileUploadIcon,
-                        onClick: item.onClick
-                    })),
+                    ...(stageMenu?.backdropButtons?.(fileUploadIcon) || []),
                     {
                         title: intl.formatMessage(messages.addBackdropFromFile),
                         img: fileUploadIcon,
@@ -136,27 +132,11 @@ const StageSelector = props => {
             />
         </Box>
     );
-    if (!transferMenu.contextItems.length) return content;
-    return (
-        <ContextMenuTrigger
-            attributes={{className: styles.contextMenuWrapper}}
-            id="tw-plus-stage-transfer"
-        >
-            {content}
-            <ContextMenu id="tw-plus-stage-transfer">
-                {transferMenu.contextItems.map(({label, onClick: handleClick}) => (
-                    <MenuItem
-                        key={label}
-                        onClick={handleClick}
-                    >{label}</MenuItem>
-                ))}
-            </ContextMenu>
-        </ContextMenuTrigger>
-    );
+    return stageMenu?.wrap?.(content, {ContextMenuTrigger, ContextMenu, MenuItem}) ?? content;
 };
 
 StageSelector.propTypes = {
-    transferMenu: PropTypes.shape({contextItems: PropTypes.array, backdropItems: PropTypes.array}),
+    stageMenu: PropTypes.shape({backdropButtons: PropTypes.func, wrap: PropTypes.func}),
     backdropCount: PropTypes.number.isRequired,
     containerRef: PropTypes.func,
     dragOver: PropTypes.bool,
