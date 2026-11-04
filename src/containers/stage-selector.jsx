@@ -169,19 +169,20 @@ class StageSelector extends React.Component {
     }
     render () {
         const componentProps = omit(this.props, [
-            'asset', 'dispatchSetHoveredSprite', 'id', 'intl',
+            'asset', 'compactStageTransfer', 'dispatchSetHoveredSprite', 'id', 'intl',
             'onActivateTab', 'onSelect', 'onShowImporting', 'onCloseImporting',
             'isRtl', 'workspaceMetrics'
         ]);
         return (
             <DroppableThrottledStage
-                stageMenu={this.props.compact ? undefined : getHostIntegration()?.hostStageTransferMenu?.({
-                    vm: this.props.vm,
-                    locale: this.props.intl.locale,
-                    document,
-                    Zip,
-                    deserializeBlocks
-                }, getHostIntegration()?.hostIntegration?.())}
+                stageMenu={this.props.compact && !this.props.compactStageTransfer ? undefined :
+                    getHostIntegration()?.hostStageTransferMenu?.({
+                        vm: this.props.vm,
+                        locale: this.props.intl.locale,
+                        document,
+                        Zip,
+                        deserializeBlocks
+                    }, getHostIntegration()?.hostIntegration?.())}
                 componentRef={this.setRef}
                 fileInputRef={this.setFileInput}
                 onBackdropFileUpload={this.handleBackdropUpload}
@@ -199,6 +200,7 @@ class StageSelector extends React.Component {
 }
 StageSelector.propTypes = {
     ...StageSelectorComponent.propTypes,
+    compactStageTransfer: PropTypes.bool,
     id: PropTypes.string,
     intl: intlShape.isRequired,
     isRtl: PropTypes.bool,

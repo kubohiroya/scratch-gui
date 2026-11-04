@@ -66,7 +66,7 @@ const StageSelector = props => {
         ...componentProps
     } = props;
     if (compact && BackdropTile) {
-        return <BackdropTile
+        const tile = <BackdropTile
             containerRef={containerRef}
             highlighted={raised || dragOver || receivedBlocks}
             label={<FormattedMessage
@@ -80,6 +80,8 @@ const StageSelector = props => {
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
         />;
+        return stageMenu?.wrap?.(tile, {ContextMenuTrigger, ContextMenu, MenuItem}, {includeBackdropItems: true}) ??
+            tile;
     }
     const content = (
         <Box
