@@ -13,6 +13,7 @@ import styles from './stage-wrapper.css';
 
 const StageWrapperComponent = function (props) {
     const {
+        className,
         isEmbedded,
         isFullScreen,
         isRtl,
@@ -40,6 +41,7 @@ const StageWrapperComponent = function (props) {
         <Box
             className={classNames(
                 styles.stageWrapper,
+                className,
                 {
                     [styles.embedded]: isEmbedded,
                     [styles.fullScreen]: isFullScreen,
@@ -74,6 +76,7 @@ const StageWrapperComponent = function (props) {
 };
 
 StageWrapperComponent.propTypes = {
+    className: PropTypes.string,
     isEmbedded: PropTypes.bool,
     isFullScreen: PropTypes.bool,
     isRendererSupported: PropTypes.bool.isRequired,

@@ -40,23 +40,23 @@ class SpriteInfo extends React.Component {
         this.props.onChangeVisibility(false);
     }
     render () {
-        if (Panel) {
-            const {targetId, values, locale} = this.props;
-            return (
-                <Panel
-                    disabled={!values}
-                    locale={locale}
-                    targetId={values ? targetId : null}
-                    values={values}
-                    onChange={this.handleChangeProperties}
-                />
-            );
-        }
-        return (
+        const fallback = (
             <SpriteInfoComponent
                 {...this.props}
                 onClickNotVisible={this.handleClickNotVisible}
                 onClickVisible={this.handleClickVisible}
+            />
+        );
+        if (!Panel) return fallback;
+        const {targetId, values, locale} = this.props;
+        return (
+            <Panel
+                disabled={!values}
+                fallback={fallback}
+                locale={locale}
+                targetId={values ? targetId : null}
+                values={values}
+                onChange={this.handleChangeProperties}
             />
         );
     }
