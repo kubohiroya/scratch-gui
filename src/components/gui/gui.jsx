@@ -352,6 +352,7 @@ const GUIComponent = props => {
                         rtl={isRtl}
                         stageAspect={customStageSize.width / customStageSize.height}
                         verticalInset={46}
+                        vm={vm}
                         // eslint-disable-next-line react/jsx-no-bind
                         render={layout => (
                             <Box

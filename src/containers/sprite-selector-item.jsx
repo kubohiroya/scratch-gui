@@ -19,6 +19,7 @@ class SpriteSelectorItem extends React.PureComponent {
             'getCostumeData',
             'setRef',
             'handleClick',
+            'handleOpenEditor',
             'handleDelete',
             'handleDuplicate',
             'handleExport',
@@ -90,6 +91,9 @@ class SpriteSelectorItem extends React.PureComponent {
             this.props.onClick(this.props.id);
         }
     }
+    handleOpenEditor () {
+        this.props.onOpenEditor(this.props.id);
+    }
     handleDelete (e) {
         e.stopPropagation(); // To prevent from bubbling back to handleClick
         this.props.onDeleteButtonClick(this.props.id);
@@ -123,6 +127,7 @@ class SpriteSelectorItem extends React.PureComponent {
             id,
             index,
             onClick,
+            onOpenEditor,
             onDeleteButtonClick,
             onDuplicateButtonClick,
             onExportButtonClick,
@@ -140,6 +145,7 @@ class SpriteSelectorItem extends React.PureComponent {
                 costumeURL={this.getCostumeData()}
                 preventContextMenu={this.dragRecognizer.gestureInProgress()}
                 onClick={this.handleClick}
+                onOpenEditor={onOpenEditor ? this.handleOpenEditor : null}
                 onDeleteButtonClick={onDeleteButtonClick ? this.handleDelete : null}
                 onDuplicateButtonClick={onDuplicateButtonClick ? this.handleDuplicate : null}
                 onExportButtonClick={onExportButtonClick ? this.handleExport : null}
@@ -168,6 +174,7 @@ SpriteSelectorItem.propTypes = {
     // eslint-disable-next-line react/forbid-prop-types
     name: PropTypes.any,
     onClick: PropTypes.func,
+    onOpenEditor: PropTypes.func,
     onDeleteButtonClick: PropTypes.func,
     onRenameButtonClick: PropTypes.func,
     onDrag: PropTypes.func.isRequired,

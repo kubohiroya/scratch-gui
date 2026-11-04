@@ -222,6 +222,14 @@ class Blocks extends React.Component {
             warpTimer: true
         });
 
+        this.spriteCodeWorkspace = getHostIntegration()?.attachSpriteCodeWorkspace?.({
+            vm: this.props.vm,
+            ScratchBlocks: this.ScratchBlocks,
+            workspace: this.workspace,
+            options: workspaceConfig,
+            onError: error => log.error(error)
+        });
+        this.workspaceBlockListener = this.spriteCodeWorkspace?.blockListener || this.props.vm.blockListener;
         this.attachVM();
         this.scriptTransferBridge = getHostIntegration()?.attachHostScriptTransfer?.({
             vm: this.props.vm,
@@ -305,6 +313,7 @@ class Blocks extends React.Component {
     }
     componentWillUnmount () {
         this.detachVM();
+        this.spriteCodeWorkspace?.dispose();
         if (this.scriptTransferBridge) this.scriptTransferBridge.dispose();
         this.unmounted = true;
         this.props.onWorkspaceWillDispose?.();
@@ -372,7 +381,7 @@ class Blocks extends React.Component {
     }
 
     attachVM () {
-        this.workspace.addChangeListener(this.props.vm.blockListener);
+        this.workspace.addChangeListener(this.workspaceBlockListener);
         this.flyoutWorkspace = this.workspace
             .getFlyout()
             .getWorkspace();
@@ -494,11 +503,14 @@ class Blocks extends React.Component {
             this.onWorkspaceMetricsChange();
         }
 
+        this.spriteCodeWorkspace?.beforeReload();
         // Remove and reattach the workspace listener (but allow flyout events)
-        this.workspace.removeChangeListener(this.props.vm.blockListener);
+        this.workspace.removeChangeListener(this.workspaceBlockListener);
         const dom = this.ScratchBlocks.Xml.textToDom(data.xml);
         try {
-            this.ScratchBlocks.Xml.clearWorkspaceAndLoadFromXml(dom, this.workspace);
+            const load = () => this.ScratchBlocks.Xml.clearWorkspaceAndLoadFromXml(dom, this.workspace);
+            if (this.spriteCodeWorkspace) this.spriteCodeWorkspace.load(load);
+            else load();
         } catch (error) {
             // The workspace is likely incomplete. What did update should be
             // functional.
@@ -514,7 +526,7 @@ class Blocks extends React.Component {
             }
             log.error(error);
         }
-        this.workspace.addChangeListener(this.props.vm.blockListener);
+        this.workspace.addChangeListener(this.workspaceBlockListener);
 
         if (this.props.vm.editingTarget && this.props.workspaceMetrics.targets[this.props.vm.editingTarget.id]) {
             const {scrollX, scrollY, scale} = this.props.workspaceMetrics.targets[this.props.vm.editingTarget.id];
@@ -528,6 +540,7 @@ class Blocks extends React.Component {
         // fresh workspace and we don't want any changes made to another sprites
         // workspace to be 'undone' here.
         this.workspace.clearUndo();
+        this.spriteCodeWorkspace?.afterReload();
     }
     handleMonitorsUpdate (monitors) {
         // Update the checkboxes of the relevant monitors.

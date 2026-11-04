@@ -18,7 +18,10 @@ const ThrottledSpriteSelectorItem = ThrottledPropertyHOC('asset', 500)(SpriteSel
 const SpriteGrid = getHostIntegration()?.SpriteGrid ||
     (({className, children}) => <Box className={className}>{children}</Box>);
 
+const useSpriteCodeWindows = getHostIntegration()?.useSpriteCodeWindows || (() => null);
+
 const SpriteList = function (props) {
+    const codeWindows = useSpriteCodeWindows();
     const {
         compact,
         containerRef,
@@ -98,8 +101,10 @@ const SpriteList = function (props) {
                                 index={index}
                                 key={sprite.id}
                                 name={sprite.name}
-                                selected={sprite.id === selectedId}
-                                onClick={onSelectSprite}
+                                selected={sprite.id === (codeWindows ? codeWindows.selectedId : selectedId)}
+                                onClick={codeWindows?.select || onSelectSprite}
+                                openEditorLabel={codeWindows?.openLabel}
+                                onOpenEditor={codeWindows?.open}
                                 onDeleteButtonClick={onDeleteSprite}
                                 onDuplicateButtonClick={onDuplicateSprite}
                                 onExportButtonClick={onExportSprite}
