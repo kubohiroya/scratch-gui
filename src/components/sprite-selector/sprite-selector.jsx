@@ -9,6 +9,7 @@ import SpriteList from './sprite-list.jsx';
 import ActionMenu from '../action-menu/action-menu.jsx';
 import {STAGE_DISPLAY_SIZES} from '../../lib/layout-constants';
 import {isRtl} from '@turbowarp/scratch-l10n';
+import {getHostIntegration} from '../../addons/hooks.js';
 
 import styles from './sprite-selector.css';
 
@@ -17,6 +18,8 @@ import paintIcon from '../action-menu/icon--paint.svg';
 import spriteIcon from '../action-menu/icon--sprite.svg';
 import surpriseIcon from '../action-menu/icon--surprise.svg';
 import searchIcon from '../action-menu/icon--search.svg';
+
+const TargetListPanel = getHostIntegration()?.TargetListPanel || React.Fragment;
 
 const messages = defineMessages({
     addSpriteFromLibrary: {
@@ -43,6 +46,7 @@ const messages = defineMessages({
 
 const SpriteSelectorComponent = function (props) {
     const {
+        compact,
         editingTarget,
         hoveredTarget,
         intl,
@@ -68,6 +72,7 @@ const SpriteSelectorComponent = function (props) {
         spriteFileInput,
         sprites,
         stageSize,
+        stageTile,
         ...componentProps
     } = props;
     let selectedSprite = sprites[selectedId];
@@ -78,7 +83,7 @@ const SpriteSelectorComponent = function (props) {
     }
     return (
         <Box
-            className={classNames(styles.spriteSelector, {[styles.hostSpriteProperties]: hasHostSpriteProperties})}
+            className={classNames(styles.spriteSelector, {[styles.hostSpriteProperties]: hasHostSpriteProperties || compact})}
             {...componentProps}
         >
 
@@ -101,53 +106,59 @@ const SpriteSelectorComponent = function (props) {
                 onChangeY={onChangeSpriteY}
             />
 
-            <SpriteList
-                editingTarget={editingTarget}
-                hoveredTarget={hoveredTarget}
-                items={Object.keys(sprites).map(id => sprites[id])}
-                raised={raised}
-                selectedId={selectedId}
-                onDeleteSprite={onDeleteSprite}
-                onDrop={onDrop}
-                onDuplicateSprite={onDuplicateSprite}
-                onExportSprite={onExportSprite}
-                onSelectSprite={onSelectSprite}
-            />
-            <ActionMenu
-                className={styles.addButton}
-                img={spriteIcon}
-                moreButtons={[
-                    {
-                        title: intl.formatMessage(messages.addSpriteFromFile),
-                        img: fileUploadIcon,
-                        onClick: onFileUploadClick,
-                        fileAccept: '.svg, .png, .bmp, .jpg, .jpeg, .jfif, .webp, .sprite2, .sprite3, .gif',
-                        fileChange: onSpriteUpload,
-                        fileInput: spriteFileInput,
-                        fileMultiple: true
-                    }, {
-                        title: intl.formatMessage(messages.addSpriteFromSurprise),
-                        img: surpriseIcon,
-                        onClick: onSurpriseSpriteClick // TODO need real function for this
-                    }, {
-                        title: intl.formatMessage(messages.addSpriteFromPaint),
-                        img: paintIcon,
-                        onClick: onPaintSpriteClick // TODO need real function for this
-                    }, {
-                        title: intl.formatMessage(messages.addSpriteFromLibrary),
-                        img: searchIcon,
-                        onClick: onNewSpriteClick
-                    }
-                ]}
-                title={intl.formatMessage(messages.addSpriteFromLibrary)}
-                tooltipPlace={isRtl(intl.locale) ? 'right' : 'left'}
-                onClick={onNewSpriteClick}
-            />
+            <TargetListPanel>
+                <SpriteList
+                    compact={compact}
+                    stageTile={stageTile}
+                    editingTarget={editingTarget}
+                    hoveredTarget={hoveredTarget}
+                    items={Object.keys(sprites).map(id => sprites[id])}
+                    raised={raised}
+                    selectedId={selectedId}
+                    onDeleteSprite={onDeleteSprite}
+                    onDrop={onDrop}
+                    onDuplicateSprite={onDuplicateSprite}
+                    onExportSprite={onExportSprite}
+                    onSelectSprite={onSelectSprite}
+                />
+                <ActionMenu
+                    className={styles.addButton}
+                    img={spriteIcon}
+                    moreButtons={[
+                        {
+                            title: intl.formatMessage(messages.addSpriteFromFile),
+                            img: fileUploadIcon,
+                            onClick: onFileUploadClick,
+                            fileAccept: '.svg, .png, .bmp, .jpg, .jpeg, .jfif, .webp, .sprite2, .sprite3, .gif',
+                            fileChange: onSpriteUpload,
+                            fileInput: spriteFileInput,
+                            fileMultiple: true
+                        }, {
+                            title: intl.formatMessage(messages.addSpriteFromSurprise),
+                            img: surpriseIcon,
+                            onClick: onSurpriseSpriteClick // TODO need real function for this
+                        }, {
+                            title: intl.formatMessage(messages.addSpriteFromPaint),
+                            img: paintIcon,
+                            onClick: onPaintSpriteClick // TODO need real function for this
+                        }, {
+                            title: intl.formatMessage(messages.addSpriteFromLibrary),
+                            img: searchIcon,
+                            onClick: onNewSpriteClick
+                        }
+                    ]}
+                    title={intl.formatMessage(messages.addSpriteFromLibrary)}
+                    tooltipPlace={isRtl(intl.locale) ? 'right' : 'left'}
+                    onClick={onNewSpriteClick}
+                />
+            </TargetListPanel>
         </Box>
     );
 };
 
 SpriteSelectorComponent.propTypes = {
+    compact: PropTypes.bool,
+    stageTile: PropTypes.node,
     editingTarget: PropTypes.string,
     hoveredTarget: PropTypes.shape({
         hoveredSprite: PropTypes.string,

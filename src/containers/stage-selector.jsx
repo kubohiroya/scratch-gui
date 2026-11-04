@@ -175,7 +175,7 @@ class StageSelector extends React.Component {
         ]);
         return (
             <DroppableThrottledStage
-                stageMenu={getHostIntegration()?.hostStageTransferMenu?.({
+                stageMenu={this.props.compact ? undefined : getHostIntegration()?.hostStageTransferMenu?.({
                     vm: this.props.vm,
                     locale: this.props.intl.locale,
                     document,

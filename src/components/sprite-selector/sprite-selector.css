@@ -139,3 +139,9 @@
     background: black;
     filter: opacity(15%) brightness(0%);
 }
+
+.compact-scroll-wrapper {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+}

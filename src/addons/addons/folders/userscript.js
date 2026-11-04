@@ -98,13 +98,11 @@ export default async function ({ addon, console, msg }) {
   let currentAssetItems;
 
   const getSortableHOCFromElement = (el) => {
-    const nearestSpriteSelector = el.closest("[class*='sprite-selector_sprite-selector']");
-    if (nearestSpriteSelector) {
-      return nearestSpriteSelector[reactInternalKey].child.sibling.child.stateNode;
-    }
-    const nearestAssetPanelWrapper = el.closest('[class*="asset-panel_wrapper"]');
-    if (nearestAssetPanelWrapper) {
-      return nearestAssetPanelWrapper[reactInternalKey].child.child.stateNode;
+    // Follow the React tree so list chrome and portals can sit between the selector and its tiles.
+    for (let fiber = el[reactInternalKey]; fiber; fiber = fiber.return) {
+      const instance = fiber.stateNode;
+      if (instance && typeof instance.handleAddSortable === "function" &&
+          typeof instance.getOrdering === "function") return instance;
     }
     throw new Error("cannot find SortableHOC");
   };
