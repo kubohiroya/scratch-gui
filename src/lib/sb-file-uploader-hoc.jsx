@@ -1,4 +1,3 @@
-import {setPlayer, setFullScreen} from '../reducers/mode';
 import {getHostIntegration} from '../addons/hooks.js';
 import bindAll from 'lodash.bindall';
 import React from 'react';
@@ -8,9 +7,9 @@ import {connect} from 'react-redux';
 import log from '../lib/log';
 import sharedMessages from './shared-messages';
 import {setFileHandle, setProjectError} from '../reducers/tw';
+import {recoverProjectLoad} from './tw-load-project-error';
 
 import {
-    cancelSecurityLoad,
     LoadingStates,
     getIsLoadingUpload,
     getIsShowingWithoutId,
@@ -27,18 +26,6 @@ import {
 import {
     closeFileMenu
 } from '../reducers/menus';
-
-const securityLoadActions = {
-    cancelSecurityLoad,
-    setProjectTitle,
-    setFileHandle,
-    setProjectError,
-    closeLoadingProject,
-    openInvalidProjectModal,
-    closeFileMenu,
-    setPlayer,
-    setFullScreen
-};
 
 /**
  * Higher Order Component to provide behavior for loading local project files into editor.
@@ -212,7 +199,7 @@ const SBFileUploaderHOC = function (WrappedComponent) {
                 this.props.onLoadingStarted();
                 const filename = this.fileToUpload && this.fileToUpload.name;
                 let loadingSuccess = false;
-                let cancelled = false;
+                let recovered = false;
                 // tw: stop when loading new project
                 this.props.vm.quit();
                 this.props.vm.loadProject(this.fileReader.result)
@@ -226,20 +213,14 @@ const SBFileUploaderHOC = function (WrappedComponent) {
                         loadingSuccess = true;
                     })
                     .catch(error => {
-                        if (getHostIntegration()?.isPlusPermissionDenied?.(error)) {
-                            cancelled = true;
-                            this.props.onSecurityLoadCancelled();
-                        } else if (getHostIntegration()?.isExtensionLoadFailure?.(error)) {
-                            // The previous project's Plus extensions are already unloaded; do not keep showing it.
-                            cancelled = true;
-                            this.props.onExtensionLoadFailed(error);
-                        } else {
+                        recovered = this.props.onRecoverProjectLoad(error);
+                        if (!recovered) {
                             log.error(error);
                             this.props.onLoadingFailed(error);
                         }
                     })
                     .then(() => {
-                        if (!cancelled) this.props.onLoadingFinished(this.props.loadingState, loadingSuccess);
+                        if (!recovered) this.props.onLoadingFinished(this.props.loadingState, loadingSuccess);
                         // go back to step 7: whether project loading succeeded
                         // or failed, reset file objects
                         this.removeFileObjects();
@@ -265,11 +246,10 @@ const SBFileUploaderHOC = function (WrappedComponent) {
                 isLoadingUpload,
                 isShowingWithoutId,
                 loadingState,
-                onExtensionLoadFailed,
                 onLoadingFailed,
-                onSecurityLoadCancelled,
                 onLoadingFinished,
                 onLoadingStarted,
+                onRecoverProjectLoad,
                 onSetFileHandle,
                 onSetProjectTitle,
                 projectChanged,
@@ -298,11 +278,10 @@ const SBFileUploaderHOC = function (WrappedComponent) {
         isShowingProject: PropTypes.bool,
         isShowingWithoutId: PropTypes.bool,
         loadingState: PropTypes.oneOf(LoadingStates),
-        onExtensionLoadFailed: PropTypes.func,
         onLoadingFailed: PropTypes.func,
-        onSecurityLoadCancelled: PropTypes.func,
         onLoadingFinished: PropTypes.func,
         onLoadingStarted: PropTypes.func,
+        onRecoverProjectLoad: PropTypes.func,
         onSetProjectTitle: PropTypes.func,
         projectChanged: PropTypes.bool,
         requestProjectUpload: PropTypes.func,
@@ -337,9 +316,7 @@ const SBFileUploaderHOC = function (WrappedComponent) {
         };
     };
     const mapDispatchToProps = (dispatch, ownProps) => ({
-        onSecurityLoadCancelled: () => getHostIntegration()?.returnToEditorStart?.(dispatch, securityLoadActions),
-        onExtensionLoadFailed: error => getHostIntegration()?.returnToEditorStartAfterExtensionFailure?.(
-            dispatch, error, securityLoadActions),
+        onRecoverProjectLoad: error => recoverProjectLoad(dispatch, error),
         cancelFileUpload: loadingState => dispatch(onLoadedProject(loadingState, false, false)),
         closeFileMenu: () => dispatch(closeFileMenu()),
         onLoadingFailed: error => {

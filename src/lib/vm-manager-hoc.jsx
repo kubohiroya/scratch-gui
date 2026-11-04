@@ -1,8 +1,3 @@
-import {setPlayer, setFullScreen} from '../reducers/mode';
-import {closeFileMenu} from '../reducers/menus';
-import {closeLoadingProject, openInvalidProjectModal} from '../reducers/modals';
-import {setFileHandle, setProjectError} from '../reducers/tw';
-import {setProjectTitle} from '../reducers/project-title';
 import {getHostIntegration} from '../addons/hooks.js';
 import bindAll from 'lodash.bindall';
 import PropTypes from 'prop-types';
@@ -14,25 +9,13 @@ import AudioEngine from 'scratch-audio';
 
 import {setProjectUnchanged} from '../reducers/project-changed';
 import {
-    cancelSecurityLoad,
     LoadingStates,
     getIsLoadingWithId,
     onLoadedProject,
     projectError
 } from '../reducers/project-state';
 import log from './log';
-
-const securityLoadActions = {
-    cancelSecurityLoad,
-    setProjectTitle,
-    setFileHandle,
-    setProjectError,
-    closeLoadingProject,
-    openInvalidProjectModal,
-    closeFileMenu,
-    setPlayer,
-    setFullScreen
-};
+import {recoverProjectLoad} from './tw-load-project-error';
 
 /**
  * List of fonts that could be used by security prompts.
@@ -110,9 +93,7 @@ const vmManagerHOC = function (WrappedComponent) {
                     }
                 })
                 .catch(e => {
-                    if (getHostIntegration()?.isPlusPermissionDenied?.(e)) this.props.onSecurityLoadCancelled();
-                    else if (getHostIntegration()?.isExtensionLoadFailure?.(e)) this.props.onExtensionLoadFailed(e);
-                    else this.props.onError(e);
+                    if (!this.props.onRecoverProjectLoad(e)) this.props.onError(e);
                 });
         }
         render () {
@@ -124,10 +105,9 @@ const vmManagerHOC = function (WrappedComponent) {
                 messages,
                 isStarted,
                 onError: onErrorProp,
-                onExtensionLoadFailed,
                 onLoadedProject: onLoadedProjectProp,
+                onRecoverProjectLoad,
                 onSetProjectUnchanged,
-                onSecurityLoadCancelled,
                 projectData,
                 /* eslint-enable no-unused-vars */
                 isLoadingWithId: isLoadingWithIdProp,
@@ -155,10 +135,9 @@ const vmManagerHOC = function (WrappedComponent) {
         locale: PropTypes.string,
         messages: PropTypes.objectOf(PropTypes.string),
         onError: PropTypes.func,
-        onExtensionLoadFailed: PropTypes.func,
         onLoadedProject: PropTypes.func,
+        onRecoverProjectLoad: PropTypes.func,
         onSetProjectUnchanged: PropTypes.func,
-        onSecurityLoadCancelled: PropTypes.func,
         projectData: PropTypes.oneOfType([PropTypes.object, PropTypes.string]),
         projectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         username: PropTypes.string,
@@ -181,12 +160,10 @@ const vmManagerHOC = function (WrappedComponent) {
     };
 
     const mapDispatchToProps = dispatch => ({
-        onSecurityLoadCancelled: () => getHostIntegration()?.returnToEditorStart?.(dispatch, securityLoadActions),
         onError: error => dispatch(projectError(error)),
-        onExtensionLoadFailed: error => getHostIntegration()?.returnToEditorStartAfterExtensionFailure?.(
-            dispatch, error, securityLoadActions),
         onLoadedProject: (loadingState, canSave) =>
             dispatch(onLoadedProject(loadingState, canSave, true)),
+        onRecoverProjectLoad: error => recoverProjectLoad(dispatch, error),
         onSetProjectUnchanged: () => dispatch(setProjectUnchanged())
     });
 
