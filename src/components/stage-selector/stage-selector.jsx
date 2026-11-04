@@ -138,7 +138,10 @@ const StageSelector = props => {
     );
     if (!transferMenu.contextItems.length) return content;
     return (
-        <ContextMenuTrigger id="tw-plus-stage-transfer">
+        <ContextMenuTrigger
+            attributes={{className: styles.contextMenuWrapper}}
+            id="tw-plus-stage-transfer"
+        >
             {content}
             <ContextMenu id="tw-plus-stage-transfer">
                 {transferMenu.contextItems.map(({label, onClick: handleClick}) => (
