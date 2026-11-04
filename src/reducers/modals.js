@@ -20,7 +20,6 @@ const MODAL_RESTORE_POINTS = 'restorePointModal';
 const MODAL_FONTS = 'fontsModal';
 const MODAL_UNKNOWN_PLATFORM = 'unknownPlatformModal';
 const MODAL_INVALID_PROJECT = 'invalidProjectModal';
-const MODAL_BLOCK_EDITOR = 'blockEditorModal';
 const hostModals = getHostIntegration()?.hostModalNames?.(getHostIntegration()?.hostIntegration?.()) || [];
 
 const initialState = {
@@ -41,7 +40,6 @@ const initialState = {
     [MODAL_FONTS]: false,
     [MODAL_UNKNOWN_PLATFORM]: false,
     [MODAL_INVALID_PROJECT]: false,
-    [MODAL_BLOCK_EDITOR]: false,
     ...getHostIntegration()?.hostModalDefaults?.(getHostIntegration()?.hostIntegration?.())
 };
 
@@ -183,14 +181,9 @@ const assertHostModal = name => {
 const openHostModal = name => openModal(assertHostModal(name));
 const closeHostModal = name => closeModal(assertHostModal(name));
 
-const openBlockEditorModal = () => openModal(MODAL_BLOCK_EDITOR);
-const closeBlockEditorModal = () => closeModal(MODAL_BLOCK_EDITOR);
-
 export {
     openHostModal,
     closeHostModal,
-    openBlockEditorModal,
-    closeBlockEditorModal,
     reducer as default,
     initialState as modalsInitialState,
     openBackdropLibrary,

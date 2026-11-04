@@ -30,8 +30,8 @@ import {
     openSoundRecorder,
     openConnectionModal,
     openCustomExtensionModal,
-    openBlockEditorModal,
-    closeBlockEditorModal
+    openHostModal,
+    closeHostModal
 } from '../reducers/modals';
 import {activateCustomProcedures, deactivateCustomProcedures} from '../reducers/custom-procedures';
 import {setConnectionModalExtensionId} from '../reducers/connection-modal';
@@ -49,17 +49,9 @@ import {gentlyRequestPersistentStorage} from '../lib/tw-persistent-storage.js';
 
 import Modal from './modal.jsx';
 
-const reportHostError = error => log.error(error);
-const BlockEditorModal = props => {
-    const Component = getHostIntegration()?.BlockEditorModal;
-    return Component ? (
-        <Component
-            {...props}
-            ModalComponent={Modal}
-            onError={reportHostError}
-        />
-    ) : null;
-};
+const wrapBlocks = getHostIntegration()?.createBlocksWrapper?.({
+    ModalComponent: Modal, openHostModal, closeHostModal, onError: error => log.error(error)
+});
 
 // TW: Strings we add to scratch-blocks are localized here
 const messages = defineMessages({
@@ -138,18 +130,13 @@ class Blocks extends React.Component {
             'onWorkspaceMetricsChange',
             'setBlocks',
             'setLocale',
-            'handleEnableProcedureReturns',
-            'handleOpenBlockEditor',
-            'handleCloseBlockEditor'
+            'handleEnableProcedureReturns'
         ]);
         this.ScratchBlocks.prompt = this.handlePromptStart;
         this.ScratchBlocks.statusButtonCallback = this.handleConnectionModalStart;
         this.ScratchBlocks.recordSoundCallback = this.handleOpenSoundRecorder;
 
-        this.state = {
-            prompt: null,
-            blockEditorSession: null
-        };
+        this.state = {prompt: null};
         this.onTargetsUpdate = debounce(this.onTargetsUpdate, 100);
         this.toolboxUpdateQueue = [];
     }
@@ -245,34 +232,7 @@ class Blocks extends React.Component {
             canUse: () => this.props.isVisible && !this.props.anyModalVisible,
             onError: error => log.error(error)
         }, getHostIntegration()?.hostIntegration?.());
-        const startupWorkspace = this.workspace;
-        const startupVM = this.props.vm;
-        const startupBlocks = this.ScratchBlocks;
-        const blockEditor = getHostIntegration()?.hostBlockEditor?.(getHostIntegration()?.hostIntegration?.());
-        const attachBlockEditors = (fixedInputs = true) => {
-            this.blockEditorBridge = blockEditor.attach({
-                fixedInputs,
-                ScratchBlocks: this.ScratchBlocks,
-                workspace: this.workspace,
-                vm: this.props.vm,
-                service: getHostIntegration()?.getBlockEditorService?.(this.props.vm, this.props.intl),
-                label: this.props.intl.formatMessage({
-                    id: 'tw.blockEditor.open',
-                    defaultMessage: 'Edit block',
-                    description: 'Tooltip for an extension block editor icon'
-                }),
-                canOpen: () => this.props.isVisible && !this.props.anyModalVisible &&
-                    !this.state.blockEditorSession,
-                onOpen: this.handleOpenBlockEditor,
-                onError: error => log.error(error)
-            });
-        };
-        // With no editor shipped there is nothing to attach, and the workspace is upstream's own.
-        if (blockEditor) {
-            getHostIntegration()?.afterNativeFieldStartup?.(AddonHooks.startupAwaitedAddonsReady, attachBlockEditors,
-                () => this.unmounted || this.workspace !== startupWorkspace || this.props.vm !== startupVM ||
-                this.ScratchBlocks !== startupBlocks, error => log.error(error));
-        }
+        this.props.onWorkspaceReady?.(this.workspace, this.ScratchBlocks, AddonHooks.startupAwaitedAddonsReady);
         // Only update blocks/vm locale when visible to avoid sizing issues
         // If locale changes while not visible it will get handled in didUpdate
         if (this.props.isVisible) {
@@ -289,7 +249,6 @@ class Blocks extends React.Component {
     shouldComponentUpdate (nextProps, nextState) {
         return (
             this.state.prompt !== nextState.prompt ||
-            this.state.blockEditorSession !== nextState.blockEditorSession ||
             this.props.isVisible !== nextProps.isVisible ||
             this._renderedToolboxXML !== nextProps.toolboxXML ||
             this.props.extensionLibraryVisible !== nextProps.extensionLibraryVisible ||
@@ -345,8 +304,7 @@ class Blocks extends React.Component {
         this.detachVM();
         if (this.scriptTransferBridge) this.scriptTransferBridge.dispose();
         this.unmounted = true;
-        if (this.blockEditorBridge) this.blockEditorBridge.dispose();
-        if (this.state.blockEditorSession) this.props.onCloseBlockEditor();
+        this.props.onWorkspaceWillDispose?.();
         this.workspace.dispose();
         clearTimeout(this.toolboxUpdateTimeout);
 
@@ -718,17 +676,6 @@ class Blocks extends React.Component {
                 this.updateToolbox(); // To show new variables/custom blocks
             });
     }
-    handleOpenBlockEditor (session, nodeLabels, nodeAppearances) {
-        getHostIntegration()?.getBlockEditorService?.(this.props.vm, this.props.intl);
-        this.setState({blockEditorSession: session,
-            blockEditorLabels: nodeLabels,
-            blockEditorAppearances: nodeAppearances});
-        this.props.onOpenBlockEditor();
-    }
-    handleCloseBlockEditor () {
-        if (!this.unmounted) this.setState({blockEditorSession: null});
-        this.props.onCloseBlockEditor();
-    }
     handleEnableProcedureReturns () {
         this.workspace.enableProcedureReturns();
         this.requestToolboxUpdate();
@@ -747,8 +694,8 @@ class Blocks extends React.Component {
             isRtl,
             isVisible,
             onActivateColorPicker,
-            onOpenBlockEditor,
-            onCloseBlockEditor,
+            onWorkspaceReady,
+            onWorkspaceWillDispose,
             onOpenConnectionModal,
             onOpenSoundRecorder,
             onOpenCustomExtensionModal,
@@ -771,14 +718,6 @@ class Blocks extends React.Component {
                     onDrop={this.handleDrop}
                     {...props}
                 />
-                {this.state.blockEditorSession ? (
-                    <BlockEditorModal
-                        nodeAppearances={this.state.blockEditorAppearances}
-                        nodeLabels={this.state.blockEditorLabels}
-                        session={this.state.blockEditorSession}
-                        onClose={this.handleCloseBlockEditor}
-                    />
-                ) : null}
                 {this.state.prompt ? (
                     <Prompt
                         defaultValue={this.state.prompt.defaultValue}
@@ -830,8 +769,8 @@ Blocks.propTypes = {
     locale: PropTypes.string.isRequired,
     messages: PropTypes.objectOf(PropTypes.string),
     onActivateColorPicker: PropTypes.func,
-    onOpenBlockEditor: PropTypes.func,
-    onCloseBlockEditor: PropTypes.func,
+    onWorkspaceReady: PropTypes.func,
+    onWorkspaceWillDispose: PropTypes.func,
     onActivateCustomProcedures: PropTypes.func,
     onOpenConnectionModal: PropTypes.func,
     onOpenSoundRecorder: PropTypes.func,
@@ -900,8 +839,6 @@ const mapStateToProps = state => ({
 });
 
 const mapDispatchToProps = dispatch => ({
-    onOpenBlockEditor: () => dispatch(openBlockEditorModal()),
-    onCloseBlockEditor: () => dispatch(closeBlockEditorModal()),
     onActivateColorPicker: callback => dispatch(activateColorPicker(callback)),
     onActivateCustomProcedures: (data, callback) => dispatch(activateCustomProcedures(data, callback)),
     onOpenConnectionModal: id => {
@@ -931,5 +868,5 @@ export default injectIntl(errorBoundaryHOC('Blocks')(
     connect(
         mapStateToProps,
         mapDispatchToProps
-    )(LoadScratchBlocksHOC(Blocks))
+    )(LoadScratchBlocksHOC(wrapBlocks ? wrapBlocks(Blocks) : Blocks))
 ));
