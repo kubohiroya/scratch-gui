@@ -17,6 +17,7 @@ const Selector = props => {
         dragType,
         isRtl,
         items,
+        listActions: ListActions,
         selectedItemIndex,
         draggingIndex,
         draggingType,
@@ -85,7 +86,9 @@ const Selector = props => {
                     </SortableAsset>
                 ))}
             </Box>
-            {newButtonSection}
+            {ListActions ? <ListActions buttons={buttons}>
+                {newButtonSection}
+            </ListActions> : newButtonSection}
         </Box>
     );
 };
@@ -101,6 +104,7 @@ Selector.propTypes = {
     draggingIndex: PropTypes.number,
     draggingType: PropTypes.oneOf(Object.keys(DragConstants)),
     isRtl: PropTypes.bool,
+    listActions: PropTypes.elementType,
     items: PropTypes.arrayOf(PropTypes.shape({
         url: PropTypes.string,
         name: PropTypes.any // modified by folders addon

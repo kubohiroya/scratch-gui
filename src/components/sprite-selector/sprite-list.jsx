@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 import classNames from 'classnames';
+import {getHostIntegration} from '../../addons/hooks.js';
 
 import DragConstants from '../../lib/drag-constants';
 
@@ -14,8 +15,12 @@ import styles from './sprite-selector.css';
 
 const ThrottledSpriteSelectorItem = ThrottledPropertyHOC('asset', 500)(SpriteSelectorItem);
 
+const SpriteGrid = getHostIntegration()?.SpriteGrid ||
+    (({className, children}) => <Box className={className}>{children}</Box>);
+
 const SpriteList = function (props) {
     const {
+        compact,
         containerRef,
         editingTarget,
         draggingIndex,
@@ -30,6 +35,7 @@ const SpriteList = function (props) {
         ordering,
         raised,
         selectedId,
+        stageTile,
         items
     } = props;
 
@@ -38,12 +44,15 @@ const SpriteList = function (props) {
     return (
         <Box
             className={classNames(styles.scrollWrapper, {
+                [styles.compactScrollWrapper]: compact,
                 [styles.scrollWrapperDragging]: draggingType === DragConstants.BACKPACK_SPRITE
             })}
             componentRef={containerRef}
         >
-            <Box
+            <SpriteGrid
                 className={styles.itemsWrapper}
+                compact={compact}
+                stageTile={stageTile}
             >
                 {items.map((sprite, index) => {
 
@@ -98,12 +107,14 @@ const SpriteList = function (props) {
                         </SortableAsset>
                     );
                 })}
-            </Box>
+            </SpriteGrid>
         </Box>
     );
 };
 
 SpriteList.propTypes = {
+    compact: PropTypes.bool,
+    stageTile: PropTypes.node,
     containerRef: PropTypes.func,
     draggingIndex: PropTypes.number,
     draggingType: PropTypes.oneOf(Object.keys(DragConstants)),

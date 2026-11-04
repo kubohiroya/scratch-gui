@@ -2,6 +2,7 @@ import bindAll from 'lodash.bindall';
 import React from 'react';
 import PropTypes from 'prop-types';
 import {injectIntl, intlShape, defineMessages} from 'react-intl';
+import {getHostIntegration} from '../addons/hooks';
 
 import monitorAdapter from '../lib/monitor-adapter.js';
 import MonitorComponent, {monitorModes} from '../components/monitor/monitor.jsx';
@@ -172,7 +173,11 @@ class Monitor extends React.Component {
         this.handleSliderPromptClose();
     }
     setElement (monitorElt) {
+        this.detachExternalDrag?.();
         this.element = monitorElt;
+        this.detachExternalDrag = monitorElt && getHostIntegration()?.attachStageMonitorDrag?.(
+            monitorElt, this.handleDragEnd, () => this.props.draggable
+        );
     }
     handleImport () {
         importCSV().then(async ({rows, text}) => {

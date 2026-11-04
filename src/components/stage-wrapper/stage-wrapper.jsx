@@ -18,12 +18,23 @@ const StageWrapperComponent = function (props) {
         isRtl,
         isRendererSupported,
         loading,
+        stageAspect,
+        stageDefaultWidth,
         stageDisplayWidth,
+        stagePanel: StagePanel,
         stageSize,
         stageTools,
         onStagePreset,
         vm
     } = props;
+
+    const renderStage = (width, floating, inputDocument) => isRendererSupported ? <Stage
+        refreshInputBounds={floating}
+        stageInputDocument={inputDocument}
+        stageDisplayWidth={width}
+        stageSize={stageSize}
+        vm={vm}
+    /> : null;
 
     return (
         <Box
@@ -48,15 +59,12 @@ const StageWrapperComponent = function (props) {
                 />
             </Box>
             <Box className={styles.stageCanvasWrapper}>
-                {
-                    isRendererSupported ?
-                        <Stage
-                            stageDisplayWidth={stageDisplayWidth}
-                            stageSize={stageSize}
-                            vm={vm}
-                        /> :
-                        null
-                }
+                {StagePanel && isRendererSupported ? <StagePanel
+                    aspect={stageAspect}
+                    defaultWidth={stageDefaultWidth}
+                    render={renderStage}
+                    width={stageDisplayWidth}
+                /> : renderStage(stageDisplayWidth)}
             </Box>
             {loading ? (
                 <Loader isFullScreen={isFullScreen} />
@@ -71,7 +79,10 @@ StageWrapperComponent.propTypes = {
     isRendererSupported: PropTypes.bool.isRequired,
     isRtl: PropTypes.bool.isRequired,
     loading: PropTypes.bool,
+    stageAspect: PropTypes.number,
+    stageDefaultWidth: PropTypes.number,
     stageDisplayWidth: PropTypes.number,
+    stagePanel: PropTypes.elementType,
     stageTools: PropTypes.node,
     onStagePreset: PropTypes.func,
     stageSize: PropTypes.oneOf(Object.keys(STAGE_DISPLAY_SIZES)).isRequired,

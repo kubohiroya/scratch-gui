@@ -9,12 +9,15 @@ import Box from '../box/box.jsx';
 import ActionMenu from '../action-menu/action-menu.jsx';
 import styles from './stage-selector.css';
 import {isRtl} from '@turbowarp/scratch-l10n';
+import {getHostIntegration} from '../../addons/hooks.js';
 
 import backdropIcon from '../action-menu/icon--backdrop.svg';
 import fileUploadIcon from '../action-menu/icon--file-upload.svg';
 import paintIcon from '../action-menu/icon--paint.svg';
 import surpriseIcon from '../action-menu/icon--surprise.svg';
 import searchIcon from '../action-menu/icon--search.svg';
+
+const BackdropTile = getHostIntegration()?.BackdropTile;
 
 const messages = defineMessages({
     addBackdropFromLibrary: {
@@ -43,6 +46,7 @@ const StageSelector = props => {
     const {
         stageMenu,
         backdropCount,
+        compact,
         containerRef,
         dragOver,
         fileInputRef,
@@ -61,6 +65,22 @@ const StageSelector = props => {
         onEmptyBackdropClick,
         ...componentProps
     } = props;
+    if (compact && BackdropTile) {
+        return <BackdropTile
+            containerRef={containerRef}
+            highlighted={raised || dragOver || receivedBlocks}
+            label={<FormattedMessage
+                defaultMessage="Backdrops"
+                description="Label for the backdrops in the stage selector"
+                id="gui.stageSelector.backdrops"
+            />}
+            selected={selected}
+            url={url}
+            onClick={onClick}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+        />;
+    }
     const content = (
         <Box
             className={classNames(styles.stageSelector, {
@@ -136,6 +156,7 @@ const StageSelector = props => {
 };
 
 StageSelector.propTypes = {
+    compact: PropTypes.bool,
     stageMenu: PropTypes.shape({backdropButtons: PropTypes.func, wrap: PropTypes.func}),
     backdropCount: PropTypes.number.isRequired,
     containerRef: PropTypes.func,

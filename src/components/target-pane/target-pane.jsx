@@ -2,6 +2,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 
 import VM from 'scratch-vm';
+import {getHostIntegration} from '../../addons/hooks.js';
 
 import SpriteLibrary from '../../containers/sprite-library.jsx';
 import SpriteSelectorComponent from '../sprite-selector/sprite-selector.jsx';
@@ -9,6 +10,8 @@ import StageSelector from '../../containers/stage-selector.jsx';
 import {STAGE_DISPLAY_SIZES} from '../../lib/layout-constants';
 
 import styles from './target-pane.css';
+
+const TargetListLayout = getHostIntegration()?.TargetListLayout || (({render}) => render(false));
 
 /*
  * Pane that contains the sprite selector, sprite info, stage selector,
@@ -47,59 +50,62 @@ const TargetPane = ({
     vm,
     ...componentProps
 }) => (
-    <div
-        className={styles.targetPane}
-        {...componentProps}
-    >
+    // eslint-disable-next-line react/jsx-no-bind
+    <TargetListLayout render={compact => {
+        const stageSelector = stage.id && <StageSelector
+            asset={stage.costume && stage.costume.asset}
+            backdropCount={stage.costumeCount}
+            compact={compact}
+            id={stage.id}
+            selected={stage.id === editingTarget}
+            onSelect={onSelectSprite}
+        />;
+        const library = spriteLibraryVisible && <SpriteLibrary
+            vm={vm}
+            onActivateBlocksTab={onActivateBlocksTab}
+            onRequestClose={onRequestCloseSpriteLibrary}
+        />;
+        return (
+            <div
+                className={styles.targetPane}
+                {...componentProps}
+            >
 
-        <SpriteSelectorComponent
-            editingTarget={editingTarget}
-            hoveredTarget={hoveredTarget}
-            raised={raiseSprites}
-            selectedId={editingTarget}
-            spriteFileInput={fileInputRef}
-            sprites={sprites}
-            stageSize={stageSize}
-            onChangeSpriteDirection={onChangeSpriteDirection}
-            onChangeSpriteName={onChangeSpriteName}
-            onChangeSpriteRotationStyle={onChangeSpriteRotationStyle}
-            onChangeSpriteSize={onChangeSpriteSize}
-            onChangeSpriteVisibility={onChangeSpriteVisibility}
-            onChangeSpriteX={onChangeSpriteX}
-            onChangeSpriteY={onChangeSpriteY}
-            onDeleteSprite={onDeleteSprite}
-            onDrop={onDrop}
-            onDuplicateSprite={onDuplicateSprite}
-            onExportSprite={onExportSprite}
-            onFileUploadClick={onFileUploadClick}
-            onNewSpriteClick={onNewSpriteClick}
-            onPaintSpriteClick={onPaintSpriteClick}
-            onSelectSprite={onSelectSprite}
-            onSpriteUpload={onSpriteUpload}
-            onSurpriseSpriteClick={onSurpriseSpriteClick}
-        />
-        <div className={styles.stageSelectorWrapper}>
-            {stage.id && <StageSelector
-                asset={
-                    stage.costume &&
-                    stage.costume.asset
-                }
-                backdropCount={stage.costumeCount}
-                id={stage.id}
-                selected={stage.id === editingTarget}
-                onSelect={onSelectSprite}
-            />}
-            <div>
-                {spriteLibraryVisible ? (
-                    <SpriteLibrary
-                        vm={vm}
-                        onActivateBlocksTab={onActivateBlocksTab}
-                        onRequestClose={onRequestCloseSpriteLibrary}
-                    />
-                ) : null}
+                <SpriteSelectorComponent
+                    compact={compact}
+                    editingTarget={editingTarget}
+                    hoveredTarget={hoveredTarget}
+                    raised={raiseSprites}
+                    selectedId={editingTarget}
+                    spriteFileInput={fileInputRef}
+                    sprites={sprites}
+                    stageSize={stageSize}
+                    stageTile={compact ? stageSelector : null}
+                    onChangeSpriteDirection={onChangeSpriteDirection}
+                    onChangeSpriteName={onChangeSpriteName}
+                    onChangeSpriteRotationStyle={onChangeSpriteRotationStyle}
+                    onChangeSpriteSize={onChangeSpriteSize}
+                    onChangeSpriteVisibility={onChangeSpriteVisibility}
+                    onChangeSpriteX={onChangeSpriteX}
+                    onChangeSpriteY={onChangeSpriteY}
+                    onDeleteSprite={onDeleteSprite}
+                    onDrop={onDrop}
+                    onDuplicateSprite={onDuplicateSprite}
+                    onExportSprite={onExportSprite}
+                    onFileUploadClick={onFileUploadClick}
+                    onNewSpriteClick={onNewSpriteClick}
+                    onPaintSpriteClick={onPaintSpriteClick}
+                    onSelectSprite={onSelectSprite}
+                    onSpriteUpload={onSpriteUpload}
+                    onSurpriseSpriteClick={onSurpriseSpriteClick}
+                />
+                {compact ? library : <div className={styles.stageSelectorWrapper}>
+                    {stageSelector}
+                    <div>{library}</div>
+                </div>}
             </div>
-        </div>
-    </div>
+        );
+    }} />
 );
 
 const spriteShape = PropTypes.shape({

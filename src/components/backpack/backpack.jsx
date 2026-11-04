@@ -55,7 +55,8 @@ const Backpack = ({
     onRename,
     onMouseEnter,
     onMouseLeave,
-    onMore
+    onMore,
+    renderScriptDragHandle
 }) => (
     <div className={styles.backpackContainer}>
         <div
@@ -113,21 +114,23 @@ const Backpack = ({
                         contents.length > 0 ? (
                             <div className={styles.backpackListInner}>
                                 {contents.map(item => (
-                                    <SpriteSelectorItem
-                                        className={styles.backpackItem}
-                                        costumeURL={item.thumbnailUrl}
-                                        details={item.name}
-                                        dragPayload={item}
-                                        dragType={dragTypeMap[item.type]}
-                                        id={item.id}
-                                        key={item.id}
-                                        name={intl.formatMessage(labelMap[item.type])}
-                                        selected={false}
-                                        onClick={noop}
-                                        onDeleteButtonClick={onDelete}
-                                        // Currently, renaming sprites is not supported.
-                                        onRenameButtonClick={item.type === 'sprite' ? null : onRename}
-                                    />
+                                    <React.Fragment key={item.id}>
+                                        <SpriteSelectorItem
+                                            className={styles.backpackItem}
+                                            costumeURL={item.thumbnailUrl}
+                                            details={item.name}
+                                            dragPayload={item}
+                                            dragType={dragTypeMap[item.type]}
+                                            id={item.id}
+                                            name={intl.formatMessage(labelMap[item.type])}
+                                            selected={false}
+                                            onClick={noop}
+                                            onDeleteButtonClick={onDelete}
+                                            // Currently, renaming sprites is not supported.
+                                            onRenameButtonClick={item.type === 'sprite' ? null : onRename}
+                                        />
+                                        {item.type === 'script' && renderScriptDragHandle?.(item)}
+                                    </React.Fragment>
                                 ))}
                                 {showMore && (
                                     <button
@@ -178,6 +181,7 @@ Backpack.propTypes = {
     onMouseEnter: PropTypes.func,
     onMouseLeave: PropTypes.func,
     onToggle: PropTypes.func,
+    renderScriptDragHandle: PropTypes.func,
     showMore: PropTypes.bool
 };
 
