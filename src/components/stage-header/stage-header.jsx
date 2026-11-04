@@ -72,19 +72,24 @@ const StageHeaderComponent = function (props) {
         onKeyPress,
         onSetStageFullScreen,
         onSetStageUnFullScreen,
+        onStagePreset,
         onSetStageLarge,
         onSetStageSmall,
         onSetStageFull,
         onOpenSettings,
         isEmbedded,
+        stageDisplayWidth,
         stageSize,
+        stageTools,
         stageSizeMode,
         vm
     } = props;
 
     let header = null;
 
-    const stageDimensions = getStageDimensions(stageSize, customStageSize, isFullScreen || isEmbedded);
+    const stageDimensions = getStageDimensions(
+        stageSize, customStageSize, isFullScreen || isEmbedded, stageDisplayWidth
+    );
 
     if (isFullScreen || isEmbedded) {
         const settingsButton = isEmbedded && enableSettingsButton ? (
@@ -157,15 +162,23 @@ const StageHeaderComponent = function (props) {
             </Box>
         );
     } else {
+        const selectPreset = action => {
+            if (!onStagePreset) return action;
+            return () => {
+                onStagePreset();
+                action();
+            };
+        };
         const stageControls =
             isPlayerOnly ? (
                 []
             ) : (
                 <div className={styles.stageSizeToggleGroup}>
+                    {stageTools}
                     <ToggleButtons
                         buttons={[
                             {
-                                handleClick: onSetStageSmall,
+                                handleClick: selectPreset(onSetStageSmall),
                                 icon: smallStageIcon,
                                 iconClassName: styles.stageButtonIcon,
                                 isSelected: stageSizeMode === STAGE_SIZE_MODES.small,
@@ -173,7 +186,7 @@ const StageHeaderComponent = function (props) {
                             },
                             ...(showFixedLargeSize ? [
                                 {
-                                    handleClick: onSetStageLarge,
+                                    handleClick: selectPreset(onSetStageLarge),
                                     icon: largeStageIcon,
                                     iconClassName: styles.stageButtonIcon,
                                     isSelected: stageSizeMode === STAGE_SIZE_MODES.large,
@@ -181,7 +194,7 @@ const StageHeaderComponent = function (props) {
                                 }
                             ] : []),
                             {
-                                handleClick: onSetStageFull,
+                                handleClick: selectPreset(onSetStageFull),
                                 icon: showFixedLargeSize ? fullStageIcon : largeStageIcon,
                                 iconClassName: styles.stageButtonIcon,
                                 isSelected: stageSizeMode === STAGE_SIZE_MODES.full,
@@ -195,7 +208,9 @@ const StageHeaderComponent = function (props) {
             <Box
                 className={styles.stageHeaderWrapper}
                 // + 2 px because the stage will have 2 pixels of border around it
-                style={{minWidth: `${Math.max(stageDimensions.width, getMinWidth(stageSize)) + 2}px`}}
+                style={typeof stageDisplayWidth === 'number' ?
+                    {width: '100%'} :
+                    {minWidth: `${Math.max(stageDimensions.width, getMinWidth(stageSize)) + 2}px`}}
             >
                 <Box className={styles.stageMenuWrapper}>
                     <Controls
@@ -252,6 +267,9 @@ StageHeaderComponent.propTypes = {
     onSetStageFull: PropTypes.func.isRequired,
     onOpenSettings: PropTypes.func.isRequired,
     isEmbedded: PropTypes.bool.isRequired,
+    stageDisplayWidth: PropTypes.number,
+    stageTools: PropTypes.node,
+    onStagePreset: PropTypes.func,
     stageSize: PropTypes.oneOf(Object.keys(STAGE_DISPLAY_SIZES)),
     stageSizeMode: PropTypes.oneOf(Object.keys(STAGE_SIZE_MODES)),
     vm: PropTypes.instanceOf(VM).isRequired

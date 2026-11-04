@@ -256,6 +256,7 @@ class Blocks extends React.Component {
             this.props.locale !== nextProps.locale ||
             this.props.anyModalVisible !== nextProps.anyModalVisible ||
             this.props.stageSize !== nextProps.stageSize ||
+            this.props.layoutWidth !== nextProps.layoutWidth ||
             this.props.customStageSize !== nextProps.customStageSize
         );
     }
@@ -279,6 +280,8 @@ class Blocks extends React.Component {
             ) {
                 // force workspace to redraw for the new stage size
                 window.dispatchEvent(new Event('resize'));
+            } else if (this.props.isVisible && this.props.layoutWidth !== prevProps.layoutWidth) {
+                this.ScratchBlocks.svgResize(this.workspace);
             }
             return;
         }
@@ -693,6 +696,7 @@ class Blocks extends React.Component {
             vm,
             isRtl,
             isVisible,
+            layoutWidth,
             onActivateColorPicker,
             onWorkspaceReady,
             onWorkspaceWillDispose,
@@ -766,6 +770,7 @@ Blocks.propTypes = {
     extensionLibraryVisible: PropTypes.bool,
     isRtl: PropTypes.bool,
     isVisible: PropTypes.bool,
+    layoutWidth: PropTypes.number,
     locale: PropTypes.string.isRequired,
     messages: PropTypes.objectOf(PropTypes.string),
     onActivateColorPicker: PropTypes.func,
