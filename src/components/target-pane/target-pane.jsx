@@ -51,12 +51,11 @@ const TargetPane = ({
     ...componentProps
 }) => (
     // eslint-disable-next-line react/jsx-no-bind
-    <TargetListLayout render={(compact, compactStageTransfer) => {
+    <TargetListLayout render={compact => {
         const stageSelector = stage.id && <StageSelector
             asset={stage.costume && stage.costume.asset}
             backdropCount={stage.costumeCount}
             compact={compact}
-            compactStageTransfer={compactStageTransfer}
             id={stage.id}
             selected={stage.id === editingTarget}
             onSelect={onSelectSprite}
