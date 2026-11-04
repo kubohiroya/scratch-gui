@@ -7,9 +7,7 @@ import {getIsShowingProject} from '../reducers/project-state';
 
 const PACKAGER_URL = 'https://packager.turbowarp.org';
 const PACKAGER_ORIGIN = PACKAGER_URL;
-// A host that packages some projects itself, resolved once: whether it does cannot change while
-// the editor is open.
-const hostPackager = getHostIntegration()?.hostProjectPackager?.(getHostIntegration()?.hostIntegration?.());
+const connectPackager = getHostIntegration()?.hostProjectPackager;
 
 const PackagerIntegrationHOC = function (WrappedComponent) {
     class PackagerIntegrationComponent extends React.Component {
@@ -17,7 +15,7 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
             super(props);
             this.handleClickPackager = this.handleClickPackager.bind(this);
             this.handleMessage = this.handleMessage.bind(this);
-            this.projectName = () => `${this.props.reduxProjectTitle}.sb3`;
+            this.packager = connectPackager?.(() => this.props.vm, () => this.props.reduxProjectTitle);
         }
         componentDidMount () {
             window.addEventListener('message', this.handleMessage);
@@ -28,19 +26,12 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
         handleClickPackager () {
             if (!this.props.canOpenPackager) return;
             const upstream = `${PACKAGER_URL}/?import_from=${location.origin}`;
-            if (!hostPackager) {
-                window.open(upstream);
-                return;
-            }
-            // Reserve the browsing context during the user gesture, before serializing: a popup
-            // opened after an await would be blocked. The host decides where it goes.
-            const popup = window.open('about:blank');
-            if (!popup) return;
-            hostPackager.open({popup, vm: this.props.vm, name: this.projectName, fallbackURL: upstream});
+            // Reserve the window during the user gesture, before the host can serialize.
+            const popup = window.open(this.packager ? 'about:blank' : upstream);
+            if (popup) this.packager?.open(popup, upstream);
         }
         handleMessage (e) {
-            // A window the host took over talks to the host, not to this fork.
-            if (hostPackager && hostPackager.handleMessage(e)) return;
+            if (this.packager?.handleMessage(e)) return;
             if (e.origin !== PACKAGER_ORIGIN) {
                 return;
             }
@@ -49,11 +40,11 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
                 return;
             }
 
-            const packagerData = e.data && e.data.p4;
-            if (!packagerData || packagerData.type !== 'ready-for-import') {
+            if (e.data?.p4?.type !== 'ready-for-import' || !e.source) {
                 return;
             }
 
+            const cancelImport = () => e.source.postMessage({p4: {type: 'cancel-import'}}, e.origin);
             // The packager needs to know that we will be importing something so it can display a loading screen
             e.source.postMessage({
                 p4: {
@@ -63,15 +54,8 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
 
             this.props.vm.saveProjectSb3('arraybuffer')
                 .then(async buffer => {
-                    // Rechecked after an asynchronous import request: the Editor may have changed
-                    // projects, and the host may claim this one as its own to package.
-                    if (hostPackager && await hostPackager.claim({source: e.source,
-                        buffer,
-                        name: this.projectName,
-                        cancelImport: () => e.source.postMessage({p4: {type: 'cancel-import'}}, e.origin)})) {
-                        return;
-                    }
-                    const name = this.projectName();
+                    if (this.packager && await this.packager.claim(e.source, buffer, cancelImport)) return;
+                    const name = `${this.props.reduxProjectTitle}.sb3`;
                     e.source.postMessage({
                         p4: {
                             type: 'finish-import',
@@ -82,11 +66,7 @@ const PackagerIntegrationHOC = function (WrappedComponent) {
                 })
                 .catch(err => {
                     log.error(err);
-                    e.source.postMessage({
-                        p4: {
-                            type: 'cancel-import'
-                        }
-                    }, e.origin);
+                    cancelImport();
                 });
         }
         render () {
