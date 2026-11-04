@@ -1,4 +1,5 @@
 import React from 'react';
+import {getHostIntegration} from '../addons/hooks';
 import PropTypes from 'prop-types';
 import bindAll from 'lodash.bindall';
 import {defineMessages, injectIntl, intlShape} from 'react-intl';
@@ -257,7 +258,7 @@ class Backpack extends React.Component {
         this.getContents();
     }
     render () {
-        return (
+        const content = (
             <DroppableBackpack
                 blockDragOver={this.state.blockDragOverBackpack}
                 contents={this.state.contents}
@@ -274,6 +275,8 @@ class Backpack extends React.Component {
                 onToggle={this.props.host ? this.handleToggle : null}
             />
         );
+        const Surface = this.props.host === LOCAL_API && getHostIntegration()?.BackpackSurface;
+        return Surface ? <Surface vm={this.props.vm}>{content}</Surface> : content;
     }
 }
 
