@@ -23,15 +23,9 @@ const messages = defineMessages({
         id: 'gui.extensionLibrary.chooseAnExtension'
     }
 });
-// Resolved once, like the rest of this file's library data: a project cannot add a tab by being
-// opened. A build that distributes nothing supplies no tab, and the library stays upstream's own.
-const plusTab = getHostIntegration()?.hostLibraryTab?.(getHostIntegration()?.hostIntegration?.());
-// The review bookkeeping is a WeakMap on this VM's security manager, which this fork's own
-// `getSandboxMode` reads back, so the tab is given the two functions that write it.
-const plusPermissions = {
-    beginReview: getHostIntegration()?.beginPlusReview,
-    canLoad: getHostIntegration()?.canLoadPlusExtension
-};
+const host = getHostIntegration();
+const customTab = host?.hostLibraryTab?.(host.hostIntegration?.());
+const libraryTags = customTab ? extensionTags.concat(customTab.tagProps) : extensionTags;
 
 const toLibraryItem = extension => {
     if (typeof extension === 'object') {
@@ -99,12 +93,11 @@ class ExtensionLibrary extends React.PureComponent {
         super(props);
         bindAll(this, [
             'handleItemSelect',
-            'handlePlusBusyChange',
-            'handlePlusKeyDown',
-            'renderPlusContent'
+            'handleBusyChange',
+            'renderCustomContent'
         ]);
         this.state = {
-            plusBusy: false,
+            busy: false,
             gallery: cachedGallery,
             galleryError: null,
             galleryTimedOut: false
@@ -170,25 +163,11 @@ class ExtensionLibrary extends React.PureComponent {
             }
         }
     }
-    handlePlusBusyChange (plusBusy) {
-        this.setState({plusBusy});
+    handleBusyChange (busy) {
+        this.setState({busy});
     }
-    handlePlusKeyDown (event) {
-        if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            event.currentTarget.click();
-        }
-    }
-    renderPlusContent (filterQuery) {
-        return plusTab.render({
-            filterQuery,
-            locale: this.props.intl.locale,
-            vm: this.props.vm,
-            permissions: plusPermissions,
-            onBusyChange: this.handlePlusBusyChange,
-            onCategorySelected: this.props.onCategorySelected,
-            onRequestClose: this.props.onRequestClose
-        });
+    renderCustomContent (filterQuery) {
+        return customTab.render(filterQuery, this.props, this.handleBusyChange);
     }
     render () {
         let library = null;
@@ -213,22 +192,15 @@ class ExtensionLibrary extends React.PureComponent {
 
         return (
             <LibraryComponent
-                busy={this.state.plusBusy}
-                customClasses={plusTab ? plusTab.classes : null}
-                customTag={plusTab ? plusTab.tag : null}
-                renderCustomContent={plusTab ? this.renderPlusContent : null}
+                busy={this.state.busy}
+                customClasses={customTab?.classes}
+                customTag={customTab?.tagProps.tag}
+                renderCustomContent={customTab ? this.renderCustomContent : null}
                 data={library}
                 filterable
                 persistableKey="extensionId"
                 id="extensionLibrary"
-                tags={plusTab ? extensionTags.concat({
-                    tag: plusTab.tag,
-                    intlLabel: plusTab.label,
-                    iconSrc: plusTab.iconSrc,
-                    className: plusTab.className,
-                    tabIndex: 0,
-                    onKeyDown: this.handlePlusKeyDown
-                }) : extensionTags}
+                tags={libraryTags}
                 title={this.props.intl.formatMessage(messages.extensionTitle)}
                 visible={this.props.visible}
                 onItemSelected={this.handleItemSelect}
