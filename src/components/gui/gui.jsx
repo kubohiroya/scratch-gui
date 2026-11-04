@@ -355,7 +355,7 @@ const GUIComponent = props => {
                         // eslint-disable-next-line react/jsx-no-bind
                         render={layout => (
                             <Box
-                                className={styles.flexWrapper}
+                                className={classNames(styles.flexWrapper, layout.bodyClassName)}
                                 componentRef={layout.observe}
                                 style={layout.bodyStyle}
                             >
@@ -480,6 +480,7 @@ const GUIComponent = props => {
                                     style={layout.stageColumnStyle}
                                 >
                                     <StageWrapper
+                                        className={layout.stageClassName}
                                         isFullScreen={isFullScreen}
                                         isRendererSupported={isRendererSupported()}
                                         isRtl={isRtl}
@@ -493,7 +494,7 @@ const GUIComponent = props => {
                                         vm={vm}
                                     />
                                     {layout.rowSplitter}
-                                    <Box className={styles.targetWrapper}>
+                                    <Box className={classNames(styles.targetWrapper, layout.targetClassName)}>
                                         <TargetPane
                                             stageSize={stageSize}
                                             vm={vm}
