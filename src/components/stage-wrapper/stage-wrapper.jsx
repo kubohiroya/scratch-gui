@@ -28,8 +28,9 @@ const StageWrapperComponent = function (props) {
         vm
     } = props;
 
-    const renderStage = (width, floating) => isRendererSupported ? <Stage
+    const renderStage = (width, floating, inputDocument) => isRendererSupported ? <Stage
         refreshInputBounds={floating}
+        stageInputDocument={inputDocument}
         stageDisplayWidth={width}
         stageSize={stageSize}
         vm={vm}

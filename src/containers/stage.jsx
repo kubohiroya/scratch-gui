@@ -89,6 +89,7 @@ class Stage extends React.Component {
     componentDidMount () {
         this.attachRectEvents();
         this.attachMouseEvents(this.canvas);
+        this.setInputDocument(this.props.stageInputDocument);
         this.updateRect();
         this.renderer.resize(this.rect.width, this.rect.height);
         this.props.vm.runtime.addListener('QUESTION', this.questionListener);
@@ -96,6 +97,7 @@ class Stage extends React.Component {
     shouldComponentUpdate (nextProps, nextState) {
         return this.props.stageSize !== nextProps.stageSize ||
             this.props.stageDisplayWidth !== nextProps.stageDisplayWidth ||
+            this.props.stageInputDocument !== nextProps.stageInputDocument ||
             this.props.refreshInputBounds !== nextProps.refreshInputBounds ||
             this.props.isColorPicking !== nextProps.isColorPicking ||
             this.state.colorInfo !== nextState.colorInfo ||
@@ -108,6 +110,10 @@ class Stage extends React.Component {
             this.props.customStageSize !== nextProps.customStageSize;
     }
     componentDidUpdate (prevProps) {
+        if (prevProps.stageInputDocument !== this.props.stageInputDocument) {
+            this.detachInputDocument();
+            this.setInputDocument(this.props.stageInputDocument);
+        }
         if (this.props.isColorPicking && !prevProps.isColorPicking) {
             this.startColorPickingLoop();
         } else if (!this.props.isColorPicking && prevProps.isColorPicking) {
@@ -118,6 +124,7 @@ class Stage extends React.Component {
     }
     componentWillUnmount () {
         this.detachMouseEvents(this.canvas);
+        this.detachInputDocument();
         this.detachRectEvents();
         this.stopColorPickingLoop();
         this.props.vm.runtime.removeListener('QUESTION', this.questionListener);
@@ -143,24 +150,62 @@ class Stage extends React.Component {
         cancelAnimationFrame(this.animationFrameId);
     }
     attachMouseEvents (canvas) {
-        document.addEventListener('mousemove', this.onMouseMove);
-        document.addEventListener('mouseup', this.onMouseUp);
-        document.addEventListener('touchmove', this.onMouseMove);
-        document.addEventListener('touchend', this.onMouseUp);
         canvas.addEventListener('mousedown', this.onMouseDown);
         canvas.addEventListener('touchstart', this.onMouseDown);
         canvas.addEventListener('wheel', this.onWheel);
         canvas.addEventListener('contextmenu', this.onContextMenu);
     }
     detachMouseEvents (canvas) {
-        document.removeEventListener('mousemove', this.onMouseMove);
-        document.removeEventListener('mouseup', this.onMouseUp);
-        document.removeEventListener('touchmove', this.onMouseMove);
-        document.removeEventListener('touchend', this.onMouseUp);
         canvas.removeEventListener('mousedown', this.onMouseDown);
         canvas.removeEventListener('touchstart', this.onMouseDown);
         canvas.removeEventListener('wheel', this.onWheel);
         canvas.removeEventListener('contextmenu', this.onContextMenu);
+    }
+    setInputDocument (external) {
+        const doc = external || document;
+        const inputWindow = doc.defaultView;
+        const pressed = new Map();
+        const keyData = e => ({key: (!e.key || e.key === 'Dead') ? e.keyCode : e.key, keyCode: e.keyCode});
+        const down = e => {
+            if (e.target !== doc.body && e.target !== doc && e.target !== this.canvas) return;
+            if (e.metaKey || e.ctrlKey || e.altKey) return;
+            const data = keyData(e);
+            const code = e.code || e.keyCode;
+            if (!pressed.has(code)) this.props.vm.postIOData('keyboard', {...data, isDown: true});
+            pressed.set(code, data);
+            if ([8, 32, 37, 38, 39, 40].includes(e.keyCode)) e.preventDefault();
+        };
+        const up = e => {
+            const code = e.code || e.keyCode;
+            const data = pressed.get(code);
+            if (pressed.delete(code)) this.props.vm.postIOData('keyboard', {...data, isDown: false});
+        };
+        const release = () => {
+            for (const data of pressed.values()) this.props.vm.postIOData('keyboard', {...data, isDown: false});
+            pressed.clear();
+            if (this.state.mouseDown) {
+                this.cancelMouseDownTimeout();
+                if (this.state.isDragging) this.onStopDrag(-1, -1);
+                this.props.vm.postIOData('mouse', {isDown: false, button: 0, wasDragged: true});
+                this.setState({mouseDown: false, mouseDownPosition: null});
+            }
+        };
+        const listeners = [
+            ['mousemove', this.onMouseMove], ['mouseup', this.onMouseUp],
+            ['touchmove', this.onMouseMove], ['touchend', this.onMouseUp]
+        ];
+        if (external) {
+            listeners.push(['keydown', down], ['keyup', up]);
+            inputWindow.addEventListener('blur', release);
+        }
+        for (const [event, handle] of listeners) doc.addEventListener(event, handle);
+        this.detachInputDocument = () => {
+            for (const [event, handle] of listeners) doc.removeEventListener(event, handle);
+            if (external) {
+                inputWindow.removeEventListener('blur', release);
+                release();
+            }
+        };
     }
     attachRectEvents () {
         window.addEventListener('resize', this.updateRect);
@@ -299,7 +344,7 @@ class Stage extends React.Component {
             // Immediately update the color picker info
             this.setState({colorInfo: this.getColorInfo(this.pickX, this.pickY)});
         } else {
-            const isTouchEvent = window.TouchEvent && e instanceof TouchEvent;
+            const isTouchEvent = e.type === 'touchstart';
             if (e.button === 0 || isTouchEvent) {
                 this.setState({
                     mouseDown: true,
@@ -323,9 +368,7 @@ class Stage extends React.Component {
                 // Prevent default to prevent touch from dragging page
                 e.preventDefault();
                 // But we do want any active input to be blurred
-                if (document.activeElement && document.activeElement.blur) {
-                    document.activeElement.blur();
-                }
+                this.canvas.ownerDocument.activeElement?.blur?.();
             }
         }
     }
@@ -456,6 +499,7 @@ class Stage extends React.Component {
             onActivateColorPicker, // eslint-disable-line no-unused-vars
             disableEditingTargetChange, // eslint-disable-line no-unused-vars
             refreshInputBounds, // eslint-disable-line no-unused-vars
+            stageInputDocument, // eslint-disable-line no-unused-vars
             ...props
         } = this.props;
         return (
@@ -493,6 +537,7 @@ Stage.propTypes = {
     onDeactivateColorPicker: PropTypes.func,
     stageDisplayWidth: PropTypes.number,
     refreshInputBounds: PropTypes.bool,
+    stageInputDocument: PropTypes.object, // eslint-disable-line react/forbid-prop-types
     stageSize: PropTypes.oneOf(Object.keys(STAGE_DISPLAY_SIZES)).isRequired,
     useEditorDragStyle: PropTypes.bool,
     vm: PropTypes.instanceOf(VM).isRequired
