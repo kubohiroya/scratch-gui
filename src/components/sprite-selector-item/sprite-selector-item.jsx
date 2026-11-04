@@ -11,6 +11,9 @@ import {FormattedMessage} from 'react-intl';
 // react-contextmenu requires unique id to match trigger and context menu
 let contextMenuId = 0;
 
+const hasContextMenu = ({onOpenEditor, onDuplicateButtonClick, onDeleteButtonClick, onExportButtonClick}) =>
+    onOpenEditor || onDuplicateButtonClick || onDeleteButtonClick || onExportButtonClick;
+
 const SpriteSelectorItem = props => (
     <ContextMenuTrigger
         attributes={{
@@ -54,8 +57,11 @@ const SpriteSelectorItem = props => (
                 onClick={props.onDeleteButtonClick}
             />
         ) : null }
-        {props.onDuplicateButtonClick || props.onDeleteButtonClick || props.onExportButtonClick ? (
+        {hasContextMenu(props) ? (
             <ContextMenu id={`${props.name}-${contextMenuId++}`}>
+                {props.onOpenEditor ? (
+                    <MenuItem onClick={props.onOpenEditor}>{props.openEditorLabel}</MenuItem>
+                ) : null}
                 {props.onDuplicateButtonClick ? (
                     <MenuItem onClick={props.onDuplicateButtonClick}>
                         <FormattedMessage
@@ -106,6 +112,8 @@ SpriteSelectorItem.propTypes = {
     name: PropTypes.any,
     number: PropTypes.number,
     onClick: PropTypes.func,
+    openEditorLabel: PropTypes.string,
+    onOpenEditor: PropTypes.func,
     onDeleteButtonClick: PropTypes.func,
     onDuplicateButtonClick: PropTypes.func,
     onExportButtonClick: PropTypes.func,
