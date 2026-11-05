@@ -39,6 +39,7 @@ class Backpack extends React.Component {
         bindAll(this, [
             'handleDrop',
             'handleToggle',
+            'setExpanded',
             'handleDelete',
             'handleRename',
             'getBackpackAssetURL',
@@ -85,12 +86,15 @@ class Backpack extends React.Component {
         return `${this.props.host}/${asset.assetId}.${asset.dataFormat}`;
     }
     handleToggle () {
-        const newState = !this.state.expanded;
-        this.setState({expanded: newState, contents: []}, () => {
+        this.setExpanded(!this.state.expanded);
+    }
+    setExpanded (expanded) {
+        if (this.state.expanded === expanded) return;
+        this.setState({expanded, contents: []}, () => {
             // Emit resize on window to get blocks to resize
             window.dispatchEvent(new Event('resize'));
         });
-        if (newState) {
+        if (expanded) {
             this.getContents();
         }
     }
@@ -276,7 +280,7 @@ class Backpack extends React.Component {
             />
         );
         const Surface = this.props.host === LOCAL_API && getHostIntegration()?.BackpackSurface;
-        return Surface ? <Surface vm={this.props.vm}>{content}</Surface> : content;
+        return Surface ? <Surface setExpanded={this.setExpanded} vm={this.props.vm}>{content}</Surface> : content;
     }
 }
 
