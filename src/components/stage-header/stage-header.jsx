@@ -9,6 +9,7 @@ import Box from '../box/box.jsx';
 import Button from '../button/button.jsx';
 import ToggleButtons from '../toggle-buttons/toggle-buttons.jsx';
 import Controls from '../../containers/controls.jsx';
+import {getHostIntegration} from '../../addons/hooks.js';
 import {getStageDimensions, getMinWidth} from '../../lib/screen-utils';
 import {STAGE_DISPLAY_SIZES, STAGE_SIZE_MODES} from '../../lib/layout-constants';
 
@@ -169,41 +170,38 @@ const StageHeaderComponent = function (props) {
                 action();
             };
         };
-        const stageControls =
-            isPlayerOnly ? (
-                []
-            ) : (
-                <div className={styles.stageSizeToggleGroup}>
-                    {stageTools}
-                    <ToggleButtons
-                        buttons={[
-                            {
-                                handleClick: selectPreset(onSetStageSmall),
-                                icon: smallStageIcon,
-                                iconClassName: styles.stageButtonIcon,
-                                isSelected: stageSizeMode === STAGE_SIZE_MODES.small,
-                                title: props.intl.formatMessage(messages.smallStageSizeMessage)
-                            },
-                            ...(showFixedLargeSize ? [
-                                {
-                                    handleClick: selectPreset(onSetStageLarge),
-                                    icon: largeStageIcon,
-                                    iconClassName: styles.stageButtonIcon,
-                                    isSelected: stageSizeMode === STAGE_SIZE_MODES.large,
-                                    title: props.intl.formatMessage(messages.largeStageSizeMessage)
-                                }
-                            ] : []),
-                            {
-                                handleClick: selectPreset(onSetStageFull),
-                                icon: showFixedLargeSize ? fullStageIcon : largeStageIcon,
-                                iconClassName: styles.stageButtonIcon,
-                                isSelected: stageSizeMode === STAGE_SIZE_MODES.full,
-                                title: props.intl.formatMessage(messages.fullStageSizeMessage)
-                            }
-                        ]}
-                    />
-                </div>
-            );
+        const stageSizeButtons = [
+            {
+                handleClick: selectPreset(onSetStageSmall),
+                icon: smallStageIcon,
+                iconClassName: styles.stageButtonIcon,
+                isSelected: stageSizeMode === STAGE_SIZE_MODES.small,
+                title: props.intl.formatMessage(messages.smallStageSizeMessage)
+            },
+            ...(showFixedLargeSize ? [
+                {
+                    handleClick: selectPreset(onSetStageLarge),
+                    icon: largeStageIcon,
+                    iconClassName: styles.stageButtonIcon,
+                    isSelected: stageSizeMode === STAGE_SIZE_MODES.large,
+                    title: props.intl.formatMessage(messages.largeStageSizeMessage)
+                }
+            ] : []),
+            {
+                handleClick: selectPreset(onSetStageFull),
+                icon: showFixedLargeSize ? fullStageIcon : largeStageIcon,
+                iconClassName: styles.stageButtonIcon,
+                isSelected: stageSizeMode === STAGE_SIZE_MODES.full,
+                title: props.intl.formatMessage(messages.fullStageSizeMessage)
+            }
+        ];
+        const StageDisplayMenu = !isPlayerOnly && getHostIntegration()?.StageDisplayMenu;
+        const stageControls = isPlayerOnly ? null : (
+            <div className={styles.stageSizeToggleGroup}>
+                {stageTools}
+                {!StageDisplayMenu && <ToggleButtons buttons={stageSizeButtons} />}
+            </div>
+        );
         header = (
             <Box
                 className={styles.stageHeaderWrapper}
@@ -222,20 +220,31 @@ const StageHeaderComponent = function (props) {
                         key="editor" // addons require the HTML element to be not be re-used by in-editor buttons
                     >
                         {stageControls}
-                        <div>
-                            <Button
-                                className={styles.stageButton}
-                                onClick={onSetStageFullScreen}
-                            >
-                                <img
-                                    alt={props.intl.formatMessage(messages.fullStageSizeMessage)}
-                                    className={styles.stageButtonIcon}
-                                    draggable={false}
-                                    src={fullScreenIcon}
-                                    title={props.intl.formatMessage(messages.fullscreenControl)}
-                                />
-                            </Button>
-                        </div>
+                        {StageDisplayMenu ? (
+                            <StageDisplayMenu
+                                fullscreen={{
+                                    handleClick: onSetStageFullScreen,
+                                    title: props.intl.formatMessage(messages.fullScreenMessage)
+                                }}
+                                locale={props.intl.locale}
+                                presets={stageSizeButtons}
+                            />
+                        ) : (
+                            <div>
+                                <Button
+                                    className={styles.stageButton}
+                                    onClick={onSetStageFullScreen}
+                                >
+                                    <img
+                                        alt={props.intl.formatMessage(messages.fullStageSizeMessage)}
+                                        className={styles.stageButtonIcon}
+                                        draggable={false}
+                                        src={fullScreenIcon}
+                                        title={props.intl.formatMessage(messages.fullscreenControl)}
+                                    />
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </Box>
             </Box>
