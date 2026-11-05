@@ -80,8 +80,7 @@ const StageSelector = props => {
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
         />;
-        return stageMenu?.wrap?.(tile, {ContextMenuTrigger, ContextMenu, MenuItem}, {includeBackdropItems: true}) ??
-            tile;
+        return stageMenu?.wrapBackdropTile?.(tile, {ContextMenuTrigger, ContextMenu, MenuItem}) ?? tile;
     }
     const content = (
         <Box
@@ -159,7 +158,7 @@ const StageSelector = props => {
 
 StageSelector.propTypes = {
     compact: PropTypes.bool,
-    stageMenu: PropTypes.shape({backdropButtons: PropTypes.func, wrap: PropTypes.func}),
+    stageMenu: PropTypes.shape({backdropButtons: PropTypes.func, wrap: PropTypes.func, wrapBackdropTile: PropTypes.func}),
     backdropCount: PropTypes.number.isRequired,
     containerRef: PropTypes.func,
     dragOver: PropTypes.bool,
