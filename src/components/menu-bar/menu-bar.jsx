@@ -483,7 +483,9 @@ class MenuBar extends React.Component {
             </Button>
         );
         // Show the About button only if we have a handler for it (like in the desktop app)
-        const aboutButton = this.buildAboutMenu(this.props.onClickAbout);
+        const ProjectInfoMenu = !this.props.onClickAbout && getHostIntegration()?.ProjectInfoMenu;
+        const aboutButton = ProjectInfoMenu ?
+            <ProjectInfoMenu locale={this.props.intl.locale} /> : this.buildAboutMenu(this.props.onClickAbout);
         const menuBar = (
             <Box
                 className={classNames(
@@ -991,7 +993,7 @@ class MenuBar extends React.Component {
                         </div>
                     )}
                     <div className={classNames(styles.menuBarItem, styles.communityButtonWrapper)}>
-                        {this.props.enableCommunity ? (
+                        {this.props.enableCommunity && !ProjectInfoMenu ? (
                             (this.props.isShowingProject || this.props.isUpdating) && (
                                 <ProjectWatcher onDoneUpdating={this.props.onSeeCommunity}>
                                     {
@@ -1008,7 +1010,7 @@ class MenuBar extends React.Component {
                                     }
                                 </ProjectWatcher>
                             )
-                        ) : (this.props.showComingSoon ? (
+                        ) : (this.props.showComingSoon && !ProjectInfoMenu ? (
                             <MenuBarItemTooltip id="community-button">
                                 <CommunityButton className={styles.menuBarButton} />
                             </MenuBarItemTooltip>
@@ -1020,7 +1022,7 @@ class MenuBar extends React.Component {
                         ) : []))}
                     </div>
                     {/* tw: add a feedback button */}
-                    <div className={styles.menuBarItem}>
+                    {!ProjectInfoMenu && <div className={styles.menuBarItem}>
                         <a
                             className={styles.feedbackLink}
                             href="https://scratch.mit.edu/users/GarboMuffin/#comments"
@@ -1039,7 +1041,7 @@ class MenuBar extends React.Component {
                                 />
                             </Button>
                         </a>
-                    </div>
+                    </div>}
                 </div>
 
                 <div className={styles.accountInfoGroup}>

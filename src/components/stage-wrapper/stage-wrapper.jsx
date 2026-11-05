@@ -29,13 +29,24 @@ const StageWrapperComponent = function (props) {
         vm
     } = props;
 
-    const renderStage = (width, floating, inputDocument) => isRendererSupported ? <Stage
-        refreshInputBounds={floating}
-        stageInputDocument={inputDocument}
-        stageDisplayWidth={width}
-        stageSize={stageSize}
-        vm={vm}
-    /> : null;
+    const renderStage = (width, floating, inputDocument) => (isRendererSupported ? (
+        <Stage
+            refreshInputBounds={floating}
+            stageInputDocument={inputDocument}
+            stageDisplayWidth={width}
+            stageSize={stageSize}
+            vm={vm}
+        />
+    ) : null);
+    const renderHeader = width => (
+        <StageHeader
+            stageDisplayWidth={width}
+            stageSize={stageSize}
+            stageTools={stageTools}
+            vm={vm}
+            onStagePreset={onStagePreset}
+        />
+    );
 
     return (
         <Box
@@ -51,23 +62,23 @@ const StageWrapperComponent = function (props) {
             )}
             dir={isRtl ? 'rtl' : 'ltr'}
         >
-            <Box className={styles.stageMenuWrapper}>
-                <StageHeader
-                    stageDisplayWidth={stageDisplayWidth}
-                    stageSize={stageSize}
-                    stageTools={stageTools}
-                    vm={vm}
-                    onStagePreset={onStagePreset}
-                />
-            </Box>
-            <Box className={styles.stageCanvasWrapper}>
-                {StagePanel && isRendererSupported ? <StagePanel
+            {StagePanel && isRendererSupported ? (
+                <StagePanel
                     aspect={stageAspect}
                     defaultWidth={stageDefaultWidth}
+                    isFullScreen={isFullScreen}
+                    /* eslint-disable react/jsx-no-bind */
                     render={renderStage}
+                    renderHeader={renderHeader}
+                    /* eslint-enable react/jsx-no-bind */
                     width={stageDisplayWidth}
-                /> : renderStage(stageDisplayWidth)}
-            </Box>
+                />
+            ) : (
+                <>
+                    <Box className={styles.stageMenuWrapper}>{renderHeader(stageDisplayWidth)}</Box>
+                    <Box className={styles.stageCanvasWrapper}>{renderStage(stageDisplayWidth)}</Box>
+                </>
+            )}
             {loading ? (
                 <Loader isFullScreen={isFullScreen} />
             ) : null}
