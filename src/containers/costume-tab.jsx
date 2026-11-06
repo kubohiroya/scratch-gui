@@ -355,7 +355,7 @@ CostumeTab.propTypes = {
     assetSelection: PropTypes.shape({
         restore: PropTypes.func.isRequired,
         remember: PropTypes.func.isRequired,
-        rememberLayout: PropTypes.func
+        renderPanel: PropTypes.func
     }),
     dispatchUpdateRestore: PropTypes.func,
     editingTarget: PropTypes.string,
