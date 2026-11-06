@@ -20,6 +20,7 @@ import surpriseIcon from '../action-menu/icon--surprise.svg';
 import searchIcon from '../action-menu/icon--search.svg';
 
 const TargetListPanel = getHostIntegration()?.TargetListPanel || React.Fragment;
+const spriteListClasses = getHostIntegration()?.spriteListClasses;
 
 const messages = defineMessages({
     addSpriteFromLibrary: {
@@ -83,7 +84,8 @@ const SpriteSelectorComponent = function (props) {
     }
     return (
         <Box
-            className={classNames(styles.spriteSelector, {[styles.hostSpriteProperties]: hasHostSpriteProperties || compact})}
+            className={classNames(styles.spriteSelector,
+                (hasHostSpriteProperties || compact) && spriteListClasses?.selector)}
             {...componentProps}
         >
 

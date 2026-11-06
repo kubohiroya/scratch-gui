@@ -55,20 +55,6 @@
     overflow-y: auto;
 }
 
-.host-sprite-properties {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    min-height: 0;
-    contain: size;
-}
-
-.host-sprite-properties > .scroll-wrapper {
-    flex: 1 0 4.5rem;
-    height: auto;
-    min-height: 0;
-}
-
 .scroll-wrapper-dragging {
     background-color: $drop-highlight;
 }
@@ -138,10 +124,4 @@
 .placeholder > .sprite {
     background: black;
     filter: opacity(15%) brightness(0%);
-}
-
-.compact-scroll-wrapper {
-    flex: 1;
-    height: auto;
-    min-height: 0;
 }
