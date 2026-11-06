@@ -18,6 +18,8 @@ const ThrottledSpriteSelectorItem = ThrottledPropertyHOC('asset', 500)(SpriteSel
 const SpriteGrid = getHostIntegration()?.SpriteGrid ||
     (({className, children}) => <Box className={className}>{children}</Box>);
 
+const spriteListClasses = getHostIntegration()?.spriteListClasses;
+
 const useSpriteCodeWindows = getHostIntegration()?.useSpriteCodeWindows || (() => null);
 
 const SpriteList = function (props) {
@@ -46,8 +48,7 @@ const SpriteList = function (props) {
 
     return (
         <Box
-            className={classNames(styles.scrollWrapper, {
-                [styles.compactScrollWrapper]: compact,
+            className={classNames(styles.scrollWrapper, spriteListClasses?.scroll, compact && spriteListClasses?.compact, {
                 [styles.scrollWrapperDragging]: draggingType === DragConstants.BACKPACK_SPRITE
             })}
             componentRef={containerRef}
