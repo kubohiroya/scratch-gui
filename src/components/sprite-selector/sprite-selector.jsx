@@ -48,6 +48,7 @@ const SpriteSelectorComponent = function (props) {
     const {
         compact,
         editingTarget,
+        hideSpriteInfo,
         hoveredTarget,
         intl,
         onChangeSpriteDirection,
@@ -64,10 +65,12 @@ const SpriteSelectorComponent = function (props) {
         onFileUploadClick,
         onNewSpriteClick,
         onPaintSpriteClick,
+        onRenameSprite,
         onSelectSprite,
         onSpriteUpload,
         onSurpriseSpriteClick,
         raised,
+        renameSpriteLabel,
         selectedId,
         spriteFileInput,
         sprites,
@@ -87,7 +90,7 @@ const SpriteSelectorComponent = function (props) {
             {...componentProps}
         >
 
-            <SpriteInfo
+            {!hideSpriteInfo && <SpriteInfo
                 direction={selectedSprite.direction}
                 disabled={spriteInfoDisabled}
                 name={selectedSprite.name}
@@ -104,7 +107,7 @@ const SpriteSelectorComponent = function (props) {
                 onChangeVisibility={onChangeSpriteVisibility}
                 onChangeX={onChangeSpriteX}
                 onChangeY={onChangeSpriteY}
-            />
+            />}
 
             <TargetListPanel>
                 <SpriteList
@@ -114,11 +117,13 @@ const SpriteSelectorComponent = function (props) {
                     hoveredTarget={hoveredTarget}
                     items={Object.keys(sprites).map(id => sprites[id])}
                     raised={raised}
+                    renameSpriteLabel={renameSpriteLabel}
                     selectedId={selectedId}
                     onDeleteSprite={onDeleteSprite}
                     onDrop={onDrop}
                     onDuplicateSprite={onDuplicateSprite}
                     onExportSprite={onExportSprite}
+                    onRenameSprite={onRenameSprite}
                     onSelectSprite={onSelectSprite}
                 />
                 <ActionMenu
@@ -160,6 +165,7 @@ SpriteSelectorComponent.propTypes = {
     compact: PropTypes.bool,
     stageTile: PropTypes.node,
     editingTarget: PropTypes.string,
+    hideSpriteInfo: PropTypes.bool,
     hoveredTarget: PropTypes.shape({
         hoveredSprite: PropTypes.string,
         receivedBlocks: PropTypes.bool
@@ -179,10 +185,12 @@ SpriteSelectorComponent.propTypes = {
     onFileUploadClick: PropTypes.func,
     onNewSpriteClick: PropTypes.func,
     onPaintSpriteClick: PropTypes.func,
+    onRenameSprite: PropTypes.func,
     onSelectSprite: PropTypes.func,
     onSpriteUpload: PropTypes.func,
     onSurpriseSpriteClick: PropTypes.func,
     raised: PropTypes.bool,
+    renameSpriteLabel: PropTypes.string,
     selectedId: PropTypes.string,
     spriteFileInput: PropTypes.func,
     sprites: PropTypes.shape({
