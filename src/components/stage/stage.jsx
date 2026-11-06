@@ -57,7 +57,7 @@ const StageComponent = props => {
                 }}
             >
                 <Box
-                    data-gui-stage="true"
+                    data-gui-stage={isFullScreen ? 'fullscreen' : 'true'}
                     className={classNames(
                         styles.stage,
                         {[styles.fullScreen]: isFullScreen}
