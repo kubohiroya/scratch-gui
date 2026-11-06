@@ -21,6 +21,7 @@ import ProjectWatcher from '../../containers/project-watcher.jsx';
 import MenuBarMenu from './menu-bar-menu.jsx';
 import MenuLabel from './tw-menu-label.jsx';
 import {MenuItem, MenuSection} from '../menu/menu.jsx';
+import addExtensionIcon from '../gui/icon--extensions.svg';
 import ProjectTitleInput from './project-title-input.jsx';
 import AuthorInfo from './author-info.jsx';
 import SB3Downloader from '../../containers/sb3-downloader.jsx';
@@ -208,6 +209,8 @@ MenuItemLink.propTypes = {
     children: PropTypes.node.isRequired,
     href: PropTypes.string.isRequired
 };
+
+const FileMenuItem = getHostIntegration()?.createFileMenuItem?.(MenuItem, addExtensionIcon) || MenuItem;
 
 class MenuBar extends React.Component {
     constructor (props) {
@@ -594,15 +597,17 @@ class MenuBar extends React.Component {
                                     open={this.props.fileMenuOpen}
                                     place={this.props.isRtl ? 'left' : 'right'}
                                 >
-                                    <MenuItem
+                                    <FileMenuItem
                                         isRtl={this.props.isRtl}
+                                        command="new"
                                         onClick={this.handleClickNew}
                                     >
                                         {newProjectMessage}
-                                    </MenuItem>
+                                    </FileMenuItem>
                                     {this.props.onClickNewWindow && (
-                                        <MenuItem
+                                        <FileMenuItem
                                             isRtl={this.props.isRtl}
+                                            command="window"
                                             onClick={this.handleClickNewWindow}
                                         >
                                             <FormattedMessage
@@ -611,33 +616,43 @@ class MenuBar extends React.Component {
                                                 description="Part of desktop app. Menu bar item that creates a new window."
                                                 id="tw.menuBar.newWindow"
                                             />
-                                        </MenuItem>
+                                        </FileMenuItem>
                                     )}
                                     {(this.props.canSave || this.props.canCreateCopy || this.props.canRemix) && (
                                         <MenuSection>
                                             {this.props.canSave && (
-                                                <MenuItem onClick={this.handleClickSave}>
+                                                <FileMenuItem
+                                                    command="save"
+                                                    onClick={this.handleClickSave}
+                                                >
                                                     {saveNowMessage}
-                                                </MenuItem>
+                                                </FileMenuItem>
                                             )}
                                             {this.props.canCreateCopy && (
-                                                <MenuItem onClick={this.handleClickSaveAsCopy}>
+                                                <FileMenuItem
+                                                    command="copy"
+                                                    onClick={this.handleClickSaveAsCopy}
+                                                >
                                                     {createCopyMessage}
-                                                </MenuItem>
+                                                </FileMenuItem>
                                             )}
                                             {this.props.canRemix && (
-                                                <MenuItem onClick={this.handleClickRemix}>
+                                                <FileMenuItem
+                                                    command="remix"
+                                                    onClick={this.handleClickRemix}
+                                                >
                                                     {remixMessage}
-                                                </MenuItem>
+                                                </FileMenuItem>
                                             )}
                                         </MenuSection>
                                     )}
                                     <MenuSection>
-                                        <MenuItem
+                                        <FileMenuItem
+                                            command="open"
                                             onClick={this.props.onStartSelectingFileUpload}
                                         >
                                             {this.props.intl.formatMessage(sharedMessages.loadFromComputerTitle)}
-                                        </MenuItem>
+                                        </FileMenuItem>
                                         <SB3Downloader
                                             showSaveFilePicker={this.props.showSaveFilePicker}
                                         >
@@ -646,8 +661,10 @@ class MenuBar extends React.Component {
                                                     {extended.available && (
                                                         <React.Fragment>
                                                             {extended.name !== null && (
-                                                                // eslint-disable-next-line max-len
-                                                                <MenuItem onClick={this.getSaveToComputerHandler(extended.saveToLastFile)}>
+                                                                <FileMenuItem
+                                                                    command="save"
+                                                                    onClick={this.getSaveToComputerHandler(extended.saveToLastFile)}
+                                                                >
                                                                     <FormattedMessage
                                                                         defaultMessage="Save to {file}"
                                                                         // eslint-disable-next-line max-len
@@ -657,21 +674,24 @@ class MenuBar extends React.Component {
                                                                             file: extended.name
                                                                         }}
                                                                     />
-                                                                </MenuItem>
+                                                                </FileMenuItem>
                                                             )}
-                                                            {/* eslint-disable-next-line max-len */}
-                                                            <MenuItem onClick={this.getSaveToComputerHandler(extended.saveAsNew)}>
+                                                            <FileMenuItem
+                                                                command="save-as"
+                                                                onClick={this.getSaveToComputerHandler(extended.saveAsNew)}
+                                                            >
                                                                 <FormattedMessage
                                                                     defaultMessage="Save as..."
                                                                     // eslint-disable-next-line max-len
                                                                     description="Menu bar item to select a new file to save the project as"
                                                                     id="tw.saveAs"
                                                                 />
-                                                            </MenuItem>
+                                                            </FileMenuItem>
                                                         </React.Fragment>
                                                     )}
                                                     {notScratchDesktop() && (
-                                                        <MenuItem
+                                                        <FileMenuItem
+                                                            command="download"
                                                             onClick={this.getSaveToComputerHandler(downloadProject)}
                                                         >
                                                             {extended.available ? (
@@ -688,7 +708,7 @@ class MenuBar extends React.Component {
                                                                     id="gui.menuBar.downloadToComputer"
                                                                 />
                                                             )}
-                                                        </MenuItem>
+                                                        </FileMenuItem>
                                                     )}
                                                 </React.Fragment>
                                             )}
@@ -696,7 +716,8 @@ class MenuBar extends React.Component {
                                     </MenuSection>
                                     {this.props.onClickPackager && (
                                         <MenuSection>
-                                            <MenuItem
+                                            <FileMenuItem
+                                                command="package"
                                                 onClick={this.handleClickPackager}
                                             >
                                                 <FormattedMessage
@@ -705,23 +726,27 @@ class MenuBar extends React.Component {
                                                     description="Menu bar item to open the current project in the packager"
                                                     id="tw.menuBar.package"
                                                 />
-                                            </MenuItem>
+                                            </FileMenuItem>
                                         </MenuSection>
                                     )}
                                     <MenuSection>
-                                        <MenuItem onClick={this.handleClickRestorePoints}>
+                                        <FileMenuItem
+                                            command="restore"
+                                            onClick={this.handleClickRestorePoints}
+                                        >
                                             <FormattedMessage
                                                 defaultMessage="Restore points"
                                                 description="Menu bar item to manage restore points"
                                                 id="tw.menuBar.restorePoints"
                                             />
-                                        </MenuItem>
+                                        </FileMenuItem>
                                     </MenuSection>
                                     {getHostIntegration()?.renderFileMenu?.({
                                         vm: this.props.vm,
                                         locale: this.props.locale,
-                                        MenuItem,
+                                        MenuItem: FileMenuItem,
                                         MenuSection,
+                                        onAddExtension: this.props.onAddExtension,
                                         onRequestClose: this.props.onRequestCloseFile
                                     })}
                                 </MenuBarMenu>
@@ -1111,6 +1136,7 @@ MenuBar.propTypes = {
     mode220022BC: PropTypes.bool,
     modeMenuOpen: PropTypes.bool,
     modeNow: PropTypes.bool,
+    onAddExtension: PropTypes.func,
     onClickAbout: PropTypes.oneOfType([
         PropTypes.func, // button mode: call this callback when the About button is clicked
         PropTypes.arrayOf( // menu mode: list of items in the About menu

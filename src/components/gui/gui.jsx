@@ -60,6 +60,7 @@ const TWPlusWorkspaceAttachment = getHostIntegration()?.createWorkspaceAttachmen
 
 const EditorLayout = getHostIntegration()?.EditorLayout || (({render}) => render({}));
 const StagePanel = getHostIntegration()?.StagePanel;
+const extensionInFileMenu = getHostIntegration()?.extensionInFileMenu === true;
 
 const renderInline = content => content;
 const renderInlinePanel = (index, content) => content;
@@ -180,6 +181,7 @@ const GUIComponent = props => {
         return <Box {...componentProps}>{children}</Box>;
     }
 
+    const useExtensionFileMenu = extensionInFileMenu && canManageFiles;
     const tabClassNames = {
         tabs: styles.tabs,
         tab: classNames(tabStyles.reactTabsTab, styles.tab),
@@ -326,6 +328,7 @@ const GUIComponent = props => {
                     showComingSoon={showComingSoon}
                     showOpenFilePicker={showOpenFilePicker}
                     showSaveFilePicker={showSaveFilePicker}
+                    onAddExtension={useExtensionFileMenu ? onExtensionButtonClick : null}
                     onClickAbout={onClickAbout}
                     onClickAccountNav={onClickAccountNav}
                     onClickAddonSettings={onClickAddonSettings}
@@ -450,7 +453,9 @@ const GUIComponent = props => {
                                                         vm={vm}
                                                     />
                                                 </Box>
-                                                <Box className={styles.extensionButtonContainer}>
+                                                {!useExtensionFileMenu && <Box
+                                                    className={styles.extensionButtonContainer}
+                                                >
                                                     <button
                                                         className={styles.extensionButton}
                                                         title={intl.formatMessage(messages.addExtension)}
@@ -462,7 +467,7 @@ const GUIComponent = props => {
                                                             src={addExtensionIcon}
                                                         />
                                                     </button>
-                                                </Box>
+                                                </Box>}
                                                 <Box className={styles.watermark}>
                                                     <Watermark />
                                                 </Box>
