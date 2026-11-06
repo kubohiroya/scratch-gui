@@ -10,7 +10,7 @@ import DragConstants from '../../lib/drag-constants';
 
 import styles from './selector.css';
 
-const Selector = props => {
+export const Selector = props => {
     const {
         buttons,
         containerRef,
@@ -18,6 +18,8 @@ const Selector = props => {
         isRtl,
         items,
         listActions: ListActions,
+        listRef,
+        onListScroll,
         selectedItemIndex,
         draggingIndex,
         draggingType,
@@ -53,9 +55,14 @@ const Selector = props => {
     return (
         <Box
             className={styles.wrapper}
+            data-layout-asset-list={listRef ? '' : null}
             componentRef={containerRef}
         >
-            <Box className={styles.listArea}>
+            <Box
+                className={styles.listArea}
+                componentRef={listRef}
+                onScroll={onListScroll}
+            >
                 {items.map((item, index) => (
                     <SortableAsset
                         id={item.name}
@@ -94,6 +101,8 @@ const Selector = props => {
 };
 
 Selector.propTypes = {
+    listRef: PropTypes.func,
+    onListScroll: PropTypes.func,
     buttons: PropTypes.arrayOf(PropTypes.shape({
         title: PropTypes.string.isRequired,
         img: PropTypes.string.isRequired,

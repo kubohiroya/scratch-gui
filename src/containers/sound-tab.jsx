@@ -56,7 +56,11 @@ class SoundTab extends React.Component {
             'handleDrop',
             'setFileInput'
         ]);
-        this.state = {selectedSoundIndex: 0};
+        this.state = {selectedSoundIndex: this.restoreAssetSelection(props)};
+    }
+
+    componentDidMount () {
+        this.rememberAssetSelection();
     }
 
     componentWillReceiveProps (nextProps) {
@@ -72,10 +76,32 @@ class SoundTab extends React.Component {
         }
 
         // If switching editing targets, reset the sound index
-        if (this.props.editingTarget !== editingTarget) {
-            this.setState({selectedSoundIndex: 0});
+        if (this.props.editingTarget !== editingTarget ||
+            (nextProps.assetSelection && this.props.assetSelection !== nextProps.assetSelection)) {
+            this.setState({selectedSoundIndex: this.restoreAssetSelection(nextProps)});
         } else if (this.state.selectedSoundIndex > target.sounds.length - 1) {
             this.setState({selectedSoundIndex: Math.max(target.sounds.length - 1, 0)});
+        }
+    }
+
+    componentDidUpdate () {
+        this.rememberAssetSelection();
+    }
+
+    restoreAssetSelection (props) {
+        if (!props.assetSelection) return 0;
+        const target = props.vm.editingTarget;
+        return (target && props.assetSelection.restore(target, target.getSounds())) ?? 0;
+    }
+
+    rememberAssetSelection () {
+        const {assetSelection, vm} = this.props;
+        if (!assetSelection) return;
+        const target = vm.editingTarget;
+        if (target) {
+            assetSelection.remember(
+                target, target.getSounds()[this.state.selectedSoundIndex], this.handleSelectSound
+            );
         }
     }
 
@@ -226,6 +252,7 @@ class SoundTab extends React.Component {
 
         return (
             <AssetPanel
+                assetSelection={this.props.assetSelection}
                 buttons={isSupported ? [{
                     title: intl.formatMessage(messages.addSound),
                     img: addSoundFromLibraryIcon,
@@ -286,6 +313,11 @@ class SoundTab extends React.Component {
 }
 
 SoundTab.propTypes = {
+    assetSelection: PropTypes.shape({
+        restore: PropTypes.func.isRequired,
+        remember: PropTypes.func.isRequired,
+        rememberLayout: PropTypes.func
+    }),
     dispatchUpdateRestore: PropTypes.func,
     editingTarget: PropTypes.string,
     intl: intlShape,
