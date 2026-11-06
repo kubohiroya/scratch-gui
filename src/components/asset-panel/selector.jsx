@@ -19,6 +19,7 @@ export const Selector = props => {
         items,
         listActions: ListActions,
         listRef,
+        wrapperAttributes,
         onListScroll,
         selectedItemIndex,
         draggingIndex,
@@ -55,8 +56,8 @@ export const Selector = props => {
     return (
         <Box
             className={styles.wrapper}
-            data-layout-asset-list={listRef ? '' : null}
             componentRef={containerRef}
+            {...wrapperAttributes}
         >
             <Box
                 className={styles.listArea}
@@ -103,6 +104,7 @@ export const Selector = props => {
 Selector.propTypes = {
     listRef: PropTypes.func,
     onListScroll: PropTypes.func,
+    wrapperAttributes: PropTypes.objectOf(PropTypes.string),
     buttons: PropTypes.arrayOf(PropTypes.shape({
         title: PropTypes.string.isRequired,
         img: PropTypes.string.isRequired,
