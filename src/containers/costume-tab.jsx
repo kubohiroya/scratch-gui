@@ -95,11 +95,10 @@ class CostumeTab extends React.Component {
             stage
         } = props;
         const target = editingTarget && sprites[editingTarget] ? sprites[editingTarget] : stage;
-        if (target && target.currentCostume) {
-            this.state = {selectedCostumeIndex: target.currentCostume};
-        } else {
-            this.state = {selectedCostumeIndex: 0};
-        }
+        this.state = {selectedCostumeIndex: this.restoreAssetSelection(props, target?.currentCostume || 0)};
+    }
+    componentDidMount () {
+        this.rememberAssetSelection();
     }
     componentWillReceiveProps (nextProps) {
         const {
@@ -113,7 +112,10 @@ class CostumeTab extends React.Component {
             return;
         }
 
-        if (this.props.editingTarget === editingTarget) {
+        if (nextProps.assetSelection &&
+            (this.props.assetSelection !== nextProps.assetSelection || this.props.editingTarget !== editingTarget)) {
+            this.setState({selectedCostumeIndex: this.restoreAssetSelection(nextProps, target.currentCostume)});
+        } else if (this.props.editingTarget === editingTarget) {
             // If costumes have been added or removed, change costumes to the editing target's
             // current costume.
             const oldTarget = this.props.sprites[editingTarget] ?
@@ -127,6 +129,24 @@ class CostumeTab extends React.Component {
         } else {
             // If switching editing targets, update the costume index
             this.setState({selectedCostumeIndex: target.currentCostume});
+        }
+    }
+    componentDidUpdate () {
+        this.rememberAssetSelection();
+    }
+    restoreAssetSelection (props, fallback) {
+        if (!props.assetSelection) return fallback;
+        const target = props.vm.editingTarget;
+        return (target && props.assetSelection.restore(target, target.getCostumes())) ?? fallback;
+    }
+    rememberAssetSelection () {
+        const {assetSelection, vm} = this.props;
+        if (!assetSelection) return;
+        const target = vm.editingTarget;
+        if (target) {
+            assetSelection.remember(
+                target, target.getCostumes()[this.state.selectedCostumeIndex], this.handleSelectCostume
+            );
         }
     }
     handleSelectCostume (costumeIndex) {
@@ -276,6 +296,7 @@ class CostumeTab extends React.Component {
         })) : [];
         return (
             <AssetPanel
+                assetSelection={this.props.assetSelection}
                 buttons={[
                     {
                         title: intl.formatMessage(addLibraryMessage),
@@ -307,7 +328,7 @@ class CostumeTab extends React.Component {
                         onClick: addLibraryFunc
                     }
                 ]}
-                listActions={isStage ? getHostIntegration()?.BackdropListActions : undefined}
+                listActions={isStage ? getHostIntegration()?.BackdropListActions : null}
                 dragType={DragConstants.COSTUME}
                 isRtl={isRtl}
                 items={costumeData}
@@ -331,6 +352,11 @@ class CostumeTab extends React.Component {
 }
 
 CostumeTab.propTypes = {
+    assetSelection: PropTypes.shape({
+        restore: PropTypes.func.isRequired,
+        remember: PropTypes.func.isRequired,
+        rememberLayout: PropTypes.func
+    }),
     dispatchUpdateRestore: PropTypes.func,
     editingTarget: PropTypes.string,
     intl: intlShape,
