@@ -82,11 +82,11 @@ const SpriteSelectorItem = props => (
                 ) : null }
                 {props.onRenameButtonClick ? (
                     <MenuItem onClick={props.onRenameButtonClick}>
-                        <FormattedMessage
+                        {props.renameLabel || <FormattedMessage
                             defaultMessage="rename"
                             description="Menu item to rename an item"
                             id="tw.spriteSelectorItem.rename"
-                        />
+                        />}
                     </MenuItem>
                 ) : null}
                 {props.onDeleteButtonClick ? (
@@ -122,6 +122,7 @@ SpriteSelectorItem.propTypes = {
     onMouseEnter: PropTypes.func,
     onMouseLeave: PropTypes.func,
     preventContextMenu: PropTypes.bool,
+    renameLabel: PropTypes.string,
     selected: PropTypes.bool.isRequired
 };
 

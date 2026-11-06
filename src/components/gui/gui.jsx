@@ -45,6 +45,7 @@ import TWInvalidProjectModal from '../../containers/tw-invalid-project-modal.jsx
 import {STAGE_SIZE_MODES, FIXED_WIDTH, UNCONSTRAINED_NON_STAGE_WIDTH} from '../../lib/layout-constants';
 import {getStageDimensions, getMinWidth, resolveStageSize} from '../../lib/screen-utils';
 import {Theme} from '../../lib/themes';
+import {BLOCKS_TAB_INDEX} from '../../reducers/editor-tab';
 
 import {isRendererSupported, isBrowserSupported} from '../../lib/tw-environment-support-prober';
 
@@ -63,6 +64,7 @@ const extensionInFileMenu = getHostIntegration()?.extensionInFileMenu === true;
 
 const renderInline = content => content;
 const renderInlinePanel = (index, content) => content;
+const propertiesTabIndex = 3;
 
 const messages = defineMessages({
     addExtension: {
@@ -371,7 +373,10 @@ const GUIComponent = props => {
                                     {(layout.renderEditor || renderInline)(<Tabs
                                         forceRenderTabPanel
                                         className={tabClassNames.tabs}
-                                        selectedIndex={activeTabIndex}
+                                        selectedIndex={
+                                            activeTabIndex === propertiesTabIndex && !layout.propertiesTab ?
+                                                BLOCKS_TAB_INDEX : activeTabIndex
+                                        }
                                         selectedTabClassName={tabClassNames.tabSelected}
                                         selectedTabPanelClassName={tabClassNames.tabPanelSelected}
                                         onSelect={onActivateTab}
@@ -425,6 +430,9 @@ const GUIComponent = props => {
                                                         id="gui.gui.soundsTab"
                                                     />
                                                 </Tab>
+                                                {layout.propertiesTab && <Tab className={tabClassNames.tab}>
+                                                    {layout.propertiesTab.title}
+                                                </Tab>}
                                             </TabList>
                                         )}
                                         <TabPanel className={tabClassNames.tabPanel}>
@@ -475,6 +483,9 @@ const GUIComponent = props => {
                                                 (soundsTabVisible || layout.isEditorPanelOpen?.(2)) ? <SoundTab vm={vm} /> : null
                                             )}
                                         </TabPanel>
+                                        {layout.propertiesTab && <TabPanel className={tabClassNames.tabPanel}>
+                                            {layout.propertiesTab.content}
+                                        </TabPanel>}
                                     </Tabs>)}
                                     {backpackVisible ? (
                                         <Backpack host={backpackHost} />
@@ -503,6 +514,8 @@ const GUIComponent = props => {
                                     {layout.rowSplitter}
                                     <Box className={classNames(styles.targetWrapper, layout.targetClassName)}>
                                         <TargetPane
+                                            hideSpriteInfo={Boolean(layout.propertiesTab)}
+                                            renameSpriteLabel={layout.propertiesTab?.renameLabel}
                                             stageSize={stageSize}
                                             vm={vm}
                                         />

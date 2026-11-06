@@ -14,6 +14,7 @@ import {showStandardAlert, closeAlertWithId} from '../reducers/alerts';
 import {setRestore} from '../reducers/restore-deletion';
 import DragConstants from '../lib/drag-constants';
 import TargetPaneComponent from '../components/target-pane/target-pane.jsx';
+import Prompt from './prompt.jsx';
 import {getSpriteLibrary} from '../lib/libraries/tw-async-libraries';
 import {handleFileUpload, spriteUpload} from '../lib/file-uploader.js';
 import sharedMessages from '../lib/shared-messages';
@@ -46,10 +47,14 @@ class TargetPane extends React.Component {
             'handleSelectSprite',
             'handleSurpriseSpriteClick',
             'handlePaintSpriteClick',
+            'handleRequestSpriteRename',
+            'handleConfirmSpriteRename',
+            'handleCancelSpriteRename',
             'handleFileUploadClick',
             'handleSpriteUpload',
             'setFileInput'
         ]);
+        this.state = {renameTarget: null};
     }
     componentDidMount () {
         this.props.vm.addListener('BLOCK_DRAG_END', this.handleBlockDragEnd);
@@ -65,6 +70,22 @@ class TargetPane extends React.Component {
     }
     handleChangeSpriteName (name) {
         this.props.vm.renameSprite(this.props.editingTarget, name);
+    }
+    handleRequestSpriteRename (id) {
+        const target = this.props.vm.runtime.getTargetById(id);
+        if (target && !target.isStage) this.setState({renameTarget: target});
+    }
+    handleConfirmSpriteRename (value) {
+        const {renameTarget} = this.state;
+        const {vm} = this.props;
+        const name = value.trim();
+        if (name && renameTarget && vm.runtime.getTargetById(renameTarget.id) === renameTarget) {
+            vm.renameSprite(renameTarget.id, name);
+        }
+        this.handleCancelSpriteRename();
+    }
+    handleCancelSpriteRename () {
+        this.setState({renameTarget: null});
     }
     handleChangeSpriteSize (size) {
         this.props.vm.postSpriteInfo({size});
@@ -221,32 +242,52 @@ class TargetPane extends React.Component {
             onHighlightTarget,
             onReceivedBlocks,
             onShowImporting,
+            renameSpriteLabel,
             workspaceMetrics,
             ...componentProps
         } = this.props;
         /* eslint-enable no-unused-vars */
         return (
-            <TargetPaneComponent
-                {...componentProps}
-                fileInputRef={this.setFileInput}
-                onActivateBlocksTab={this.handleActivateBlocksTab}
-                onChangeSpriteDirection={this.handleChangeSpriteDirection}
-                onChangeSpriteName={this.handleChangeSpriteName}
-                onChangeSpriteRotationStyle={this.handleChangeSpriteRotationStyle}
-                onChangeSpriteSize={this.handleChangeSpriteSize}
-                onChangeSpriteVisibility={this.handleChangeSpriteVisibility}
-                onChangeSpriteX={this.handleChangeSpriteX}
-                onChangeSpriteY={this.handleChangeSpriteY}
-                onDeleteSprite={this.handleDeleteSprite}
-                onDrop={this.handleDrop}
-                onDuplicateSprite={this.handleDuplicateSprite}
-                onExportSprite={this.handleExportSprite}
-                onFileUploadClick={this.handleFileUploadClick}
-                onPaintSpriteClick={this.handlePaintSpriteClick}
-                onSelectSprite={this.handleSelectSprite}
-                onSpriteUpload={this.handleSpriteUpload}
-                onSurpriseSpriteClick={this.handleSurpriseSpriteClick}
-            />
+            <React.Fragment>
+                <TargetPaneComponent
+                    {...componentProps}
+                    fileInputRef={this.setFileInput}
+                    onActivateBlocksTab={this.handleActivateBlocksTab}
+                    onChangeSpriteDirection={this.handleChangeSpriteDirection}
+                    onChangeSpriteName={this.handleChangeSpriteName}
+                    onChangeSpriteRotationStyle={this.handleChangeSpriteRotationStyle}
+                    onChangeSpriteSize={this.handleChangeSpriteSize}
+                    onChangeSpriteVisibility={this.handleChangeSpriteVisibility}
+                    onChangeSpriteX={this.handleChangeSpriteX}
+                    onChangeSpriteY={this.handleChangeSpriteY}
+                    onDeleteSprite={this.handleDeleteSprite}
+                    onDrop={this.handleDrop}
+                    onDuplicateSprite={this.handleDuplicateSprite}
+                    onExportSprite={this.handleExportSprite}
+                    onFileUploadClick={this.handleFileUploadClick}
+                    onPaintSpriteClick={this.handlePaintSpriteClick}
+                    onSelectSprite={this.handleSelectSprite}
+                    onSpriteUpload={this.handleSpriteUpload}
+                    onSurpriseSpriteClick={this.handleSurpriseSpriteClick}
+                    onRenameSprite={renameSpriteLabel ? this.handleRequestSpriteRename : null}
+                    renameSpriteLabel={renameSpriteLabel}
+                />
+                {renameSpriteLabel && this.state.renameTarget && <Prompt
+                    defaultValue={this.state.renameTarget.getName()}
+                    isStage={false}
+                    label={this.props.intl.formatMessage({
+                        id: 'gui.SpriteInfo.spritePlaceholder',
+                        defaultMessage: 'Name',
+                        description: 'Placeholder text for sprite name'
+                    })}
+                    showCloudOption={false}
+                    showListMessage={false}
+                    showVariableOptions={false}
+                    title={renameSpriteLabel}
+                    onCancel={this.handleCancelSpriteRename}
+                    onOk={this.handleConfirmSpriteRename}
+                />}
+            </React.Fragment>
         );
     }
 }
