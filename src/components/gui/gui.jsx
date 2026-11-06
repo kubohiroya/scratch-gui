@@ -59,6 +59,7 @@ const TWPlusWorkspaceAttachment = getHostIntegration()?.createWorkspaceAttachmen
 
 const EditorLayout = getHostIntegration()?.EditorLayout || (({render}) => render({}));
 const StagePanel = getHostIntegration()?.StagePanel;
+const extensionInFileMenu = getHostIntegration()?.extensionInFileMenu === true;
 
 const renderInline = content => content;
 const renderInlinePanel = (index, content) => content;
@@ -178,6 +179,7 @@ const GUIComponent = props => {
         return <Box {...componentProps}>{children}</Box>;
     }
 
+    const useExtensionFileMenu = extensionInFileMenu && canManageFiles;
     const tabClassNames = {
         tabs: styles.tabs,
         tab: classNames(tabStyles.reactTabsTab, styles.tab),
@@ -324,6 +326,7 @@ const GUIComponent = props => {
                     showComingSoon={showComingSoon}
                     showOpenFilePicker={showOpenFilePicker}
                     showSaveFilePicker={showSaveFilePicker}
+                    onAddExtension={useExtensionFileMenu ? onExtensionButtonClick : null}
                     onClickAbout={onClickAbout}
                     onClickAccountNav={onClickAccountNav}
                     onClickAddonSettings={onClickAddonSettings}
@@ -349,6 +352,7 @@ const GUIComponent = props => {
                         fullscreen={isFullScreen}
                         horizontalInset={18}
                         locale={intl.locale}
+                        onActivateEditorTab={onActivateTab}
                         rtl={isRtl}
                         stageAspect={customStageSize.width / customStageSize.height}
                         verticalInset={46}
@@ -364,7 +368,7 @@ const GUIComponent = props => {
                                     className={styles.editorWrapper}
                                     style={layout.editorStyle}
                                 >
-                                    <Tabs
+                                    {(layout.renderEditor || renderInline)(<Tabs
                                         forceRenderTabPanel
                                         className={tabClassNames.tabs}
                                         selectedIndex={activeTabIndex}
@@ -441,7 +445,9 @@ const GUIComponent = props => {
                                                         vm={vm}
                                                     />
                                                 </Box>
-                                                <Box className={styles.extensionButtonContainer}>
+                                                {!useExtensionFileMenu && <Box
+                                                    className={styles.extensionButtonContainer}
+                                                >
                                                     <button
                                                         className={styles.extensionButton}
                                                         title={intl.formatMessage(messages.addExtension)}
@@ -453,7 +459,7 @@ const GUIComponent = props => {
                                                             src={addExtensionIcon}
                                                         />
                                                     </button>
-                                                </Box>
+                                                </Box>}
                                                 <Box className={styles.watermark}>
                                                     <Watermark />
                                                 </Box>
@@ -469,7 +475,7 @@ const GUIComponent = props => {
                                                 (soundsTabVisible || layout.isEditorPanelOpen?.(2)) ? <SoundTab vm={vm} /> : null
                                             )}
                                         </TabPanel>
-                                    </Tabs>
+                                    </Tabs>)}
                                     {backpackVisible ? (
                                         <Backpack host={backpackHost} />
                                     ) : null}
