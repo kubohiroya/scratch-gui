@@ -28,7 +28,7 @@ import SB3Downloader from '../../containers/sb3-downloader.jsx';
 import DeletionRestorer from '../../containers/deletion-restorer.jsx';
 import TurboMode from '../../containers/turbo-mode.jsx';
 import MenuBarHOC from '../../containers/menu-bar-hoc.jsx';
-import SettingsMenu from './settings-menu.jsx';
+import SettingsMenu, {SettingsMenuItems} from './settings-menu.jsx';
 
 import FramerateChanger from '../../containers/tw-framerate-changer.jsx';
 import ChangeUsername from '../../containers/tw-change-username.jsx';
@@ -211,6 +211,84 @@ MenuItemLink.propTypes = {
 };
 
 const FileMenuItem = getHostIntegration()?.createFileMenuItem?.(MenuItem, addExtensionIcon) || MenuItem;
+
+const renderRuntimeSettings = (Item = MenuItem) => [
+    <TurboMode key="turbo">{(toggleTurboMode, {turboMode}) => (
+        <Item onClick={toggleTurboMode}>
+            {turboMode ? (
+                <FormattedMessage
+                    defaultMessage="Turn off Turbo Mode"
+                    description="Menu bar item for turning off turbo mode"
+                    id="gui.menuBar.turboModeOff"
+                />
+            ) : (
+                <FormattedMessage
+                    defaultMessage="Turn on Turbo Mode"
+                    description="Menu bar item for turning on turbo mode"
+                    id="gui.menuBar.turboModeOn"
+                />
+            )}
+        </Item>
+    )}</TurboMode>,
+    <FramerateChanger key="framerate">{(changeFramerate, {framerate}) => (
+        <Item onClick={changeFramerate}>
+            {framerate === 60 ? (
+                <FormattedMessage
+                    defaultMessage="Turn off 60 FPS Mode"
+                    description="Menu bar item for turning off 60 FPS mode"
+                    id="tw.menuBar.60off"
+                />
+            ) : (
+                <FormattedMessage
+                    defaultMessage="Turn on 60 FPS Mode"
+                    description="Menu bar item for turning on 60 FPS mode"
+                    id="tw.menuBar.60on"
+                />
+            )}
+        </Item>
+    )}</FramerateChanger>,
+    <ChangeUsername key="username">{changeUsername => (
+        <Item
+            closeOnSelect
+            onClick={changeUsername}
+        >
+            <FormattedMessage
+                defaultMessage="Change Username"
+                description="Menu bar item for changing the username"
+                id="tw.menuBar.changeUsername"
+            />
+        </Item>
+    )}</ChangeUsername>,
+    <CloudVariablesToggler key="cloud">{(toggleCloudVariables, {enabled, canUseCloudVariables}) => (
+        <Item
+            className={classNames({[styles.disabled]: !canUseCloudVariables})}
+            onClick={toggleCloudVariables}
+        >
+            {canUseCloudVariables ? (
+                enabled ? (
+                    <FormattedMessage
+                        defaultMessage="Disable Cloud Variables"
+                        description="Menu bar item for disabling cloud variables"
+                        id="tw.menuBar.cloudOff"
+                    />
+                ) : (
+                    <FormattedMessage
+                        defaultMessage="Enable Cloud Variables"
+                        description="Menu bar item for enabling cloud variables"
+                        id="tw.menuBar.cloudOn"
+                    />
+                )
+            ) : (
+                <FormattedMessage
+                    defaultMessage="Cloud Variables are not Available"
+                    // eslint-disable-next-line max-len
+                    description="Menu bar item for when cloud variables are not available"
+                    id="tw.menuBar.cloudUnavailable"
+                />
+            )}
+        </Item>
+    )}</CloudVariablesToggler>
+];
 
 class MenuBar extends React.Component {
     constructor (props) {
@@ -486,9 +564,112 @@ class MenuBar extends React.Component {
             </Button>
         );
         // Show the About button only if we have a handler for it (like in the desktop app)
-        const ProjectInfoMenu = !this.props.onClickAbout && getHostIntegration()?.ProjectInfoMenu;
-        const aboutButton = ProjectInfoMenu ?
-            <ProjectInfoMenu locale={this.props.intl.locale} /> : this.buildAboutMenu(this.props.onClickAbout);
+        const host = getHostIntegration();
+        const ProjectInfoMenu = !this.props.onClickAbout && host?.ProjectInfoMenu;
+        const reorganizeMenuBar = ProjectInfoMenu?.reorganizeMenuBar === true && !this.props.isPlayerOnly;
+        const showSettings = this.props.canChangeTheme || this.props.canChangeLanguage;
+        const settingsItemsProps = {
+            canChangeLanguage: this.props.canChangeLanguage,
+            canChangeTheme: this.props.canChangeTheme,
+            onClickDesktopSettings: this.props.onClickDesktopSettings && this.handleClickDesktopSettings,
+            onOpenCustomSettings: this.props.onClickAddonSettings &&
+                this.props.onClickAddonSettings.bind(null, 'editor-theme3'),
+            onRequestClose: this.props.onRequestCloseSettings
+        };
+        const projectSettings = reorganizeMenuBar ? {
+            leading: true,
+            displaySettings: showSettings ? {
+                items: <SettingsMenuItems {...settingsItemsProps} />,
+                open: this.props.settingsMenuOpen,
+                onOpen: this.props.onClickSettings,
+                onClose: this.props.onRequestCloseSettings
+            } : null,
+            renderRuntimeSettings,
+            addons: this.props.onClickAddonSettings ? {
+                icon: addonsIcon,
+                onClick: this.props.onClickAddonSettings
+            } : null,
+            advanced: this.props.onClickSettingsModal ? {
+                icon: advancedIcon,
+                onClick: this.props.onClickSettingsModal
+            } : null
+        } : {};
+        const aboutButton = ProjectInfoMenu ? (
+            <ProjectInfoMenu
+                locale={this.props.intl.locale}
+                {...projectSettings}
+            />
+        ) : this.buildAboutMenu(this.props.onClickAbout);
+        const projectSearch = reorganizeMenuBar && host.renderProjectSearch?.({
+            vm: this.props.vm,
+            locale: this.props.intl.locale
+        });
+        const errorsMenu = this.props.errors.length > 0 && (
+            <div>
+                <MenuLabel
+                    open={this.props.errorsMenuOpen}
+                    onOpen={this.props.onClickErrors}
+                    onClose={this.props.onRequestCloseErrors}
+                >
+                    <img
+                        src={errorIcon}
+                        draggable={false}
+                        width={20}
+                        height={20}
+                    />
+                    <img
+                        src={dropdownCaret}
+                        draggable={false}
+                        width={8}
+                        height={5}
+                    />
+                    <MenuBarMenu
+                        className={classNames(styles.menuBarMenu)}
+                        open={this.props.errorsMenuOpen}
+                        place={this.props.isRtl ? 'left' : 'right'}
+                    >
+                        <MenuSection>
+                            <MenuItemLink href="https://scratch.mit.edu/users/GarboMuffin/#comments">
+                                <FormattedMessage
+                                    defaultMessage="Some scripts encountered errors."
+                                    description="Link in error menu"
+                                    id="tw.menuBar.reportError1"
+                                />
+                            </MenuItemLink>
+                            <MenuItemLink href="https://scratch.mit.edu/users/GarboMuffin/#comments">
+                                <FormattedMessage
+                                    defaultMessage="This is a bug. Please report it."
+                                    description="Link in error menu"
+                                    id="tw.menuBar.reportError2"
+                                />
+                            </MenuItemLink>
+                        </MenuSection>
+                        <MenuSection>
+                            {this.props.errors.map(({id, sprite, error}) => (
+                                <MenuItem key={id}>
+                                    {this.props.intl.formatMessage(twMessages.compileError, {
+                                        sprite,
+                                        error
+                                    })}
+                                </MenuItem>
+                            ))}
+                        </MenuSection>
+                    </MenuBarMenu>
+                </MenuLabel>
+            </div>
+        );
+        const editableTitle = this.props.canEditTitle && (
+            <div className={classNames(styles.menuBarItem, styles.growable)}>
+                <MenuBarItemTooltip
+                    enable
+                    id="title-field"
+                >
+                    <ProjectTitleInput
+                        className={classNames(styles.titleFieldGrowable)}
+                    />
+                </MenuBarItemTooltip>
+            </div>
+        );
         const menuBar = (
             <Box
                 className={classNames(
@@ -497,76 +678,18 @@ class MenuBar extends React.Component {
                 )}
             >
                 <div className={styles.mainMenu}>
+                    {reorganizeMenuBar && aboutButton}
+                    {reorganizeMenuBar && editableTitle}
                     <div className={styles.fileGroup}>
-                        {this.props.errors.length > 0 && <div>
-                            <MenuLabel
-                                open={this.props.errorsMenuOpen}
-                                onOpen={this.props.onClickErrors}
-                                onClose={this.props.onRequestCloseErrors}
-                            >
-                                <img
-                                    src={errorIcon}
-                                    draggable={false}
-                                    width={20}
-                                    height={20}
-                                />
-                                <img
-                                    src={dropdownCaret}
-                                    draggable={false}
-                                    width={8}
-                                    height={5}
-                                />
-                                <MenuBarMenu
-                                    className={classNames(styles.menuBarMenu)}
-                                    open={this.props.errorsMenuOpen}
-                                    place={this.props.isRtl ? 'left' : 'right'}
-                                >
-                                    <MenuSection>
-                                        <MenuItemLink href="https://scratch.mit.edu/users/GarboMuffin/#comments">
-                                            <FormattedMessage
-                                                defaultMessage="Some scripts encountered errors."
-                                                description="Link in error menu"
-                                                id="tw.menuBar.reportError1"
-                                            />
-                                        </MenuItemLink>
-                                        <MenuItemLink href="https://scratch.mit.edu/users/GarboMuffin/#comments">
-                                            <FormattedMessage
-                                                defaultMessage="This is a bug. Please report it."
-                                                description="Link in error menu"
-                                                id="tw.menuBar.reportError2"
-                                            />
-                                        </MenuItemLink>
-                                    </MenuSection>
-                                    <MenuSection>
-                                        {this.props.errors.map(({id, sprite, error}) => (
-                                            <MenuItem key={id}>
-                                                {this.props.intl.formatMessage(twMessages.compileError, {
-                                                    sprite,
-                                                    error
-                                                })}
-                                            </MenuItem>
-                                        ))}
-                                    </MenuSection>
-                                </MenuBarMenu>
-                            </MenuLabel>
-                        </div>}
-                        {(this.props.canChangeTheme || this.props.canChangeLanguage) && (<SettingsMenu
-                            canChangeLanguage={this.props.canChangeLanguage}
-                            canChangeTheme={this.props.canChangeTheme}
-                            isRtl={this.props.isRtl}
-                            onClickDesktopSettings={
-                                this.props.onClickDesktopSettings &&
-                                this.handleClickDesktopSettings
-                            }
-                            // eslint-disable-next-line react/jsx-no-bind
-                            onOpenCustomSettings={
-                                this.props.onClickAddonSettings &&
-                                this.props.onClickAddonSettings.bind(null, 'editor-theme3')
-                            }
-                            onRequestClose={this.props.onRequestCloseSettings}
-                            onRequestOpen={this.props.onClickSettings}
-                            settingsMenuOpen={this.props.settingsMenuOpen}
-                        />)}
+                        {!reorganizeMenuBar && errorsMenu}
+                        {!reorganizeMenuBar && showSettings && (
+                            <SettingsMenu
+                                {...settingsItemsProps}
+                                isRtl={this.props.isRtl}
+                                onRequestOpen={this.props.onClickSettings}
+                                settingsMenuOpen={this.props.settingsMenuOpen}
+                            />
+                        )}
                         {(this.props.canManageFiles) && (
                             <MenuLabel
                                 open={this.props.fileMenuOpen}
@@ -791,91 +914,24 @@ class MenuBar extends React.Component {
                                         </MenuItem>
                                     )}</DeletionRestorer>
                                 )}
-                                <MenuSection>
-                                    <TurboMode>{(toggleTurboMode, {turboMode}) => (
-                                        <MenuItem onClick={toggleTurboMode}>
-                                            {turboMode ? (
+                                {!reorganizeMenuBar && (
+                                    <React.Fragment>
+                                        <MenuSection>{renderRuntimeSettings()}</MenuSection>
+                                        <MenuSection>
+                                            <MenuItem onClick={this.props.onClickSettingsModal}>
                                                 <FormattedMessage
-                                                    defaultMessage="Turn off Turbo Mode"
-                                                    description="Menu bar item for turning off turbo mode"
-                                                    id="gui.menuBar.turboModeOff"
+                                                    defaultMessage="Advanced Settings"
+                                                    description="Menu bar item for advanced settings"
+                                                    id="tw.menuBar.moreSettings"
                                                 />
-                                            ) : (
-                                                <FormattedMessage
-                                                    defaultMessage="Turn on Turbo Mode"
-                                                    description="Menu bar item for turning on turbo mode"
-                                                    id="gui.menuBar.turboModeOn"
-                                                />
-                                            )}
-                                        </MenuItem>
-                                    )}</TurboMode>
-                                    <FramerateChanger>{(changeFramerate, {framerate}) => (
-                                        <MenuItem onClick={changeFramerate}>
-                                            {framerate === 60 ? (
-                                                <FormattedMessage
-                                                    defaultMessage="Turn off 60 FPS Mode"
-                                                    description="Menu bar item for turning off 60 FPS mode"
-                                                    id="tw.menuBar.60off"
-                                                />
-                                            ) : (
-                                                <FormattedMessage
-                                                    defaultMessage="Turn on 60 FPS Mode"
-                                                    description="Menu bar item for turning on 60 FPS mode"
-                                                    id="tw.menuBar.60on"
-                                                />
-                                            )}
-                                        </MenuItem>
-                                    )}</FramerateChanger>
-                                    <ChangeUsername>{changeUsername => (
-                                        <MenuItem onClick={changeUsername}>
-                                            <FormattedMessage
-                                                defaultMessage="Change Username"
-                                                description="Menu bar item for changing the username"
-                                                id="tw.menuBar.changeUsername"
-                                            />
-                                        </MenuItem>
-                                    )}</ChangeUsername>
-                                    <CloudVariablesToggler>{(toggleCloudVariables, {enabled, canUseCloudVariables}) => (
-                                        <MenuItem
-                                            className={classNames({[styles.disabled]: !canUseCloudVariables})}
-                                            onClick={toggleCloudVariables}
-                                        >
-                                            {canUseCloudVariables ? (
-                                                enabled ? (
-                                                    <FormattedMessage
-                                                        defaultMessage="Disable Cloud Variables"
-                                                        description="Menu bar item for disabling cloud variables"
-                                                        id="tw.menuBar.cloudOff"
-                                                    />
-                                                ) : (
-                                                    <FormattedMessage
-                                                        defaultMessage="Enable Cloud Variables"
-                                                        description="Menu bar item for enabling cloud variables"
-                                                        id="tw.menuBar.cloudOn"
-                                                    />
-                                                )
-                                            ) : (
-                                                <FormattedMessage
-                                                    defaultMessage="Cloud Variables are not Available"
-                                                    // eslint-disable-next-line max-len
-                                                    description="Menu bar item for when cloud variables are not available"
-                                                    id="tw.menuBar.cloudUnavailable"
-                                                />
-                                            )}
-                                        </MenuItem>
-                                    )}</CloudVariablesToggler>
-                                </MenuSection>
-                                <MenuSection>
-                                    <MenuItem onClick={this.props.onClickSettingsModal}>
-                                        <FormattedMessage
-                                            defaultMessage="Advanced Settings"
-                                            description="Menu bar item for advanced settings"
-                                            id="tw.menuBar.moreSettings"
-                                        />
-                                    </MenuItem>
-                                </MenuSection>
+                                            </MenuItem>
+                                        </MenuSection>
+                                    </React.Fragment>
+                                )}
                             </MenuBarMenu>
                         </MenuLabel>
+                        {projectSearch}
+                        {reorganizeMenuBar && errorsMenu}
                         {this.props.isTotallyNormal && (
                             <MenuLabel
                                 open={this.props.modeMenuOpen}
@@ -920,7 +976,7 @@ class MenuBar extends React.Component {
                             </MenuLabel>
                         )}
 
-                        {this.props.onClickAddonSettings && (
+                        {!reorganizeMenuBar && this.props.onClickAddonSettings && (
                             <div
                                 className={classNames(styles.menuBarItem, styles.hoverable)}
                                 onClick={this.props.onClickAddonSettings}
@@ -940,7 +996,7 @@ class MenuBar extends React.Component {
                                 </span>
                             </div>
                         )}
-                        {this.props.onClickSettingsModal && (
+                        {!reorganizeMenuBar && this.props.onClickSettingsModal && (
                             <div
                                 className={classNames(styles.menuBarItem, styles.hoverable)}
                                 onClick={this.props.onClickSettingsModal}
@@ -965,16 +1021,7 @@ class MenuBar extends React.Component {
                     <Divider className={styles.divider} />
 
                     {this.props.canEditTitle ? (
-                        <div className={classNames(styles.menuBarItem, styles.growable)}>
-                            <MenuBarItemTooltip
-                                enable
-                                id="title-field"
-                            >
-                                <ProjectTitleInput
-                                    className={classNames(styles.titleFieldGrowable)}
-                                />
-                            </MenuBarItemTooltip>
-                        </div>
+                        !reorganizeMenuBar && editableTitle
                     ) : ((this.props.authorUsername && this.props.authorUsername !== this.props.username) ? (
                         <AuthorInfo
                             className={styles.authorInfo}
@@ -1075,7 +1122,7 @@ class MenuBar extends React.Component {
                     />
                 </div>
 
-                {aboutButton}
+                {!reorganizeMenuBar && aboutButton}
             </Box>
         );
 

@@ -17,6 +17,36 @@ import styles from './settings-menu.css';
 import dropdownCaret from './dropdown-caret.svg';
 import settingsIcon from './icon--settings.svg';
 
+export const SettingsMenuItems = ({
+    canChangeLanguage,
+    canChangeTheme,
+    onClickDesktopSettings,
+    onOpenCustomSettings,
+    onRequestClose
+}) => (
+    <MenuSection>
+        {canChangeLanguage && <LanguageMenu onRequestCloseSettings={onRequestClose} />}
+        {canChangeTheme && (
+            <React.Fragment>
+                <TWGuiThemeMenu />
+                <TWBlocksThemeMenu
+                    onOpenCustomSettings={onOpenCustomSettings}
+                />
+                <TWAccentThemeMenu />
+            </React.Fragment>
+        )}
+        {onClickDesktopSettings && <TWDesktopSettings onClick={onClickDesktopSettings} />}
+    </MenuSection>
+);
+
+SettingsMenuItems.propTypes = {
+    canChangeLanguage: PropTypes.bool,
+    canChangeTheme: PropTypes.bool,
+    onClickDesktopSettings: PropTypes.func,
+    onOpenCustomSettings: PropTypes.func,
+    onRequestClose: PropTypes.func
+};
+
 const SettingsMenu = ({
     canChangeLanguage,
     canChangeTheme,
@@ -56,19 +86,13 @@ const SettingsMenu = ({
             open={settingsMenuOpen}
             place={isRtl ? 'left' : 'right'}
         >
-            <MenuSection>
-                {canChangeLanguage && <LanguageMenu onRequestCloseSettings={onRequestClose} />}
-                {canChangeTheme && (
-                    <React.Fragment>
-                        <TWGuiThemeMenu />
-                        <TWBlocksThemeMenu
-                            onOpenCustomSettings={onOpenCustomSettings}
-                        />
-                        <TWAccentThemeMenu />
-                    </React.Fragment>
-                )}
-                {onClickDesktopSettings && <TWDesktopSettings onClick={onClickDesktopSettings} />}
-            </MenuSection>
+            <SettingsMenuItems
+                canChangeLanguage={canChangeLanguage}
+                canChangeTheme={canChangeTheme}
+                onClickDesktopSettings={onClickDesktopSettings}
+                onOpenCustomSettings={onOpenCustomSettings}
+                onRequestClose={onRequestClose}
+            />
         </MenuBarMenu>
     </MenuLabel>
 );
