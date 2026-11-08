@@ -34,11 +34,13 @@ const SpriteList = function (props) {
         onDeleteSprite,
         onDuplicateSprite,
         onExportSprite,
+        onRenameSprite,
         onSelectSprite,
         onAddSortable,
         onRemoveSortable,
         ordering,
         raised,
+        renameSpriteLabel,
         selectedId,
         stageTile,
         items
@@ -105,10 +107,12 @@ const SpriteList = function (props) {
                                 selected={sprite.id === (codeWindows ? codeWindows.selectedId : selectedId)}
                                 onClick={codeWindows?.select || onSelectSprite}
                                 openEditorLabel={codeWindows?.openLabel}
+                                renameLabel={renameSpriteLabel}
                                 onOpenEditor={codeWindows?.open}
                                 onDeleteButtonClick={onDeleteSprite}
                                 onDuplicateButtonClick={onDuplicateSprite}
                                 onExportButtonClick={onExportSprite}
+                                onRenameButtonClick={onRenameSprite}
                             />
                         </SortableAsset>
                     );
@@ -145,10 +149,12 @@ SpriteList.propTypes = {
     onDeleteSprite: PropTypes.func,
     onDuplicateSprite: PropTypes.func,
     onExportSprite: PropTypes.func,
+    onRenameSprite: PropTypes.func,
     onRemoveSortable: PropTypes.func,
     onSelectSprite: PropTypes.func,
     ordering: PropTypes.arrayOf(PropTypes.number),
     raised: PropTypes.bool,
+    renameSpriteLabel: PropTypes.string,
     selectedId: PropTypes.string
 };
 
