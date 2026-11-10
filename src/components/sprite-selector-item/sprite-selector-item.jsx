@@ -5,7 +5,7 @@ import React from 'react';
 import DeleteButton from '../delete-button/delete-button.jsx';
 import styles from './sprite-selector-item.css';
 import {ContextMenuTrigger} from 'react-contextmenu';
-import {DangerousMenuItem, ContextMenu, MenuItem} from '../context-menu/context-menu.jsx';
+import {DangerousMenuItem, ContextMenu, MenuItem, contextMenuPrimitives} from '../context-menu/context-menu.jsx';
 import {FormattedMessage} from 'react-intl';
 
 // react-contextmenu requires unique id to match trigger and context menu
@@ -14,7 +14,7 @@ let contextMenuId = 0;
 const hasContextMenu = ({onOpenEditor, onDuplicateButtonClick, onDeleteButtonClick, onExportButtonClick}) =>
     onOpenEditor || onDuplicateButtonClick || onDeleteButtonClick || onExportButtonClick;
 
-const SpriteSelectorItem = props => (
+const renderSpriteSelectorItem = (props, menuId, editorMenu) => (
     <ContextMenuTrigger
         attributes={{
             className: classNames(props.className, styles.spriteSelectorItem, {
@@ -27,7 +27,7 @@ const SpriteSelectorItem = props => (
             onTouchStart: props.onMouseDown
         }}
         disable={props.preventContextMenu}
-        id={`${props.name}-${contextMenuId}`}
+        id={menuId}
         ref={props.componentRef}
     >
         {typeof props.number === 'undefined' ? null : (
@@ -57,11 +57,14 @@ const SpriteSelectorItem = props => (
                 onClick={props.onDeleteButtonClick}
             />
         ) : null }
-        {hasContextMenu(props) ? (
-            <ContextMenu id={`${props.name}-${contextMenuId++}`}>
-                {props.onOpenEditor ? (
+        {editorMenu || hasContextMenu(props) ? (
+            <ContextMenu
+                id={menuId}
+                onShow={editorMenu?.onShow}
+            >
+                {editorMenu?.open ?? (props.onOpenEditor ? (
                     <MenuItem onClick={props.onOpenEditor}>{props.openEditorLabel}</MenuItem>
-                ) : null}
+                ) : null)}
                 {props.onDuplicateButtonClick ? (
                     <MenuItem onClick={props.onDuplicateButtonClick}>
                         <FormattedMessage
@@ -80,7 +83,7 @@ const SpriteSelectorItem = props => (
                         />
                     </MenuItem>
                 ) : null }
-                {props.onRenameButtonClick ? (
+                {editorMenu?.rename ?? (props.onRenameButtonClick ? (
                     <MenuItem onClick={props.onRenameButtonClick}>
                         {props.renameLabel || <FormattedMessage
                             defaultMessage="rename"
@@ -88,7 +91,7 @@ const SpriteSelectorItem = props => (
                             id="tw.spriteSelectorItem.rename"
                         />}
                     </MenuItem>
-                ) : null}
+                ) : null)}
                 {props.onDeleteButtonClick ? (
                     <DangerousMenuItem onClick={props.onDeleteButtonClick}>
                         <FormattedMessage
@@ -102,6 +105,12 @@ const SpriteSelectorItem = props => (
         ) : null}
     </ContextMenuTrigger>
 );
+
+const SpriteSelectorItem = props => {
+    const [menuId] = React.useState(() => `${props.name}-${contextMenuId++}`);
+    return renderSpriteSelectorItem(props, menuId,
+        props.renderEditorMenu?.(contextMenuPrimitives, props.onRenameButtonClick));
+};
 
 SpriteSelectorItem.propTypes = {
     className: PropTypes.string,
@@ -118,6 +127,7 @@ SpriteSelectorItem.propTypes = {
     onDuplicateButtonClick: PropTypes.func,
     onExportButtonClick: PropTypes.func,
     onRenameButtonClick: PropTypes.func,
+    renderEditorMenu: PropTypes.func,
     onMouseDown: PropTypes.func,
     onMouseEnter: PropTypes.func,
     onMouseLeave: PropTypes.func,

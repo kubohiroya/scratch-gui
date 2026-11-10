@@ -1,5 +1,5 @@
 import {ContextMenuTrigger} from 'react-contextmenu';
-import {ContextMenu, MenuItem} from '../context-menu/context-menu.jsx';
+import {ContextMenu, MenuItem, contextMenuPrimitives} from '../context-menu/context-menu.jsx';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import React from 'react';
@@ -80,7 +80,8 @@ const StageSelector = props => {
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
         />;
-        return stageMenu?.wrapBackdropTile?.(tile, {ContextMenuTrigger, ContextMenu, MenuItem}) ?? tile;
+        const menuComponents = {ContextMenuTrigger, ContextMenu, MenuItem, contextMenuPrimitives};
+        return stageMenu?.wrapBackdropTile?.(tile, menuComponents) ?? tile;
     }
     const content = (
         <Box
