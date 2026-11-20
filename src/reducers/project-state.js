@@ -119,7 +119,7 @@ const reducer = function (state, action) {
     switch (action.type) {
     case CANCEL_SECURITY_LOAD:
         return getHostIntegration()?.createCancelSecurityLoad?.(initialState, defaultProjectId, LoadingState,
-            getHostIntegration()?.hostIntegration?.()) || Object.assign({}, initialState, {
+            getHostIntegration()?.hostIntegration?.(), state) || Object.assign({}, initialState, {
             loadingState: LoadingState.FETCHING_NEW_DEFAULT, projectId: defaultProjectId
         });
     case DONE_CREATING_NEW:

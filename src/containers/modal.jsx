@@ -17,6 +17,7 @@ class Modal extends React.Component {
         this.addEventListeners();
     }
     componentDidMount () {
+        if (this.props.manageHistory === false) return;
         // Add a history event only if it's not currently for our modal. This
         // avoids polluting the history with many entries. We only need one.
         this.pushHistory(this.id, (history.state === null || history.state !== this.id));
@@ -49,6 +50,7 @@ class Modal extends React.Component {
 Modal.propTypes = {
     id: PropTypes.string.isRequired,
     isRtl: PropTypes.bool,
+    manageHistory: PropTypes.bool,
     onRequestClose: PropTypes.func,
     onRequestOpen: PropTypes.func
 };

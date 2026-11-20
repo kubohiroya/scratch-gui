@@ -137,6 +137,14 @@ const SBFileUploaderHOC = function (WrappedComponent) {
             const thisFileInput = e.target;
             if (thisFileInput.files) { // Don't attempt to load if no file was selected
                 this.fileToUpload = thisFileInput.files[0];
+                if (this.fileToUpload && getHostIntegration()?.openProjectInNewTab?.(this.props.vm, {
+                    kind: 'file', file: this.fileToUpload, handle: thisFileInput.handle
+                }) === true) {
+                    this.expectingFileUploadFinish = false;
+                    this.removeFileObjects();
+                    this.props.closeFileMenu();
+                    return;
+                }
 
                 // If user owns the project, or user has changed the project,
                 // we must confirm with the user that they really intend to
