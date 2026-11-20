@@ -34,7 +34,7 @@ const searchParamsToString = params => {
 const setSearchParams = params => {
     const newSearch = searchParamsToString(params);
     if (location.search !== newSearch) {
-        history.replaceState(null, null, `${location.pathname}${newSearch}${location.hash}`);
+        history.replaceState(history.state, null, `${location.pathname}${newSearch}${location.hash}`);
     }
 };
 
