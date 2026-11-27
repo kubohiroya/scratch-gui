@@ -1123,6 +1123,8 @@ class MenuBar extends React.Component {
                 </div>
 
                 {!reorganizeMenuBar && aboutButton}
+                {!this.props.isPlayerOnly &&
+                    host?.renderAccountControls?.({vm: this.props.vm, locale: this.props.intl.locale})}
             </Box>
         );
 
